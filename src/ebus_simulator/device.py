@@ -4,11 +4,15 @@ from dataclasses import dataclass, field
 import math
 
 import numpy as np
-from scipy import ndimage
 
 from ebus_simulator.centerline import CenterlineGraph, CenterlineProjection
-from ebus_simulator.geometry import distance_to_mask_surface_mm, point_to_voxel
-from ebus_simulator.models import VolumeData
+from ebus_simulator.geometry import (
+    distance_to_mask_surface_mm,
+    sample_signed_distance_mm,
+    sample_volume_scalar,
+)
+from ebus_simulator.mesh_geometry import MeshQueryResult, get_mesh_surface
+from ebus_simulator.models import PolyData, VolumeData
 
 
 EPSILON = 1e-9
@@ -18,10 +22,11 @@ CONTACT_SCAN_BACKWARD_MM = 6.0
 CONTACT_SCAN_SHAFT_MM = 2.0
 CONTACT_SCAN_STEP_MM = 0.5
 CONTACT_AMBIGUITY_SCORE_DELTA = 0.35
-WALL_NORMAL_SAMPLE_DELTA_MM = 0.6
-
-
-_SIGNED_DISTANCE_CACHE: dict[tuple[str, tuple[int, int, int], tuple[float, float, float]], np.ndarray] = {}
+MESH_SCAN_FORWARD_MM = 3.0
+MESH_SCAN_BACKWARD_MM = 2.0
+MESH_SCAN_SHAFT_MM = 1.5
+MESH_SCAN_STEP_MM = 0.5
+NORMAL_ORIENTATION_DELTA_MM = 0.75
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,11 +44,16 @@ class CPEBUSDeviceModel:
 @dataclass(slots=True)
 class ContactRefinement:
     original_contact_world: list[float]
+    voxel_refined_contact_world: list[float]
     refined_contact_world: list[float]
     original_contact_to_airway_distance_mm: float
+    voxel_refined_contact_to_airway_distance_mm: float
     refined_contact_to_airway_distance_mm: float
+    voxel_to_mesh_contact_distance_mm: float
     refinement_applied: bool
     refinement_method: str
+    voxel_refinement_method: str
+    mesh_refinement_method: str
     candidate_hu: float | None
     candidate_branch_line_index: int | None
     warnings: list[str] = field(default_factory=list)
@@ -59,6 +69,8 @@ class DevicePose:
     probe_axis_world: list[float]
     lateral_axis_world: list[float]
     wall_normal_world: list[float]
+    voxel_wall_normal_world: list[float]
+    voxel_probe_axis_world: list[float]
     target_world: list[float]
     contact_refinement: ContactRefinement
 
@@ -83,78 +95,11 @@ def _normalize(vector: np.ndarray) -> np.ndarray | None:
     norm = float(np.linalg.norm(vector))
     if norm <= EPSILON:
         return None
-    return vector / norm
+    return np.asarray(vector, dtype=np.float64) / norm
 
 
 def _project_perpendicular(vector: np.ndarray, axis: np.ndarray) -> np.ndarray:
-    return vector - (float(np.dot(vector, axis)) * axis)
-
-
-def _sample_scalar(volume: VolumeData, point_lps: np.ndarray, *, order: int, cval: float) -> float:
-    if volume.data is None:
-        raise ValueError(f"Volume {volume.path} must be loaded for device sampling.")
-    voxel = point_to_voxel(point_lps, volume)
-    value = ndimage.map_coordinates(
-        np.asarray(volume.data, dtype=np.float32),
-        [[float(voxel[0])], [float(voxel[1])], [float(voxel[2])]],
-        order=order,
-        mode="constant",
-        cval=cval,
-    )
-    return float(value[0])
-
-
-def _signed_distance_volume(mask_volume: VolumeData) -> np.ndarray:
-    if mask_volume.data is None:
-        raise ValueError(f"Mask volume {mask_volume.path} must be loaded for wall-normal estimation.")
-    mask = np.asarray(mask_volume.data > 0, dtype=bool)
-    cache_key = (
-        str(mask_volume.path),
-        tuple(int(value) for value in mask.shape[:3]),
-        tuple(float(value) for value in mask_volume.voxel_sizes_mm[:3]),
-    )
-    cached = _SIGNED_DISTANCE_CACHE.get(cache_key)
-    if cached is not None:
-        return cached
-    outside = ndimage.distance_transform_edt(~mask, sampling=mask_volume.voxel_sizes_mm[:3])
-    inside = ndimage.distance_transform_edt(mask, sampling=mask_volume.voxel_sizes_mm[:3])
-    signed_distance = outside - inside
-    _SIGNED_DISTANCE_CACHE[cache_key] = signed_distance.astype(np.float32)
-    return _SIGNED_DISTANCE_CACHE[cache_key]
-
-
-def _sample_signed_distance(mask_volume: VolumeData, point_lps: np.ndarray) -> float:
-    return _sample_scalar(
-        VolumeData(
-            path=mask_volume.path,
-            kind=mask_volume.kind,
-            shape=mask_volume.shape,
-            dtype="float32",
-            affine_ras=mask_volume.affine_ras,
-            affine_lps=mask_volume.affine_lps,
-            inverse_affine_lps=mask_volume.inverse_affine_lps,
-            voxel_sizes_mm=mask_volume.voxel_sizes_mm,
-            axis_codes_ras=mask_volume.axis_codes_ras,
-            data=_signed_distance_volume(mask_volume),
-        ),
-        point_lps,
-        order=1,
-        cval=float(np.max(_signed_distance_volume(mask_volume))),
-    )
-
-
-def _estimate_wall_normal(point_lps: np.ndarray, airway_solid: VolumeData) -> np.ndarray | None:
-    gradient = np.zeros(3, dtype=np.float64)
-    for axis_index in range(3):
-        axis = np.zeros(3, dtype=np.float64)
-        axis[axis_index] = 1.0
-        forward = _sample_signed_distance(airway_solid, point_lps + (axis * WALL_NORMAL_SAMPLE_DELTA_MM))
-        backward = _sample_signed_distance(airway_solid, point_lps - (axis * WALL_NORMAL_SAMPLE_DELTA_MM))
-        gradient[axis_index] = (forward - backward) / (2.0 * WALL_NORMAL_SAMPLE_DELTA_MM)
-    normalized = _normalize(gradient)
-    if normalized is None:
-        return None
-    return normalized
+    return np.asarray(vector, dtype=np.float64) - (float(np.dot(vector, axis)) * np.asarray(axis, dtype=np.float64))
 
 
 def _surface_distance(point_lps: np.ndarray, airway_lumen: VolumeData, airway_solid: VolumeData) -> float:
@@ -173,13 +118,19 @@ def _rotation_toward(base_axis: np.ndarray, toward_axis: np.ndarray, offset_deg:
     return normalized
 
 
-def _fallback_wall_normal(contact_world: np.ndarray, shaft_axis: np.ndarray, projection: CenterlineProjection | None, fallback_probe_axis: np.ndarray) -> np.ndarray:
+def _fallback_wall_normal(
+    contact_world: np.ndarray,
+    shaft_axis: np.ndarray,
+    projection: CenterlineProjection | None,
+    fallback_probe_axis: np.ndarray,
+) -> np.ndarray:
     if projection is not None:
-        radial = _project_perpendicular(contact_world - projection.closest_point_lps, shaft_axis)
+        tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
+        radial = _project_perpendicular(contact_world - projection.closest_point_lps, tangent)
         radial_normalized = _normalize(radial)
         if radial_normalized is not None:
             return radial_normalized
-    return fallback_probe_axis
+    return np.asarray(fallback_probe_axis, dtype=np.float64)
 
 
 def _candidate_branch_projection(
@@ -196,7 +147,65 @@ def _candidate_branch_projection(
     return network_graph.nearest_point(point_lps)
 
 
-def refine_airway_contact(
+def _build_probe_axis(
+    *,
+    contact_world: np.ndarray,
+    target_world: np.ndarray,
+    shaft_axis: np.ndarray,
+    wall_normal: np.ndarray,
+    fallback_probe_axis: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    projected_wall_normal = _project_perpendicular(wall_normal, shaft_axis)
+    probe_axis = _normalize(projected_wall_normal)
+    if probe_axis is None:
+        return np.asarray(fallback_probe_axis, dtype=np.float64), projected_wall_normal
+    if float(np.dot(target_world - contact_world, probe_axis)) < 0.0:
+        probe_axis = -probe_axis
+    return probe_axis, projected_wall_normal
+
+
+def _orient_mesh_normal(
+    normal_world: np.ndarray,
+    *,
+    contact_world: np.ndarray,
+    airway_lumen: VolumeData,
+    main_graph: CenterlineGraph,
+    network_graph: CenterlineGraph | None,
+    shaft_axis: np.ndarray,
+    fallback_probe_axis: np.ndarray,
+) -> np.ndarray:
+    oriented = _normalize(normal_world)
+    if oriented is None:
+        return _fallback_wall_normal(contact_world, shaft_axis, _candidate_branch_projection(contact_world, main_graph=main_graph, network_graph=network_graph), fallback_probe_axis)
+
+    forward_sd = sample_signed_distance_mm(contact_world + (NORMAL_ORIENTATION_DELTA_MM * oriented), airway_lumen)
+    backward_sd = sample_signed_distance_mm(contact_world - (NORMAL_ORIENTATION_DELTA_MM * oriented), airway_lumen)
+    if forward_sd < backward_sd:
+        oriented = -oriented
+
+    projection = _candidate_branch_projection(contact_world, main_graph=main_graph, network_graph=network_graph)
+    if projection is not None:
+        tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
+        radial = _project_perpendicular(contact_world - projection.closest_point_lps, tangent)
+        radial_unit = _normalize(radial)
+        if radial_unit is not None and float(np.dot(oriented, radial_unit)) < 0.0:
+            oriented = -oriented
+
+    return oriented
+
+
+def _estimate_voxel_wall_normal(point_lps: np.ndarray, airway_solid: VolumeData) -> np.ndarray | None:
+    gradient = np.zeros(3, dtype=np.float64)
+    for axis_index in range(3):
+        axis = np.zeros(3, dtype=np.float64)
+        axis[axis_index] = 1.0
+        forward = sample_signed_distance_mm(point_lps + (axis * NORMAL_ORIENTATION_DELTA_MM), airway_solid)
+        backward = sample_signed_distance_mm(point_lps - (axis * NORMAL_ORIENTATION_DELTA_MM), airway_solid)
+        gradient[axis_index] = (forward - backward) / (2.0 * NORMAL_ORIENTATION_DELTA_MM)
+    return _normalize(gradient)
+
+
+def _refine_airway_contact_voxel(
     seed_contact_world: np.ndarray,
     *,
     shaft_axis: np.ndarray,
@@ -206,15 +215,11 @@ def refine_airway_contact(
     airway_solid: VolumeData,
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None = None,
-) -> ContactRefinement:
+) -> tuple[np.ndarray, float, str, float | None, int | None, list[str]]:
     original_surface_distance = _surface_distance(seed_contact_world, airway_lumen, airway_solid)
     warnings: list[str] = []
 
-    seed_projection = _candidate_branch_projection(
-        seed_contact_world,
-        main_graph=main_graph,
-        network_graph=network_graph,
-    )
+    seed_projection = _candidate_branch_projection(seed_contact_world, main_graph=main_graph, network_graph=network_graph)
     seed_branch = None if seed_projection is None else int(seed_projection.line_index)
 
     offsets_us = np.arange(-CONTACT_SCAN_BACKWARD_MM, CONTACT_SCAN_FORWARD_MM + CONTACT_SCAN_STEP_MM, CONTACT_SCAN_STEP_MM, dtype=np.float64)
@@ -224,15 +229,11 @@ def refine_airway_contact(
     for offset_b in offsets_b:
         for offset_us in offsets_us:
             point_lps = seed_contact_world + (offset_us * probe_axis) + (offset_b * shaft_axis)
-            hu_value = _sample_scalar(ct_volume, point_lps, order=1, cval=-1000.0)
+            hu_value = sample_volume_scalar(point_lps, ct_volume, order=1, cval=-1000.0)
             if hu_value <= CONTACT_HU_THRESHOLD:
                 continue
 
-            projection = _candidate_branch_projection(
-                point_lps,
-                main_graph=main_graph,
-                network_graph=network_graph,
-            )
+            projection = _candidate_branch_projection(point_lps, main_graph=main_graph, network_graph=network_graph)
             surface_distance = _surface_distance(point_lps, airway_lumen, airway_solid)
             branch_penalty = 0.0
             branch_index = None
@@ -243,33 +244,18 @@ def refine_airway_contact(
                 if seed_branch is not None and branch_index != seed_branch:
                     branch_penalty = 1.5
                 radial_vector = point_lps - projection.closest_point_lps
-                radial_unit = _normalize(_project_perpendicular(radial_vector, projection.tangent_lps if projection.tangent_lps is not None else shaft_axis))
+                tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
+                radial_unit = _normalize(_project_perpendicular(radial_vector, tangent))
                 if radial_unit is not None:
                     direction_penalty = max(0.0, 0.75 - float(np.dot(radial_unit, probe_axis)))
 
-            score = (
-                surface_distance
-                + (0.10 * abs(float(offset_us)))
-                + (0.15 * abs(float(offset_b)))
-                + branch_penalty
-                + direction_penalty
-            )
+            score = surface_distance + (0.10 * abs(float(offset_us))) + (0.15 * abs(float(offset_b))) + branch_penalty + direction_penalty
             candidates.append((score, point_lps, hu_value, branch_index))
             break
 
     if not candidates:
-        warnings.append("Contact refinement found no tissue candidate above the HU threshold; the markup contact was retained.")
-        return ContactRefinement(
-            original_contact_world=[float(value) for value in seed_contact_world.tolist()],
-            refined_contact_world=[float(value) for value in seed_contact_world.tolist()],
-            original_contact_to_airway_distance_mm=float(original_surface_distance),
-            refined_contact_to_airway_distance_mm=float(original_surface_distance),
-            refinement_applied=False,
-            refinement_method="seed_fallback",
-            candidate_hu=None,
-            candidate_branch_line_index=seed_branch,
-            warnings=warnings,
-        )
+        warnings.append("Voxel contact refinement found no tissue candidate above the HU threshold; the markup contact was retained.")
+        return seed_contact_world.copy(), float(original_surface_distance), "seed_fallback", None, seed_branch, warnings
 
     candidates.sort(key=lambda item: item[0])
     best_score, best_point, best_hu, best_branch = candidates[0]
@@ -279,35 +265,152 @@ def refine_airway_contact(
         second_score, second_point, _, _ = candidates[1]
         separation = float(np.linalg.norm(second_point - best_point))
         if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0:
-            warnings.append("Contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.")
+            warnings.append("Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.")
 
     if refined_surface_distance > (original_surface_distance + 0.75):
-        warnings.append("Contact refinement did not improve airway-wall proximity; the markup contact was retained.")
-        return ContactRefinement(
-            original_contact_world=[float(value) for value in seed_contact_world.tolist()],
-            refined_contact_world=[float(value) for value in seed_contact_world.tolist()],
-            original_contact_to_airway_distance_mm=float(original_surface_distance),
-            refined_contact_to_airway_distance_mm=float(original_surface_distance),
-            refinement_applied=False,
-            refinement_method="seed_retained",
-            candidate_hu=best_hu,
-            candidate_branch_line_index=best_branch,
-            warnings=warnings,
-        )
+        warnings.append("Voxel contact refinement did not improve airway-wall proximity; the markup contact was retained.")
+        return seed_contact_world.copy(), float(original_surface_distance), "seed_retained", float(best_hu), best_branch, warnings
 
     if refined_surface_distance > 2.0:
-        warnings.append(f"Refined contact remains {refined_surface_distance:.2f} mm from the airway wall.")
+        warnings.append(f"Voxel-refined contact remains {refined_surface_distance:.2f} mm from the airway wall.")
 
-    return ContactRefinement(
-        original_contact_world=[float(value) for value in seed_contact_world.tolist()],
-        refined_contact_world=[float(value) for value in best_point.tolist()],
-        original_contact_to_airway_distance_mm=float(original_surface_distance),
-        refined_contact_to_airway_distance_mm=float(refined_surface_distance),
-        refinement_applied=(float(np.linalg.norm(best_point - seed_contact_world)) > 1e-3),
-        refinement_method="ct_threshold_wall_search",
-        candidate_hu=float(best_hu),
-        candidate_branch_line_index=best_branch,
-        warnings=warnings,
+    return np.asarray(best_point, dtype=np.float64), float(refined_surface_distance), "ct_threshold_wall_search", float(best_hu), best_branch, warnings
+
+
+def _score_mesh_candidate(
+    *,
+    seed_point: np.ndarray,
+    mesh_query: MeshQueryResult,
+    mesh_contact_world: np.ndarray,
+    mesh_normal_world: np.ndarray,
+    probe_axis: np.ndarray,
+    shaft_axis: np.ndarray,
+    seed_branch: int | None,
+    main_graph: CenterlineGraph,
+    network_graph: CenterlineGraph | None,
+    offset_us: float,
+    offset_b: float,
+) -> tuple[float, int | None]:
+    projection = _candidate_branch_projection(mesh_contact_world, main_graph=main_graph, network_graph=network_graph)
+    branch_index = None
+    branch_penalty = 0.0
+    radial_penalty = 0.0
+    centerline_penalty = 0.0
+    normal_penalty = 0.0
+
+    if projection is not None:
+        branch_index = int(projection.line_index)
+        if seed_branch is not None and branch_index != seed_branch:
+            branch_penalty = 1.5
+        tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
+        radial_vector = _project_perpendicular(mesh_contact_world - projection.closest_point_lps, tangent)
+        radial_unit = _normalize(radial_vector)
+        if radial_unit is not None:
+            radial_penalty = max(0.0, 0.65 - float(np.dot(radial_unit, probe_axis)))
+        centerline_penalty = 0.05 * float(projection.distance_mm)
+
+    normal_penalty = max(0.0, 0.50 - float(np.dot(mesh_normal_world, probe_axis)))
+
+    return (
+        float(mesh_query.distance_mm)
+        + (0.20 * float(np.linalg.norm(mesh_contact_world - seed_point)))
+        + (0.10 * abs(float(offset_us)))
+        + (0.15 * abs(float(offset_b)))
+        + branch_penalty
+        + radial_penalty
+        + centerline_penalty
+        + normal_penalty,
+        branch_index,
+    )
+
+
+def _refine_airway_contact_mesh(
+    seed_contact_world: np.ndarray,
+    *,
+    probe_axis: np.ndarray,
+    shaft_axis: np.ndarray,
+    raw_airway_mesh: PolyData,
+    airway_lumen: VolumeData,
+    main_graph: CenterlineGraph,
+    network_graph: CenterlineGraph | None,
+    fallback_probe_axis: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, float, str, int | None, list[str]]:
+    surface = get_mesh_surface(raw_airway_mesh)
+    warnings: list[str] = []
+    seed_projection = _candidate_branch_projection(seed_contact_world, main_graph=main_graph, network_graph=network_graph)
+    seed_branch = None if seed_projection is None else int(seed_projection.line_index)
+
+    offsets_us = np.arange(-MESH_SCAN_BACKWARD_MM, MESH_SCAN_FORWARD_MM + MESH_SCAN_STEP_MM, MESH_SCAN_STEP_MM, dtype=np.float64)
+    offsets_b = np.arange(-MESH_SCAN_SHAFT_MM, MESH_SCAN_SHAFT_MM + MESH_SCAN_STEP_MM, MESH_SCAN_STEP_MM, dtype=np.float64)
+    candidates: list[tuple[float, np.ndarray, np.ndarray, float, int | None]] = []
+
+    for offset_b in offsets_b:
+        for offset_us in offsets_us:
+            sample_point = seed_contact_world + (offset_us * probe_axis) + (offset_b * shaft_axis)
+            query = surface.nearest_point(sample_point)
+            normal = query.point_normal_lps if query.point_normal_lps is not None else query.face_normal_lps
+            if normal is None:
+                continue
+            oriented_normal = _orient_mesh_normal(
+                normal,
+                contact_world=query.closest_point_lps,
+                airway_lumen=airway_lumen,
+                main_graph=main_graph,
+                network_graph=network_graph,
+                shaft_axis=shaft_axis,
+                fallback_probe_axis=fallback_probe_axis,
+            )
+            score, branch_index = _score_mesh_candidate(
+                seed_point=sample_point,
+                mesh_query=query,
+                mesh_contact_world=query.closest_point_lps,
+                mesh_normal_world=oriented_normal,
+                probe_axis=probe_axis,
+                shaft_axis=shaft_axis,
+                seed_branch=seed_branch,
+                main_graph=main_graph,
+                network_graph=network_graph,
+                offset_us=float(offset_us),
+                offset_b=float(offset_b),
+            )
+            candidates.append((score, query.closest_point_lps, oriented_normal, float(query.distance_mm), branch_index))
+
+    if not candidates:
+        query = surface.nearest_point(seed_contact_world)
+        normal = query.point_normal_lps if query.point_normal_lps is not None else query.face_normal_lps
+        if normal is None:
+            warnings.append("Mesh contact refinement found no valid surface normal; the seed contact was retained.")
+            return seed_contact_world.copy(), np.asarray(fallback_probe_axis, dtype=np.float64), float("inf"), "mesh_seed_fallback", seed_branch, warnings
+        oriented_normal = _orient_mesh_normal(
+            normal,
+            contact_world=query.closest_point_lps,
+            airway_lumen=airway_lumen,
+            main_graph=main_graph,
+            network_graph=network_graph,
+            shaft_axis=shaft_axis,
+            fallback_probe_axis=fallback_probe_axis,
+        )
+        warnings.append("Mesh contact refinement fell back to the nearest raw-mesh projection from the seed contact.")
+        return np.asarray(query.closest_point_lps, dtype=np.float64), oriented_normal, float(query.distance_mm), "mesh_nearest_projection", seed_branch, warnings
+
+    candidates.sort(key=lambda item: item[0])
+    best_score, best_contact, best_normal, best_distance, best_branch = candidates[0]
+    if len(candidates) > 1:
+        second_score, second_contact, _, _, _ = candidates[1]
+        separation = float(np.linalg.norm(second_contact - best_contact))
+        if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0:
+            warnings.append("Mesh contact refinement was ambiguous; the best raw-mesh candidate was chosen deterministically.")
+
+    if best_distance > 2.0:
+        warnings.append(f"Mesh-refined contact remains {best_distance:.2f} mm from the raw airway mesh.")
+
+    return (
+        np.asarray(best_contact, dtype=np.float64),
+        np.asarray(best_normal, dtype=np.float64),
+        float(best_distance),
+        "raw_mesh_projection_search",
+        best_branch,
+        warnings,
     )
 
 
@@ -318,6 +421,7 @@ def build_device_pose(
     ct_volume: VolumeData,
     airway_lumen: VolumeData,
     airway_solid: VolumeData,
+    raw_airway_mesh: PolyData | None,
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None = None,
     refine_contact: bool = True,
@@ -334,8 +438,10 @@ def build_device_pose(
     if fallback_probe_axis is None:
         raise ValueError(f"Preset {pose.preset_id!r} approach {pose.contact_approach!r} does not have a valid depth/probe axis.")
 
-    refinement = (
-        refine_airway_contact(
+    original_surface_distance = _surface_distance(original_contact, airway_lumen, airway_solid)
+
+    if refine_contact:
+        voxel_contact, voxel_distance, voxel_method, candidate_hu, voxel_branch, refinement_warnings = _refine_airway_contact_voxel(
             original_contact,
             shaft_axis=shaft_axis,
             probe_axis=fallback_probe_axis,
@@ -345,59 +451,98 @@ def build_device_pose(
             main_graph=main_graph,
             network_graph=network_graph,
         )
-        if refine_contact
-        else ContactRefinement(
-            original_contact_world=[float(value) for value in original_contact.tolist()],
-            refined_contact_world=[float(value) for value in original_contact.tolist()],
-            original_contact_to_airway_distance_mm=float(_surface_distance(original_contact, airway_lumen, airway_solid)),
-            refined_contact_to_airway_distance_mm=float(_surface_distance(original_contact, airway_lumen, airway_solid)),
-            refinement_applied=False,
-            refinement_method="disabled",
-            candidate_hu=None,
-            candidate_branch_line_index=(None if pose.centerline_query is None else pose.centerline_query.line_index),
-            warnings=[],
+    else:
+        voxel_contact = original_contact.copy()
+        voxel_distance = original_surface_distance
+        voxel_method = "disabled"
+        candidate_hu = None
+        voxel_branch = None if pose.centerline_query is None else pose.centerline_query.line_index
+        refinement_warnings = []
+
+    voxel_projection = _candidate_branch_projection(voxel_contact, main_graph=main_graph, network_graph=network_graph)
+    voxel_wall_normal = _estimate_voxel_wall_normal(voxel_contact, airway_solid)
+    if voxel_wall_normal is None:
+        voxel_wall_normal = _fallback_wall_normal(voxel_contact, shaft_axis, voxel_projection, fallback_probe_axis)
+        refinement_warnings.append("Voxel wall-normal estimation was degenerate; a centerline-radial fallback was used.")
+
+    voxel_probe_axis, voxel_projected_wall_normal = _build_probe_axis(
+        contact_world=voxel_contact,
+        target_world=target_world,
+        shaft_axis=shaft_axis,
+        wall_normal=voxel_wall_normal,
+        fallback_probe_axis=fallback_probe_axis,
+    )
+    if _normalize(voxel_projected_wall_normal) is None:
+        refinement_warnings.append("Voxel wall-normal projection was degenerate; the fallback probe axis was used.")
+
+    if raw_airway_mesh is not None:
+        mesh_contact, mesh_wall_normal, mesh_distance, mesh_method, mesh_branch, mesh_warnings = _refine_airway_contact_mesh(
+            voxel_contact if refine_contact else original_contact,
+            probe_axis=voxel_probe_axis,
+            shaft_axis=shaft_axis,
+            raw_airway_mesh=raw_airway_mesh,
+            airway_lumen=airway_lumen,
+            main_graph=main_graph,
+            network_graph=network_graph,
+            fallback_probe_axis=fallback_probe_axis,
         )
+        refinement_warnings.extend(mesh_warnings)
+    else:
+        mesh_contact = voxel_contact.copy()
+        mesh_wall_normal = voxel_wall_normal.copy()
+        mesh_distance = float("nan")
+        mesh_method = "mesh_unavailable"
+        mesh_branch = voxel_branch
+        refinement_warnings.append("Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained.")
+
+    probe_axis, mesh_projected_wall_normal = _build_probe_axis(
+        contact_world=mesh_contact,
+        target_world=target_world,
+        shaft_axis=shaft_axis,
+        wall_normal=mesh_wall_normal,
+        fallback_probe_axis=voxel_probe_axis,
     )
-
-    refined_contact = np.asarray(refinement.refined_contact_world, dtype=np.float64)
-    projection = _candidate_branch_projection(
-        refined_contact,
-        main_graph=main_graph,
-        network_graph=network_graph,
-    )
-    wall_normal = _estimate_wall_normal(refined_contact, airway_solid)
-    if wall_normal is None:
-        wall_normal = _fallback_wall_normal(refined_contact, shaft_axis, projection, fallback_probe_axis)
-        refinement.warnings.append("Wall normal estimation was degenerate; a centerline-radial fallback was used.")
-
-    projected_wall_normal = _project_perpendicular(wall_normal, shaft_axis)
-    probe_axis = _normalize(projected_wall_normal)
-    if probe_axis is None:
-        probe_axis = fallback_probe_axis
-        refinement.warnings.append("Wall-normal projection was degenerate; the fallback probe axis was used.")
-
-    target_vector = target_world - refined_contact
-    if float(np.dot(target_vector, probe_axis)) < 0.0:
-        probe_axis = -probe_axis
-        if float(np.dot(projected_wall_normal, probe_axis)) < 0.0:
-            wall_normal = -wall_normal
+    if _normalize(mesh_projected_wall_normal) is None:
+        refinement_warnings.append("Mesh wall-normal projection was degenerate; the voxel probe axis was used.")
 
     lateral_axis = _normalize(np.cross(shaft_axis, probe_axis))
     if lateral_axis is None:
         raise ValueError("Failed to construct the lateral axis for the CP-EBUS device pose.")
 
     video_axis = _rotation_toward(shaft_axis, probe_axis, model.video_axis_offset_deg)
-    tip_start_world = refined_contact - (shaft_axis * model.probe_origin_offset_mm)
+    tip_start_world = mesh_contact - (shaft_axis * model.probe_origin_offset_mm)
+
+    refinement = ContactRefinement(
+        original_contact_world=[float(value) for value in original_contact.tolist()],
+        voxel_refined_contact_world=[float(value) for value in voxel_contact.tolist()],
+        refined_contact_world=[float(value) for value in mesh_contact.tolist()],
+        original_contact_to_airway_distance_mm=float(original_surface_distance),
+        voxel_refined_contact_to_airway_distance_mm=float(voxel_distance),
+        refined_contact_to_airway_distance_mm=float(mesh_distance if np.isfinite(mesh_distance) else voxel_distance),
+        voxel_to_mesh_contact_distance_mm=float(np.linalg.norm(mesh_contact - voxel_contact)),
+        refinement_applied=(
+            float(np.linalg.norm(voxel_contact - original_contact)) > 1e-3
+            or float(np.linalg.norm(mesh_contact - original_contact)) > 1e-3
+        ),
+        refinement_method=mesh_method,
+        voxel_refinement_method=voxel_method,
+        mesh_refinement_method=mesh_method,
+        candidate_hu=candidate_hu,
+        candidate_branch_line_index=(mesh_branch if mesh_branch is not None else voxel_branch),
+        warnings=refinement_warnings,
+    )
 
     return DevicePose(
         device_model=model,
         tip_start_world=[float(value) for value in tip_start_world.tolist()],
-        probe_origin_world=[float(value) for value in refined_contact.tolist()],
+        probe_origin_world=[float(value) for value in mesh_contact.tolist()],
         shaft_axis_world=[float(value) for value in shaft_axis.tolist()],
         video_axis_world=[float(value) for value in video_axis.tolist()],
         probe_axis_world=[float(value) for value in probe_axis.tolist()],
         lateral_axis_world=[float(value) for value in lateral_axis.tolist()],
-        wall_normal_world=[float(value) for value in wall_normal.tolist()],
+        wall_normal_world=[float(value) for value in mesh_wall_normal.tolist()],
+        voxel_wall_normal_world=[float(value) for value in voxel_wall_normal.tolist()],
+        voxel_probe_axis_world=[float(value) for value in voxel_probe_axis.tolist()],
         target_world=[float(value) for value in target_world.tolist()],
         contact_refinement=refinement,
     )

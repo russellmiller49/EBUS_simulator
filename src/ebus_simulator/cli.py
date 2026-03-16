@@ -28,6 +28,17 @@ def _format_summary(report_dict: dict) -> str:
         f"  main_segment_count: {report_dict['centerlines']['main_segment_count']}",
         f"  network_point_count: {report_dict['centerlines']['network_point_count']}",
         f"  network_line_count: {report_dict['centerlines']['network_line_count']}",
+        "meshes:",
+        f"  raw_path: {report_dict['meshes']['raw'].get('path')}",
+        f"  raw_present: {report_dict['meshes']['raw'].get('present')}",
+        f"  raw_space: {report_dict['meshes']['raw'].get('source_space')}",
+        f"  raw_point_count: {report_dict['meshes']['raw'].get('point_count')}",
+        f"  raw_triangle_count: {report_dict['meshes']['raw'].get('triangle_count')}",
+        f"  raw_inside_ct_fraction: {report_dict['meshes']['raw'].get('alignment_identity', {}).get('inside_ct_fraction')}",
+        f"  raw_inside_lumen_fraction: {report_dict['meshes']['raw'].get('alignment_identity', {}).get('inside_lumen_fraction')}",
+        f"  centerline_to_raw_mesh_distance_mm: {report_dict['meshes']['alignment'].get('centerline_to_raw_mesh_distance_mm')}",
+        f"  contact_to_raw_mesh_distance_mm: {report_dict['meshes']['alignment'].get('contact_to_raw_mesh_distance_mm')}",
+        f"  target_to_raw_mesh_signed_distance_mm: {report_dict['meshes']['alignment'].get('target_to_raw_mesh_signed_distance_mm')}",
         "presets:",
     ]
 
@@ -38,6 +49,7 @@ def _format_summary(report_dict: dict) -> str:
         )
         for contact in preset["contacts"]:
             airway_distance = "n/a" if contact["airway_surface_distance_mm"] is None else f"{contact['airway_surface_distance_mm']:.3f}"
+            raw_mesh_distance = "n/a" if contact["raw_mesh_distance_mm"] is None else f"{contact['raw_mesh_distance_mm']:.3f}"
             centerline_distance = (
                 "n/a"
                 if contact["centerline_projection_distance_mm"] is None
@@ -46,6 +58,7 @@ def _format_summary(report_dict: dict) -> str:
             lines.append(
                 f"    contact[{contact['approach']}]: inside_ct={contact['inside_ct_bounds']} "
                 f"airway_surface_distance_mm={airway_distance} "
+                f"raw_mesh_distance_mm={raw_mesh_distance} "
                 f"centerline_projection_distance_mm={centerline_distance} "
                 f"tangent_defined={contact['tangent_defined']}"
             )

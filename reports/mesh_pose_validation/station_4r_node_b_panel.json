@@ -1,0 +1,229 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/mesh_pose_validation/station_4r_node_b_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/mesh_pose_validation/station_4r_node_b_panel.json",
+  "image_size": [
+    768,
+    768
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -10.539466936772728,
+    -175.72781231363354,
+    1242.8554184308293
+  ],
+  "original_contact_world": [
+    -10.265640157961904,
+    -175.2366040932753,
+    1243.5311017646502
+  ],
+  "voxel_refined_contact_world": [
+    -10.50120132962726,
+    -175.5110458363866,
+    1242.9234895000918
+  ],
+  "refined_contact_world": [
+    -10.539466936772728,
+    -175.72781231363354,
+    1242.8554184308293
+  ],
+  "tip_start_world": [
+    -8.843284700618897,
+    -177.97914977524468,
+    1248.1520631664807
+  ],
+  "target_world": [
+    -10.990352215325188,
+    -186.9976425104035,
+    1244.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -9.659440994262695,
+    -170.2908935546875,
+    1245.952392578125
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "depth_axis": [
+      -0.1884253039717394,
+      -0.9241063964911027,
+      -0.33245040650807867
+    ],
+    "lateral_axis": [
+      -0.940520222409295,
+      0.07235423673738064,
+      0.33194363326523013
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "nC": [
+      -0.318676009683394,
+      0.035853695207589464,
+      -0.947185363797515
+    ],
+    "nUS": [
+      -0.1550425871532719,
+      -0.9260872814147593,
+      -0.3439827660953969
+    ],
+    "wall_normal": [
+      -0.1415188156056662,
+      -0.9427744059200014,
+      -0.30190866892449125
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.23040319619918848,
+  "original_contact_to_airway_distance_mm": 1.609375,
+  "voxel_refined_contact_to_airway_distance_mm": 0.0,
+  "refined_contact_to_airway_distance_mm": 0.23040319619918848,
+  "centerline_projection_distance_mm": 5.539871781998707,
+  "contact_refinement_method": "raw_mesh_projection_search",
+  "pose_comparison": {
+    "markup_contact_world": [
+      -10.265640157961904,
+      -175.2366040932753,
+      1243.5311017646502
+    ],
+    "voxel_refined_contact_world": [
+      -10.50120132962726,
+      -175.5110458363866,
+      1242.9234895000918
+    ],
+    "mesh_refined_contact_world": [
+      -10.539466936772728,
+      -175.72781231363354,
+      1242.8554184308293
+    ],
+    "voxel_to_mesh_contact_distance_mm": 0.23040319619918848,
+    "voxel_contact_to_airway_distance_mm": 0.0,
+    "mesh_contact_to_airway_distance_mm": 0.23040319619918848,
+    "voxel_refinement_method": "ct_threshold_wall_search",
+    "mesh_refinement_method": "raw_mesh_projection_search",
+    "voxel_wall_normal_world": [
+      -0.024810361602076954,
+      -0.9453687379245707,
+      -0.3250575261581843
+    ],
+    "mesh_wall_normal_world": [
+      -0.1415188156056662,
+      -0.9427744059200014,
+      -0.30190866892449125
+    ],
+    "voxel_nUS_world": [
+      -0.04206412960952322,
+      -0.924278581990119,
+      -0.37939387432393784
+    ],
+    "mesh_nUS_world": [
+      -0.1550425871532719,
+      -0.9260872814147593,
+      -0.3439827660953969
+    ],
+    "nUS_angular_difference_deg": 6.7884652113566935,
+    "final_nB_world": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "final_nUS_world": [
+      -0.1550425871532719,
+      -0.9260872814147593,
+      -0.3439827660953969
+    ],
+    "final_nC_world": [
+      -0.318676009683394,
+      0.035853695207589464,
+      -0.947185363797515
+    ],
+    "warnings": [
+      "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+    ]
+  },
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "right",
+  "cutaway_side_source": "station_rule",
+  "cutaway_open_side": "right",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -10.539466936772728,
+    -175.72781231363354,
+    1242.8554184308293
+  ],
+  "cutaway_normal": [
+    -0.9465961018863811,
+    0.039624674275510474,
+    0.31997766341116335
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta",
+    "target",
+    "contact"
+  ],
+  "warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ]
+}

@@ -60,9 +60,10 @@ def test_debug_mode_enables_expected_contour_overlays_and_thin_slab(tmp_path):
     assert rendered.metadata.station_overlay_enabled is True
     assert rendered.metadata.vessel_overlay_names == ["aorta", "superior_vena_cava"]
     assert rendered.metadata.slice_thickness_mm == 1.5
-    assert rendered.metadata.refined_contact_to_airway_distance_mm <= (rendered.metadata.original_contact_to_airway_distance_mm + 1e-6)
-    assert rendered.metadata.device_axes["nB"] == rendered.metadata.pose_axes["shaft_axis"]
+    assert rendered.metadata.voxel_refined_contact_to_airway_distance_mm is not None
+    assert np.allclose(rendered.metadata.device_axes["nB"], rendered.metadata.pose_axes["shaft_axis"])
     assert "wall_normal" in rendered.metadata.device_axes
+    assert rendered.metadata.pose_comparison["mesh_refinement_method"] is not None
     assert rendered.metadata.overlays_enabled == [
         "airway_lumen",
         "airway_wall",
@@ -100,7 +101,10 @@ def test_diagnostic_panel_writes_panel_image_and_metadata(tmp_path):
     assert sidecar["diagnostic_panel_enabled"] is True
     assert sidecar["diagnostic_panel_layout"] == ["virtual_ebus", "simulated_ebus", "wide_ct_localizer", "context_3d"]
     assert sidecar["original_contact_world"] != sidecar["refined_contact_world"]
-    assert sidecar["device_axes"]["nUS"] == sidecar["pose_axes"]["depth_axis"]
+    assert sidecar["voxel_refined_contact_world"] != []
+    assert "pose_comparison" in sidecar
+    assert sidecar["pose_comparison"]["mesh_refined_contact_world"] == sidecar["refined_contact_world"]
+    assert sidecar["pose_comparison"]["final_nUS_world"] == sidecar["device_axes"]["nUS"]
     assert sidecar["display_plane"] == "nUS_nB_fan"
     assert sidecar["reference_plane"] == "nUS_nB_with_lateral_thickness"
     assert sidecar["cutaway_mode"] == "lateral"

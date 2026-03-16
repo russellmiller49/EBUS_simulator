@@ -130,6 +130,7 @@ class RenderMetadata:
     simulated_ebus_enabled: bool
     contact_world: list[float]
     original_contact_world: list[float]
+    voxel_refined_contact_world: list[float]
     refined_contact_world: list[float]
     tip_start_world: list[float]
     target_world: list[float]
@@ -139,9 +140,11 @@ class RenderMetadata:
     target_in_default_forward_hemisphere: bool | None
     contact_to_airway_distance_mm: float | None
     original_contact_to_airway_distance_mm: float | None
+    voxel_refined_contact_to_airway_distance_mm: float | None
     refined_contact_to_airway_distance_mm: float | None
     centerline_projection_distance_mm: float | None
     contact_refinement_method: str
+    pose_comparison: dict[str, object]
     airway_overlay_enabled: bool
     airway_lumen_overlay_enabled: bool
     airway_wall_overlay_enabled: bool
@@ -429,8 +432,8 @@ def _resolve_slice_thickness_mm(mode: str, slice_thickness_mm: float | None) -> 
     return DEBUG_SLICE_THICKNESS_MM if mode == "debug" else CLEAN_SLICE_THICKNESS_MM
 
 
-def _load_optional_polydata(path: Path) -> PolyData | None:
-    if not path.exists():
+def _load_optional_polydata(path: Path | None) -> PolyData | None:
+    if path is None or not path.exists():
         return None
     return load_vtp_polydata(path)
 
@@ -460,8 +463,10 @@ def build_render_context(manifest_path: str | Path, *, roll_deg: float | None = 
         ct_volume=load_nifti(manifest.ct_image, kind="ct", load_data=True),
         airway_lumen_volume=load_nifti(manifest.airway_lumen_mask, kind="mask", load_data=True),
         airway_solid_volume=load_nifti(manifest.airway_solid_mask, kind="mask", load_data=True),
-        airway_display_mesh=_load_optional_polydata(manifest.root / "meshes" / "airway_endoluminal_surface_smoothed.vtp"),
-        airway_geometry_mesh=_load_optional_polydata(manifest.root / "meshes" / "airway_endoluminal_surface_raw.vtp"),
+        airway_display_mesh=_load_optional_polydata(
+            manifest.airway_cutaway_display_mesh if manifest.airway_cutaway_display_mesh is not None else manifest.airway_display_mesh
+        ),
+        airway_geometry_mesh=_load_optional_polydata(manifest.airway_raw_mesh),
         mask_cache={},
         main_graph=CenterlineGraph.from_vtp(str(manifest.centerline_main), name="main"),
         network_graph=CenterlineGraph.from_vtp(str(manifest.centerline_network), name="network"),
@@ -1544,6 +1549,7 @@ def render_preset(
         ct_volume=render_context.ct_volume,
         airway_lumen=render_context.airway_lumen_volume,
         airway_solid=render_context.airway_solid_volume,
+        raw_airway_mesh=render_context.airway_geometry_mesh,
         main_graph=render_context.main_graph,
         network_graph=render_context.network_graph,
         refine_contact=refine_contact,
@@ -1972,14 +1978,15 @@ def render_preset(
         simulated_ebus_enabled=overlay_config.simulated_ebus_enabled,
         contact_world=list(device_pose.contact_refinement.refined_contact_world),
         original_contact_world=list(device_pose.contact_refinement.original_contact_world),
+        voxel_refined_contact_world=list(device_pose.contact_refinement.voxel_refined_contact_world),
         refined_contact_world=list(device_pose.contact_refinement.refined_contact_world),
         tip_start_world=list(device_pose.tip_start_world),
         target_world=list(device_pose.target_world),
         nearest_centerline_point=pose.nearest_centerline_point,
         pose_axes={
-            "shaft_axis": list(device_pose.shaft_axis_world),
-            "depth_axis": list(device_pose.probe_axis_world),
-            "lateral_axis": list(device_pose.lateral_axis_world),
+            "shaft_axis": (None if pose.shaft_axis is None else [float(value) for value in pose.shaft_axis]),
+            "depth_axis": (None if pose.depth_axis is None else [float(value) for value in pose.depth_axis]),
+            "lateral_axis": (None if pose.lateral_axis is None else [float(value) for value in pose.lateral_axis]),
         },
         device_axes={
             "nB": list(device_pose.shaft_axis_world),
@@ -1990,9 +1997,39 @@ def render_preset(
         target_in_default_forward_hemisphere=pose.target_in_default_forward_hemisphere,
         contact_to_airway_distance_mm=float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
         original_contact_to_airway_distance_mm=float(device_pose.contact_refinement.original_contact_to_airway_distance_mm),
+        voxel_refined_contact_to_airway_distance_mm=float(device_pose.contact_refinement.voxel_refined_contact_to_airway_distance_mm),
         refined_contact_to_airway_distance_mm=float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
         centerline_projection_distance_mm=pose.centerline_projection_distance_mm,
         contact_refinement_method=device_pose.contact_refinement.refinement_method,
+        pose_comparison={
+            "markup_contact_world": list(device_pose.contact_refinement.original_contact_world),
+            "voxel_refined_contact_world": list(device_pose.contact_refinement.voxel_refined_contact_world),
+            "mesh_refined_contact_world": list(device_pose.contact_refinement.refined_contact_world),
+            "voxel_to_mesh_contact_distance_mm": float(device_pose.contact_refinement.voxel_to_mesh_contact_distance_mm),
+            "voxel_contact_to_airway_distance_mm": float(device_pose.contact_refinement.voxel_refined_contact_to_airway_distance_mm),
+            "mesh_contact_to_airway_distance_mm": float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
+            "voxel_refinement_method": device_pose.contact_refinement.voxel_refinement_method,
+            "mesh_refinement_method": device_pose.contact_refinement.mesh_refinement_method,
+            "voxel_wall_normal_world": list(device_pose.voxel_wall_normal_world),
+            "mesh_wall_normal_world": list(device_pose.wall_normal_world),
+            "voxel_nUS_world": list(device_pose.voxel_probe_axis_world),
+            "mesh_nUS_world": list(device_pose.probe_axis_world),
+            "nUS_angular_difference_deg": float(
+                np.degrees(
+                    np.arccos(
+                        np.clip(
+                            float(np.dot(device_pose.voxel_probe_axis_world, device_pose.probe_axis_world)),
+                            -1.0,
+                            1.0,
+                        )
+                    )
+                )
+            ),
+            "final_nB_world": list(device_pose.shaft_axis_world),
+            "final_nUS_world": list(device_pose.probe_axis_world),
+            "final_nC_world": list(device_pose.video_axis_world),
+            "warnings": list(device_pose.contact_refinement.warnings),
+        },
         airway_overlay_enabled=(overlay_config.airway_lumen_enabled or overlay_config.airway_wall_enabled),
         airway_lumen_overlay_enabled=overlay_config.airway_lumen_enabled,
         airway_wall_overlay_enabled=overlay_config.airway_wall_enabled,

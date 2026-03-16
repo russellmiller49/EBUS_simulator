@@ -16,6 +16,14 @@ def _resolve_path(root: Path, value: str | None) -> Path | None:
     return root / path
 
 
+def _resolve_optional_mesh(root: Path, explicit_value: str | None, fallback_relative: str) -> Path | None:
+    resolved = _resolve_path(root, explicit_value) if explicit_value is not None else None
+    if resolved is not None:
+        return resolved
+    fallback = root / fallback_relative
+    return fallback if fallback.exists() else None
+
+
 def load_case_manifest(path: str | Path) -> CaseManifest:
     manifest_path = Path(path).expanduser().resolve()
     payload = yaml.safe_load(manifest_path.read_text())
@@ -27,6 +35,7 @@ def load_case_manifest(path: str | Path) -> CaseManifest:
 
     centerlines = payload.get("centerlines", {})
     airway = payload.get("airway", {})
+    meshes = payload.get("meshes", {})
 
     presets: list[ManifestPreset] = []
     for preset in payload.get("presets", []):
@@ -68,6 +77,21 @@ def load_case_manifest(path: str | Path) -> CaseManifest:
         ],
         airway_lumen_mask=_resolve_path(root, airway["lumen_mask"]),
         airway_solid_mask=_resolve_path(root, airway["solid_mask"]),
+        airway_raw_mesh=_resolve_optional_mesh(
+            root,
+            airway.get("raw_endoluminal_mesh", meshes.get("raw_airway_endoluminal_mesh")),
+            "meshes/airway_endoluminal_surface_raw.vtp",
+        ),
+        airway_display_mesh=_resolve_optional_mesh(
+            root,
+            airway.get("smoothed_display_mesh", meshes.get("smoothed_airway_display_mesh")),
+            "meshes/airway_endoluminal_surface_smoothed.vtp",
+        ),
+        airway_cutaway_display_mesh=_resolve_optional_mesh(
+            root,
+            airway.get("cutaway_display_mesh", meshes.get("cutaway_display_mesh")),
+            "meshes/airway_endoluminal_surface_smoothed.vtp",
+        ),
         station_masks=station_masks,
         overlay_masks=overlay_masks,
         presets=presets,

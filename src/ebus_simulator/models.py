@@ -29,6 +29,9 @@ class CaseManifest:
     secondary_network_curves: list[Path]
     airway_lumen_mask: Path
     airway_solid_mask: Path
+    airway_raw_mesh: Path | None
+    airway_display_mesh: Path | None
+    airway_cutaway_display_mesh: Path | None
     station_masks: dict[str, Path]
     overlay_masks: dict[str, Path]
     presets: list[ManifestPreset]
@@ -101,6 +104,7 @@ class ContactValidation:
     point_lps: list[float]
     inside_ct_bounds: bool
     airway_surface_distance_mm: float | None
+    raw_mesh_distance_mm: float | None
     centerline_projection_distance_mm: float | None
     tangent_defined: bool
     closest_centerline_point_lps: list[float] | None
@@ -121,6 +125,9 @@ class PresetValidation:
     target_inside_ct_bounds: bool | None
     target_inside_station_mask: bool | None
     target_station_distance_mm: float | None
+    target_to_raw_mesh_signed_distance_mm: float | None
+    target_raw_mesh_side: str | None
+    target_raw_mesh_side_consistent: bool | None
     contacts: list[ContactValidation]
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -136,6 +143,7 @@ class ValidationReport:
     status: str
     ct: dict[str, Any]
     centerlines: dict[str, Any]
+    meshes: dict[str, Any]
     issues: list[ValidationIssue]
     presets: list[PresetValidation]
 

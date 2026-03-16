@@ -15,6 +15,8 @@ def test_manifest_loads_presets():
     assert manifest.case_id == "3D_slicer_files"
     assert len(manifest.presets) == 15
     assert manifest.root.name == "3D_slicer_files"
+    assert manifest.airway_raw_mesh is not None
+    assert manifest.airway_display_mesh is not None
 
 
 def test_mrk_loader_normalizes_to_lps():

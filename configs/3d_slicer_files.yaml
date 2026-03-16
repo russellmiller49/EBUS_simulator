@@ -61,6 +61,8 @@ centerlines:
 airway:
   lumen_mask: "masks/airway.nii.gz"
   solid_mask: "masks/airway_solid.nii.gz"
+  raw_endoluminal_mesh: "meshes/airway_endoluminal_surface_raw.vtp"
+  smoothed_display_mesh: "meshes/airway_endoluminal_surface_smoothed.vtp"
 
 station_masks:
   station_1l: "masks/station_1l.nii.gz"
