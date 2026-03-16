@@ -1,0 +1,264 @@
+manifest_version: 1
+case_id: 3D_slicer_files
+root: "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files"
+
+ct:
+  image: "ct.nii.gz"
+
+centerlines:
+  main: "centerlines/airway_centerline.vtp"
+  network: "centerlines/airway_network.vtp"
+  primary_markup_curve: "centerlines/Centerline curve_1 (0).mrk.json"
+  secondary_network_curves:
+    - "centerlines/Network curve_1 (0).mrk.json"
+    - "centerlines/Network curve_1 (1).mrk.json"
+    - "centerlines/Network curve_1 (2).mrk.json"
+    - "centerlines/Network curve_1 (3).mrk.json"
+    - "centerlines/Network curve_1 (4).mrk.json"
+    - "centerlines/Network curve_1 (5).mrk.json"
+    - "centerlines/Network curve_1 (6).mrk.json"
+    - "centerlines/Network curve_1 (7).mrk.json"
+    - "centerlines/Network curve_1 (8).mrk.json"
+    - "centerlines/Network curve_1 (9).mrk.json"
+    - "centerlines/Network curve_1 (10).mrk.json"
+    - "centerlines/Network curve_1 (11).mrk.json"
+    - "centerlines/Network curve_1 (12).mrk.json"
+    - "centerlines/Network curve_1 (13).mrk.json"
+    - "centerlines/Network curve_1 (14).mrk.json"
+    - "centerlines/Network curve_1 (15).mrk.json"
+    - "centerlines/Network curve_1 (16).mrk.json"
+    - "centerlines/Network curve_1 (17).mrk.json"
+    - "centerlines/Network curve_1 (18).mrk.json"
+    - "centerlines/Network curve_1 (19).mrk.json"
+    - "centerlines/Network curve_1 (20).mrk.json"
+    - "centerlines/Network curve_1 (21).mrk.json"
+    - "centerlines/Network curve_1 (22).mrk.json"
+    - "centerlines/Network curve_1 (23).mrk.json"
+    - "centerlines/Network curve_1 (24).mrk.json"
+    - "centerlines/Network curve_1 (25).mrk.json"
+    - "centerlines/Network curve_1 (26).mrk.json"
+    - "centerlines/Network curve_1 (27).mrk.json"
+    - "centerlines/Network curve_1 (28).mrk.json"
+    - "centerlines/Network curve_1 (29).mrk.json"
+    - "centerlines/Network curve_1 (30).mrk.json"
+    - "centerlines/Network curve_1 (31).mrk.json"
+    - "centerlines/Network curve_1 (32).mrk.json"
+    - "centerlines/Network curve_1 (33).mrk.json"
+    - "centerlines/Network curve_1 (34).mrk.json"
+    - "centerlines/Network curve_1 (35).mrk.json"
+    - "centerlines/Network curve_1 (36).mrk.json"
+    - "centerlines/Network curve_1 (37).mrk.json"
+    - "centerlines/Network curve_1 (38).mrk.json"
+    - "centerlines/Network curve_1 (39).mrk.json"
+    - "centerlines/Network curve_1 (40).mrk.json"
+    - "centerlines/Network curve_1 (41).mrk.json"
+    - "centerlines/Network curve_1 (42).mrk.json"
+    - "centerlines/Network curve_1 (43).mrk.json"
+    - "centerlines/Network curve_1 (44).mrk.json"
+    - "centerlines/Network curve_1 (45).mrk.json"
+    - "centerlines/Network curve_1 (46).mrk.json"
+
+airway:
+  lumen_mask: "masks/airway.nii.gz"
+  solid_mask: "masks/airway_solid.nii.gz"
+
+station_masks:
+  station_1l: "masks/station_1l.nii.gz"
+  station_1r: "masks/station_1r.nii.gz"
+  station_2l: "masks/station_2l.nii.gz"
+  station_2r: "masks/station_2r.nii.gz"
+  station_3a: "masks/station_3a.nii.gz"
+  station_4l: "masks/station_4l.nii.gz"
+  station_4r: "masks/station_4r.nii.gz"
+  station_5: "masks/station_5.nii.gz"
+  station_6: "masks/station_6.nii.gz"
+  station_7: "masks/station_7.nii.gz"
+  station_10l: "masks/station_10l.nii.gz"
+  station_10r: "masks/station_10r.nii.gz"
+  station_11l: "masks/station_11l.nii.gz"
+  station_11ri: "masks/station_11ri.nii.gz"
+  station_11rs: "masks/station_11rs.nii.gz"
+
+overlay_masks:
+  aorta: "masks/aorta.nii.gz"
+  atrial_appendage_left: "masks/atrial_appendage_left.nii.gz"
+  azygous: "masks/azygous.nii.gz"
+  brachiocephalic_trunk: "masks/brachiocephalic_trunk.nii.gz"
+  esophagus: "masks/esophagus.nii.gz"
+  inferior_vena_cava: "masks/inferior_vena_cava.nii.gz"
+  left_atrium: "masks/left_atrium.nii.gz"
+  left_brachiocephalic_vein: "masks/left_brachiocephalic_vein.nii.gz"
+  left_common_carotid_artery: "masks/left_common_carotid_artery.nii.gz"
+  left_subclavian_artery: "masks/left_subclavian_artery.nii.gz"
+  left_ventricle: "masks/left_ventricle.nii.gz"
+  pulmonary_artery: "masks/pulmonary_artery.nii.gz"
+  pulmonary_venous_system: "masks/pulmonary_venous_system.nii.gz"
+  right_atrium: "masks/right_atrium.nii.gz"
+  right_brachiocephalic_vein: "masks/right_brachiocephalic_vein.nii.gz"
+  right_common_carotid_artery: "masks/right_common_carotid_artery.nii.gz"
+  right_subclavian_artery: "masks/right_subclavian_artery.nii.gz"
+  right_ventricle: "masks/right_ventricle.nii.gz"
+  superior_vena_cava: "masks/superior_vena_cava.nii.gz"
+
+presets:
+  - id: "station_2l_node_a"
+    station: "2l"
+    node: "a"
+    station_mask: "masks/station_2l.nii.gz"
+    target: "markups/station_2L__node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_2L__node_a_contact.mrk.json"
+
+  - id: "station_2r_node_a"
+    station: "2r"
+    node: "a"
+    station_mask: "masks/station_2r.nii.gz"
+    target: "markups/station_2r__node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_2r__node_a_contact.mrk.json"
+
+  - id: "station_4l_node_a"
+    station: "4l"
+    node: "a"
+    station_mask: "masks/station_4l.nii.gz"
+    target: "markups/station_4l_node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_4l_node_a_contact.mrk.json"
+
+  - id: "station_4l_node_b"
+    station: "4l"
+    node: "b"
+    station_mask: "masks/station_4l.nii.gz"
+    target: "markups/station_4l_node_b_target.mrk.json"
+    contacts:
+      default: "markups/station_4l_node_b_contact.mrk.json"
+
+  - id: "station_4l_node_c"
+    station: "4l"
+    node: "c"
+    station_mask: "masks/station_4l.nii.gz"
+    target: "markups/station_4l_node_c_target.mrk.json"
+    contacts:
+      default: "markups/station_4l_node_c_contact.mrk.json"
+
+  - id: "station_4r_node_a"
+    station: "4r"
+    node: "a"
+    station_mask: "masks/station_4r.nii.gz"
+    target: "markups/station_4r_node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_4r_node_a_contact.mrk.json"
+
+  - id: "station_4r_node_b"
+    station: "4r"
+    node: "b"
+    station_mask: "masks/station_4r.nii.gz"
+    target: "markups/station_4r_node_b_target.mrk.json"
+    contacts:
+      default: "markups/station_4r_node_b_contact.mrk.json"
+
+  - id: "station_4r_node_c"
+    station: "4r"
+    node: "c"
+    station_mask: "masks/station_4r.nii.gz"
+    target: "markups/station_4r_node_c_target.mrk.json"
+    contacts:
+      default: "markups/station_4r_node_c_contact.mrk.json"
+
+  - id: "station_7_node_a"
+    station: "7"
+    node: "a"
+    station_mask: "masks/station_7.nii.gz"
+    target: "markups/station_7_node_a_target.mrk.json"
+    contacts:
+      lms: "markups/station_7_node_a_contact_lms.mrk.json"
+      rms: "markups/station_7_node_a_contact_rms.mrk.json"
+
+  - id: "station_10r_node_a"
+    station: "10r"
+    node: "a"
+    station_mask: "masks/station_10r.nii.gz"
+    target: "markups/station_10r_node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_10r_node_a_contact.mrk.json"
+
+  - id: "station_10r_node_b"
+    station: "10r"
+    node: "b"
+    station_mask: "masks/station_10r.nii.gz"
+    target: "markups/station_10r_node_b_target.mrk.json"
+    contacts:
+      default: "markups/station_10r_node_b_contact.mrk.json"
+
+  - id: "station_11l_node_a"
+    station: "11l"
+    node: "a"
+    station_mask: "masks/station_11l.nii.gz"
+    target: "markups/station_11l__node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_11l__node_a_contact.mrk.json"
+
+  - id: "station_11ri_node_a"
+    station: "11ri"
+    node: "a"
+    station_mask: "masks/station_11ri.nii.gz"
+    target: "markups/station_11ri__node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_11ri__node_a_contact.mrk.json"
+
+  - id: "station_11rs_node_a"
+    station: "11rs"
+    node: "a"
+    station_mask: "masks/station_11rs.nii.gz"
+    target: "markups/station_11rs_node_a_target.mrk.json"
+    contacts:
+      default: "markups/station_11rs_node_a_contact.mrk.json"
+
+  - id: "station_11rs_node_b"
+    station: "11rs"
+    node: "b"
+    station_mask: "masks/station_11rs.nii.gz"
+    target: "markups/station_11rs_node_b_target.mrk.json"
+    contacts:
+      default: "markups/station_11rs_node_b_contact.mrk.json"
+
+qa:
+  require_ct: true
+  require_centerline_main: true
+  require_centerline_network: true
+  require_airway_lumen_mask: true
+  require_airway_solid_mask: true
+  require_station_mask_for_each_preset: true
+  require_target_for_each_preset: true
+  require_at_least_one_contact_for_each_preset: true
+  check_contact_inside_ct_bounds: true
+  check_target_inside_ct_bounds: true
+  check_contact_near_airway_surface: true
+  check_target_near_station_mask: true
+  check_contact_projects_to_centerline: true
+
+render_defaults:
+  image_size: [512, 512]
+  sector_angle_deg: 60.0
+  max_depth_mm: 40.0
+  roll_deg: 0.0
+  gain: 1.0
+  attenuation: 0.15
+  use_speckle: false
+  use_edge_enhancement: false
+  default_overlays:
+    airway: true
+    target: true
+    station_mask: false
+    vessels: false
+
+notes:
+  runtime_mode: "standalone_local_python"
+  ebus_mode: "linear_only"
+  use_slicer_runtime: false
+  primary_geometry_model: "contact_anchored_target_directed"
+  primary_rendering_model: "direct_probe_centered_sampling"
+  do_not_use:
+    - "radial_ebus"
+    - "slicer_runtime_module"
+    - "rectangular_reslice_plus_2d_wedge_mask_as_primary_renderer"

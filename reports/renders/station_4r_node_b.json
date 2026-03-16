@@ -1,0 +1,57 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/station_4r_node_b.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/station_4r_node_b.json",
+  "image_size": [
+    512,
+    512
+  ],
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 4.0,
+  "slice_samples": 5,
+  "contact_world": [
+    -10.265640157961904,
+    -175.2366040932753,
+    1243.5311017646502
+  ],
+  "target_world": [
+    -10.990352215325188,
+    -186.9976425104035,
+    1244.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -9.659440994262695,
+    -170.2908935546875,
+    1245.952392578125
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "depth_axis": [
+      -0.1884253039717394,
+      -0.9241063964911027,
+      -0.33245040650807867
+    ],
+    "lateral_axis": [
+      -0.940520222409295,
+      0.07235423673738064,
+      0.33194363326523013
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 1.609375,
+  "centerline_projection_distance_mm": 5.539871781998707,
+  "airway_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "warnings": []
+}

@@ -1,0 +1,505 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "output_dir": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug",
+  "mode": "debug",
+  "render_count": 16,
+  "renders": [
+    {
+      "preset_id": "station_2l_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_2l_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_2l_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_2r_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_2r_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_2r_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 1
+    },
+    {
+      "preset_id": "station_4l_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_4l_node_b",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_b.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_b.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_4l_node_c",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_c.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4l_node_c.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_4r_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_b.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_b.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_4r_node_c",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_c.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_4r_node_c.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_7_node_a_lms.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_7_node_a_lms.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "rms",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_7_node_a_rms.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_7_node_a_rms.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_10r_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_10r_node_b",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_b.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_b.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_11l_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11l_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11l_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11ri_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11ri_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    },
+    {
+      "preset_id": "station_11rs_node_a",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11rs_node_a.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11rs_node_a.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 1
+    },
+    {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "mode": "debug",
+      "output_image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11rs_node_b.png",
+      "sidecar_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_11rs_node_b.json",
+      "image_size": [
+        512,
+        512
+      ],
+      "sector_angle_deg": 60.0,
+      "max_depth_mm": 40.0,
+      "roll_deg": 0.0,
+      "overlays_enabled": [
+        "airway",
+        "target",
+        "station",
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "airway_overlay_enabled": true,
+      "target_overlay_enabled": true,
+      "station_overlay_enabled": true,
+      "vessel_overlay_names": [
+        "aorta",
+        "azygous",
+        "superior_vena_cava"
+      ],
+      "warnings_count": 0
+    }
+  ]
+}

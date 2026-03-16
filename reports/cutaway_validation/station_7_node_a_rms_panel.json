@@ -1,0 +1,160 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_7_node_a",
+  "approach": "rms",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cutaway_validation/station_7_node_a_rms_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cutaway_validation/station_7_node_a_rms_panel.json",
+  "image_size": [
+    768,
+    768
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -26.960457709165812,
+    -154.30208149808783,
+    1196.8012000192875
+  ],
+  "original_contact_world": [
+    -28.27045743032407,
+    -154.335907119764,
+    1197.5311017646502
+  ],
+  "refined_contact_world": [
+    -26.960457709165812,
+    -154.30208149808783,
+    1196.8012000192875
+  ],
+  "tip_start_world": [
+    -24.14736034261941,
+    -156.1617952424352,
+    1201.7638553564448
+  ],
+  "target_world": [
+    -14.706595759411217,
+    -155.7811967400809,
+    1196.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -31.80726861598288,
+    -153.94593851695646,
+    1199.6390511514112
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.468849561091067,
+      0.30995229072456415,
+      -0.8271092228595381
+    ],
+    "depth_axis": [
+      0.8615537706821232,
+      -0.04592548974861842,
+      -0.5055847600697283
+    ],
+    "lateral_axis": [
+      -0.1946925506744649,
+      -0.9496422625736203,
+      -0.24550841909377788
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.468849561091067,
+      0.30995229072456415,
+      -0.8271092228595381
+    ],
+    "nC": [
+      -0.14590572868451757,
+      0.2755524378034375,
+      -0.9501486054073978
+    ],
+    "nUS": [
+      0.8615537706821232,
+      -0.04592548974861842,
+      -0.5055847600697283
+    ],
+    "wall_normal": [
+      0.8033710944616367,
+      -0.010782271256757708,
+      -0.5953810773026446
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.0,
+  "original_contact_to_airway_distance_mm": 1.609375,
+  "refined_contact_to_airway_distance_mm": 0.0,
+  "centerline_projection_distance_mm": 4.1357658893272715,
+  "contact_refinement_method": "ct_threshold_wall_search",
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "right",
+  "cutaway_side_source": "station_rule",
+  "cutaway_open_side": "right",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -26.960457709165812,
+    -154.30208149808783,
+    1196.8012000192875
+  ],
+  "cutaway_normal": [
+    -0.1946925506744649,
+    -0.9496422625736203,
+    -0.24550841909377788
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta",
+    "target",
+    "contact"
+  ],
+  "warnings": []
+}

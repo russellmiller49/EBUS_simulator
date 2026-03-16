@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ebus-simulator"
+version = "0.1.0"
+description = "Standalone linear EBUS simulator scaffold and case validator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "nibabel>=5.3",
+  "numpy>=2.2",
+  "Pillow>=11.0",
+  "PyYAML>=6.0",
+  "scipy>=1.15",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+]
+
+[project.scripts]
+validate-case = "ebus_simulator.cli:main"
+generate-poses = "ebus_simulator.pose_cli:main"
+render-preset = "ebus_simulator.render_cli:main"
+render-all-presets = "ebus_simulator.render_all_cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

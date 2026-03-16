@@ -1,0 +1,84 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/diagnostic/station_7_node_a_lms_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/diagnostic/station_7_node_a_lms_panel.json",
+  "image_size": [
+    1024,
+    1024
+  ],
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "clean_sector",
+    "sector_with_contours",
+    "reference_slice",
+    "context_3d"
+  ],
+  "contact_world": [
+    2.5769567775691584,
+    -152.82501336264266,
+    1193.5311017646502
+  ],
+  "target_world": [
+    -14.706595759411217,
+    -155.7811967400809,
+    1196.0412926391382
+  ],
+  "nearest_centerline_point": [
+    4.246675685824592,
+    -153.04078988596697,
+    1196.6546689076647
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      0.8084871258781331,
+      0.2002629234297274,
+      -0.553392563004505
+    ],
+    "depth_axis": [
+      -0.5697889115718577,
+      0.031052711460359757,
+      -0.8212041922449723
+    ],
+    "lateral_axis": [
+      -0.14727241268843816,
+      0.9792499632935091,
+      0.13921331060853187
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.8046875,
+  "centerline_projection_distance_mm": 3.548407028163961,
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium"
+  ],
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "target",
+    "contact"
+  ],
+  "warnings": []
+}

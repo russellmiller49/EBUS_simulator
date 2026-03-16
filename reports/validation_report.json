@@ -1,0 +1,741 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "dataset_root": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files",
+  "internal_world_frame": "LPS",
+  "preset_count": 15,
+  "status": "passed",
+  "ct": {
+    "path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/ct.nii.gz",
+    "shape": [
+      512,
+      512,
+      327
+    ],
+    "dtype": "int16",
+    "voxel_sizes_mm": [
+      0.8046875,
+      0.8046875,
+      2.0
+    ],
+    "axis_codes_ras": [
+      "L",
+      "P",
+      "S"
+    ]
+  },
+  "centerlines": {
+    "main_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/centerlines/airway_centerline.vtp",
+    "network_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/centerlines/airway_network.vtp",
+    "main_point_count": 6179,
+    "main_line_count": 20,
+    "main_segment_count": 5515,
+    "network_point_count": 484,
+    "network_line_count": 39,
+    "main_space": "LPS",
+    "network_space": "LPS"
+  },
+  "issues": [],
+  "presets": [
+    {
+      "id": "station_2l_node_a",
+      "station": "2l",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2L__node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_2l.nii.gz",
+      "target_point_lps": [
+        0.798289522383806,
+        -169.22106966432835,
+        1246.3818368829645
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2L__node_a_contact.mrk.json",
+          "point_lps": [
+            -4.448239819038278,
+            -170.1421271888561,
+            1247.34521484375
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.799335950644362,
+          "centerline_projection_distance_mm": 4.683971729444935,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -8.904301906025907,
+            -170.98274813112738,
+            1248.5184404275853
+          ],
+          "tangent_lps": [
+            -0.30381813158388526,
+            0.410739625408223,
+            -0.8596438233596457
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_2r_node_a",
+      "station": "2r",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2r__node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_2r.nii.gz",
+      "target_point_lps": [
+        -13.647973590408863,
+        -171.57171722444872,
+        1282.8934773581566
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2r__node_a_contact.mrk.json",
+          "point_lps": [
+            -8.438694891447685,
+            -175.06677891224422,
+            1281.0961872222829
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.0,
+          "centerline_projection_distance_mm": 6.348087685040639,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -5.291911779639822,
+            -180.2619022363761,
+            1279.250471385198
+          ],
+          "tangent_lps": [
+            0.01604343357842244,
+            0.34334946994119664,
+            -0.9390706840968438
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4l_node_a",
+      "station": "4l",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4l.nii.gz",
+      "target_point_lps": [
+        -1.5909734767025014,
+        -173.6342078853047,
+        1211.6319215638061
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_a_contact.mrk.json",
+          "point_lps": [
+            -4.220783998391388,
+            -159.430371428266,
+            1210.5482851436466
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 3.4320604784765365,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -6.555278538201906,
+            -157.16387791890213,
+            1209.456414481193
+          ],
+          "tangent_lps": [
+            0.5679192584631361,
+            0.2003708348618976,
+            -0.7983227695634315
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4l_node_b",
+      "station": "4l",
+      "node": "b",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_b_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4l.nii.gz",
+      "target_point_lps": [
+        13.68159584204524,
+        -173.55347636539645,
+        1214.2044049702147
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_b_contact.mrk.json",
+          "point_lps": [
+            -6.707188164472079,
+            -160.0879503179101,
+            1213.60249242078
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.799335950644362,
+          "centerline_projection_distance_mm": 2.9197290717555435,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -8.800363540649414,
+            -158.138916015625,
+            1213.015380859375
+          ],
+          "tangent_lps": [
+            0.6807424675364786,
+            0.10122859771984787,
+            -0.7254946339539802
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4l_node_c",
+      "station": "4l",
+      "node": "c",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_c_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4l.nii.gz",
+      "target_point_lps": [
+        13.418924520143378,
+        -156.12623131510122,
+        1214.6490083775839
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_c_contact.mrk.json",
+          "point_lps": [
+            -3.4643454135842067,
+            -158.1477615221757,
+            1209.5397003639039
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 3.0492826450794954,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -6.0650289702175835,
+            -156.93420301028627,
+            1208.5092415214165
+          ],
+          "tangent_lps": [
+            0.4497002570097508,
+            0.23113354767232078,
+            -0.8627554473811052
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4r_node_a",
+      "station": "4r",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4r.nii.gz",
+      "target_point_lps": [
+        -17.060216670665696,
+        -177.95478321979417,
+        1220.0412926391382
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_a_contact.mrk.json",
+          "point_lps": [
+            -14.58272097460835,
+            -165.93892909391602,
+            1220.0412926391382
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 5.379589360806389,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -13.240164756774902,
+            -161.31845092773438,
+            1222.447265625
+          ],
+          "tangent_lps": [
+            0.03172643223340456,
+            0.2497424869044311,
+            -0.9677923970214528
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4r_node_b",
+      "station": "4r",
+      "node": "b",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_b_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4r.nii.gz",
+      "target_point_lps": [
+        -10.990352215325188,
+        -186.9976425104035,
+        1244.0412926391382
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_b_contact.mrk.json",
+          "point_lps": [
+            -10.265640157961904,
+            -175.2366040932753,
+            1243.5311017646502
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 5.539871781998707,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -9.659440994262695,
+            -170.2908935546875,
+            1245.952392578125
+          ],
+          "tangent_lps": [
+            -0.2444601921629387,
+            0.21912268796914527,
+            -0.9445763399878464
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_4r_node_c",
+      "station": "4r",
+      "node": "c",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_c_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_4r.nii.gz",
+      "target_point_lps": [
+        -17.8034653794829,
+        -181.17552762466872,
+        1260.0412926391382
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_c_contact.mrk.json",
+          "point_lps": [
+            -10.139732344868465,
+            -176.9993134765835,
+            1259.5311017646502
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 4.430838850012283,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -6.248964095483489,
+            -174.88238362186107,
+            1259.6445184060253
+          ],
+          "tangent_lps": [
+            -0.14226064671913732,
+            0.3117964335325556,
+            -0.9394386049292585
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_7_node_a",
+      "station": "7",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_7.nii.gz",
+      "target_point_lps": [
+        -14.706595759411217,
+        -155.7811967400809,
+        1196.0412926391382
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "lms",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_contact_lms.mrk.json",
+          "point_lps": [
+            2.5769567775691584,
+            -152.82501336264266,
+            1193.5311017646502
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.8046875,
+          "centerline_projection_distance_mm": 3.548407028163961,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            4.246675685824592,
+            -153.04078988596697,
+            1196.6546689076647
+          ],
+          "tangent_lps": [
+            0.87029531313865,
+            0.19646725136906398,
+            -0.45164885372198615
+          ],
+          "warnings": [],
+          "errors": []
+        },
+        {
+          "approach": "rms",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_contact_rms.mrk.json",
+          "point_lps": [
+            -28.27045743032407,
+            -154.335907119764,
+            1197.5311017646502
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.609375,
+          "centerline_projection_distance_mm": 4.1357658893272715,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -31.80726861598288,
+            -153.94593851695646,
+            1199.6390511514112
+          ],
+          "tangent_lps": [
+            -0.44986823065415915,
+            0.3534191607317224,
+            -0.8201911191154054
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_10r_node_a",
+      "station": "10r",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_10r.nii.gz",
+      "target_point_lps": [
+        -22.437059121548383,
+        -177.81774049496937,
+        1204.8884496977441
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_a_contact.mrk.json",
+          "point_lps": [
+            -22.72197112659498,
+            -161.30334405275985,
+            1206.9392536471091
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.0,
+          "centerline_projection_distance_mm": 4.73953462912972,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -22.920314658967463,
+            -157.01338424744313,
+            1208.9442706576735
+          ],
+          "tangent_lps": [
+            -0.8490057322737686,
+            0.1910006212063335,
+            -0.49265406652647925
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_10r_node_b",
+      "station": "10r",
+      "node": "b",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_b_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_10r.nii.gz",
+      "target_point_lps": [
+        -29.671346554035843,
+        -168.09168225995703,
+        1215.6287981625358
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_b_contact.mrk.json",
+          "point_lps": [
+            -22.149400772710955,
+            -159.76729672120433,
+            1215.0067655836267
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.8046875,
+          "centerline_projection_distance_mm": 4.193843302761408,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -19.170770059094718,
+            -157.88882413615775,
+            1212.7291744290849
+          ],
+          "tangent_lps": [
+            -0.6828521220603735,
+            0.25085426429192675,
+            -0.6861378268862612
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_11l_node_a",
+      "station": "11l",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11l__node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_11l.nii.gz",
+      "target_point_lps": [
+        34.898386391024445,
+        -148.92565036362996,
+        1181.6709307147491
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11l__node_a_contact.mrk.json",
+          "point_lps": [
+            28.850094766006293,
+            -144.1040912632297,
+            1182.1315844670362
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.0,
+          "centerline_projection_distance_mm": 3.154700656771928,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            26.90923500061035,
+            -143.4440460205078,
+            1179.7337646484375
+          ],
+          "tangent_lps": [
+            0.8243216788476433,
+            0.4147711831200338,
+            -0.3853033031716833
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_11ri_node_a",
+      "station": "11ri",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11ri__node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_11ri.nii.gz",
+      "target_point_lps": [
+        -58.571725422348635,
+        -156.1657563181315,
+        1166.3350107574483
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11ri__node_a_contact.mrk.json",
+          "point_lps": [
+            -50.10602431292355,
+            -145.67261063242938,
+            1168.9616784009131
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 0.8046875,
+          "centerline_projection_distance_mm": 1.951139883675715,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -49.05962769090958,
+            -144.04727705100336,
+            1168.6965525738108
+          ],
+          "tangent_lps": [
+            -0.36305405010818337,
+            0.08233952978101147,
+            -0.9281228143599782
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_11rs_node_a",
+      "station": "11rs",
+      "node": "a",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_a_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_11rs.nii.gz",
+      "target_point_lps": [
+        -44.68960240920485,
+        -158.5468347864842,
+        1198.007359511826
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_a_contact.mrk.json",
+          "point_lps": [
+            -36.495496950164465,
+            -155.9857841433858,
+            1201.4710221259602
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 2.2759999519442,
+          "centerline_projection_distance_mm": 5.164165048854358,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -35.07637405395508,
+            -154.55279541015625,
+            1206.22509765625
+          ],
+          "tangent_lps": [
+            -0.9885258378538794,
+            0.07326042517348104,
+            0.13209685082804387
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "id": "station_11rs_node_b",
+      "station": "11rs",
+      "node": "b",
+      "status": "passed",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_b_target.mrk.json",
+      "station_mask_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/masks/station_11rs.nii.gz",
+      "target_point_lps": [
+        -47.8420757222722,
+        -169.23750298841807,
+        1193.2762707905492
+      ],
+      "target_inside_ct_bounds": true,
+      "target_inside_station_mask": true,
+      "target_station_distance_mm": 0.0,
+      "contacts": [
+        {
+          "approach": "default",
+          "markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_b_contact.mrk.json",
+          "point_lps": [
+            -35.76505905207159,
+            -155.7397975522529,
+            1197.269169925975
+          ],
+          "inside_ct_bounds": true,
+          "airway_surface_distance_mm": 1.1379999759721,
+          "centerline_projection_distance_mm": 3.984965787231006,
+          "tangent_defined": true,
+          "closest_centerline_point_lps": [
+            -32.95451084175837,
+            -152.91653012915253,
+            1197.169509800714
+          ],
+          "tangent_lps": [
+            -0.38777472775918426,
+            0.35601514230361714,
+            -0.8502258399753713
+          ],
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

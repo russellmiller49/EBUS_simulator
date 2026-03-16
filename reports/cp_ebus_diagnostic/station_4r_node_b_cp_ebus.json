@@ -1,0 +1,140 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cp_ebus_diagnostic/station_4r_node_b_cp_ebus.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cp_ebus_diagnostic/station_4r_node_b_cp_ebus.json",
+  "image_size": [
+    1024,
+    1024
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -10.50120132962726,
+    -175.5110458363866,
+    1242.9234895000918
+  ],
+  "original_contact_world": [
+    -10.265640157961904,
+    -175.2366040932753,
+    1243.5311017646502
+  ],
+  "refined_contact_world": [
+    -10.50120132962726,
+    -175.5110458363866,
+    1242.9234895000918
+  ],
+  "tip_start_world": [
+    -8.80501909347343,
+    -177.76238329799773,
+    1248.2201342357432
+  ],
+  "target_world": [
+    -10.990352215325188,
+    -186.9976425104035,
+    1244.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -9.659440994262695,
+    -170.2908935546875,
+    1245.952392578125
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "depth_axis": [
+      -0.029528441397511918,
+      -0.923282535015778,
+      -0.382984897461339
+    ],
+    "lateral_axis": [
+      -0.958754637582685,
+      -0.08220175268483347,
+      0.27208898685767474
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "nC": [
+      -0.27574764356261006,
+      0.03681297497296121,
+      -0.960524878357301
+    ],
+    "nUS": [
+      -0.029528441397511918,
+      -0.923282535015778,
+      -0.382984897461339
+    ],
+    "wall_normal": [
+      -0.012661985184421298,
+      -0.9439653948494349,
+      -0.32980146673103194
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.0,
+  "original_contact_to_airway_distance_mm": 1.609375,
+  "refined_contact_to_airway_distance_mm": 0.0,
+  "centerline_projection_distance_mm": 5.539871781998707,
+  "contact_refinement_method": "ct_threshold_wall_search",
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "aorta",
+    "azygous",
+    "superior_vena_cava"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "aorta",
+    "azygous",
+    "superior_vena_cava",
+    "target",
+    "contact"
+  ],
+  "warnings": [
+    "Contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ]
+}

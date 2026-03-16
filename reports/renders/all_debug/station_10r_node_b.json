@@ -1,0 +1,72 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_10r_node_b",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_b.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/renders/all_debug/station_10r_node_b.json",
+  "image_size": [
+    512,
+    512
+  ],
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 4.0,
+  "slice_samples": 5,
+  "contact_world": [
+    -22.149400772710955,
+    -159.76729672120433,
+    1215.0067655836267
+  ],
+  "target_world": [
+    -29.671346554035843,
+    -168.09168225995703,
+    1215.6287981625358
+  ],
+  "nearest_centerline_point": [
+    -19.170770059094718,
+    -157.88882413615775,
+    1212.7291744290849
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.6227139673800045,
+      0.18691786197119417,
+      -0.7597953854202936
+    ],
+    "depth_axis": [
+      -0.5374773922133528,
+      -0.8078803193192808,
+      0.2417590588087873
+    ],
+    "lateral_axis": [
+      -0.5686346522059561,
+      0.5589195850323143,
+      0.6035424838219071
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.8046875,
+  "centerline_projection_distance_mm": 4.193843302761408,
+  "airway_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "aorta",
+    "azygous",
+    "superior_vena_cava"
+  ],
+  "overlays_enabled": [
+    "airway",
+    "target",
+    "station",
+    "aorta",
+    "azygous",
+    "superior_vena_cava"
+  ],
+  "warnings": []
+}

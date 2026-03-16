@@ -1,0 +1,160 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_4l_node_b",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cutaway_validation/station_4l_node_b_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/cutaway_validation/station_4l_node_b_panel.json",
+  "image_size": [
+    768,
+    768
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -4.894843027755322,
+    -161.67966138618476,
+    1214.2596537255988
+  ],
+  "original_contact_world": [
+    -6.707188164472079,
+    -160.0879503179101,
+    1213.60249242078
+  ],
+  "refined_contact_world": [
+    -4.894843027755322,
+    -161.67966138618476,
+    1214.2596537255988
+  ],
+  "tip_start_world": [
+    -7.90031143642771,
+    -163.0316667109373,
+    1219.2735585159107
+  ],
+  "target_world": [
+    13.68159584204524,
+    -173.55347636539645,
+    1214.2044049702147
+  ],
+  "nearest_centerline_point": [
+    -8.800363540649414,
+    -158.138916015625,
+    1213.015380859375
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      0.500911401445398,
+      0.2253342207920879,
+      -0.8356507983853244
+    ],
+    "depth_axis": [
+      0.615954243022437,
+      -0.7710932968063865,
+      0.16129320544559417
+    ],
+    "lateral_axis": [
+      -0.6080198503376877,
+      -0.5955162605339007,
+      -0.5250449933434804
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      0.500911401445398,
+      0.2253342207920879,
+      -0.8356507983853244
+    ],
+    "nC": [
+      0.681371506086356,
+      -0.05198453540231507,
+      -0.7300893635525836
+    ],
+    "nUS": [
+      0.615954243022437,
+      -0.7710932968063865,
+      0.16129320544559417
+    ],
+    "wall_normal": [
+      0.6689668794696383,
+      -0.74043344504455,
+      0.0651277792659462
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.0,
+  "original_contact_to_airway_distance_mm": 1.799335950644362,
+  "refined_contact_to_airway_distance_mm": 0.0,
+  "centerline_projection_distance_mm": 2.9197290717555435,
+  "contact_refinement_method": "ct_threshold_wall_search",
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "left",
+  "cutaway_side_source": "station_rule",
+  "cutaway_open_side": "left",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -4.894843027755322,
+    -161.67966138618476,
+    1214.2596537255988
+  ],
+  "cutaway_normal": [
+    0.6080198503376877,
+    0.5955162605339007,
+    0.5250449933434804
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "azygous",
+    "pulmonary_artery",
+    "left_atrium",
+    "superior_vena_cava",
+    "aorta",
+    "target",
+    "contact"
+  ],
+  "warnings": []
+}

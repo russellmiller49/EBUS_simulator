@@ -1,0 +1,84 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/diagnostic/station_4r_node_b_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/diagnostic/station_4r_node_b_panel.json",
+  "image_size": [
+    1024,
+    1024
+  ],
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "clean_sector",
+    "sector_with_contours",
+    "reference_slice",
+    "context_3d"
+  ],
+  "contact_world": [
+    -10.265640157961904,
+    -175.2366040932753,
+    1243.5311017646502
+  ],
+  "target_world": [
+    -10.990352215325188,
+    -186.9976425104035,
+    1244.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -9.659440994262695,
+    -170.2908935546875,
+    1245.952392578125
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.28269703935897195,
+      0.37522291026852317,
+      -0.882774122608548
+    ],
+    "depth_axis": [
+      -0.1884253039717394,
+      -0.9241063964911027,
+      -0.33245040650807867
+    ],
+    "lateral_axis": [
+      -0.940520222409295,
+      0.07235423673738064,
+      0.33194363326523013
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 1.609375,
+  "centerline_projection_distance_mm": 5.539871781998707,
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "aorta",
+    "azygous",
+    "superior_vena_cava"
+  ],
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "aorta",
+    "azygous",
+    "superior_vena_cava",
+    "target",
+    "contact"
+  ],
+  "warnings": []
+}
