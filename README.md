@@ -90,6 +90,12 @@ Render a single preset and emit the JSON sidecar metadata:
 render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png
 ```
 
+Render the physics engine with tunable artifact strengths and per-render debug maps:
+
+```bash
+render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --speckle-strength 0.22 --reverberation-strength 0.28 --shadow-strength 0.47 --debug-map-dir reports/renders/station_4r_node_b_debug_maps --output reports/renders/station_4r_node_b_physics.png
+```
+
 Render a CP-EBUS diagnostic multi-panel export with a refined wall contact, larger source oblique section, and labeled contour overlays:
 
 ```bash
