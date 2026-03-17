@@ -9,14 +9,11 @@ import numpy as np
 
 from ebus_simulator.manifest import resolve_preset_overrides
 from ebus_simulator.rendering import (
-    _build_sector_grid,
     _default_output_stem,
-    _fan_target_row_col,
-    _get_mask_volume,
-    _map_plane_to_fan,
+    _angle_deg,
     _resolve_preset_manifest,
-    _sample_contact_plane,
     build_render_context,
+    compute_pose_review_metrics,
     render_preset,
 )
 
@@ -26,157 +23,52 @@ CONTACT_DELTA_WARN_MM = 1.5
 STATION_OVERLAP_WARN_FRACTION = 0.003
 REQUIRED_COMPARISON_CASES = {
     ("station_11l_node_a", "default"),
+    ("station_11ri_node_a", "default"),
+    ("station_11rs_node_a", "default"),
     ("station_7_node_a", "lms"),
     ("station_7_node_a", "rms"),
     ("station_4r_node_b", "default"),
 }
 
 
-def _normalize(vector: np.ndarray) -> np.ndarray | None:
-    norm = float(np.linalg.norm(vector))
-    if norm <= 1e-9:
-        return None
-    return np.asarray(vector, dtype=np.float64) / norm
-
-
-def _angle_deg(a: np.ndarray, b: np.ndarray) -> float:
-    a_unit = _normalize(a)
-    b_unit = _normalize(b)
-    if a_unit is None or b_unit is None:
-        return 0.0
-    return float(np.degrees(np.arccos(np.clip(float(np.dot(a_unit, b_unit)), -1.0, 1.0))))
-
-
-def _compute_contact_to_centerline_mm(context, contact_world: np.ndarray) -> tuple[float | None, str | None]:
-    projection = context.main_graph.nearest_point(contact_world)
-    if projection is not None:
-        return float(projection.distance_mm), "main"
-    projection = context.network_graph.nearest_point(contact_world)
-    if projection is not None:
-        return float(projection.distance_mm), "network"
-    return None, None
-
-
-def _compute_station_overlap_fraction_in_fan(
-    context,
-    *,
-    preset_manifest,
-    contact_world: np.ndarray,
-    probe_axis: np.ndarray,
-    shaft_axis: np.ndarray,
-    thickness_axis: np.ndarray,
-    width: int,
-    height: int,
-    source_oblique_size_mm: float,
-    max_depth_mm: float,
-    sector_angle_deg: float,
-    slice_thickness_mm: float,
-) -> float:
-    station_mask = _get_mask_volume(context, preset_manifest.station_mask)
-    source_mask, _, _, _ = _sample_contact_plane(
-        data=np.asarray(station_mask.data, dtype=np.float32),
-        inverse_affine_lps=station_mask.inverse_affine_lps,
-        origin_world=contact_world,
-        depth_axis=probe_axis,
-        lateral_axis=shaft_axis,
-        thickness_axis=thickness_axis,
-        depth_max_mm=source_oblique_size_mm,
-        lateral_half_width_mm=(source_oblique_size_mm / 2.0),
-        width=width,
-        height=height,
-        slice_thickness_mm=slice_thickness_mm,
-        order=0,
-        cval=0.0,
-    )
-    depth_grid, lateral_grid, sector_mask, _ = _build_sector_grid(width, height, max_depth_mm, sector_angle_deg)
-    fan_mask = _map_plane_to_fan(
-        source_mask,
-        source_forward_max_mm=source_oblique_size_mm,
-        source_shaft_half_width_mm=(source_oblique_size_mm / 2.0),
-        depth_grid_mm=depth_grid,
-        display_lateral_grid_mm=lateral_grid,
-        sector_mask=sector_mask,
-        order=0,
-        cval=0.0,
-    ) > 0.0
-    denominator = int(np.count_nonzero(sector_mask))
-    if denominator <= 0:
-        return 0.0
-    return float(np.count_nonzero(np.logical_and(fan_mask, sector_mask)) / denominator)
-
-
 def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict[str, object]:
     metadata = clean_rendered.metadata
-    contact_world = np.asarray(metadata.refined_contact_world, dtype=np.float64)
-    target_world = np.asarray(metadata.target_world, dtype=np.float64)
-    probe_axis = np.asarray(metadata.device_axes["nUS"], dtype=np.float64)
-    shaft_axis = np.asarray(metadata.device_axes["nB"], dtype=np.float64)
-    thickness_axis = _normalize(np.cross(shaft_axis, probe_axis))
-    if thickness_axis is None:
-        thickness_axis = np.asarray(metadata.pose_axes["lateral_axis"], dtype=np.float64)
-
-    target_offset = target_world - contact_world
-    target_depth_mm = float(np.dot(target_offset, probe_axis))
-    target_lateral_offset_mm = float(np.dot(target_offset, shaft_axis))
-    target_in_forward_hemisphere = bool(target_depth_mm > 0.0)
-    _, _, _, max_lateral_mm = _build_sector_grid(
-        clean_rendered.sector_mask.shape[1],
-        clean_rendered.sector_mask.shape[0],
-        metadata.max_depth_mm,
-        metadata.sector_angle_deg,
+    thickness_axis = np.cross(
+        np.asarray(metadata.device_axes["nB"], dtype=np.float64),
+        np.asarray(metadata.device_axes["nUS"], dtype=np.float64),
     )
-    target_in_sector = (
-        _fan_target_row_col(
-            contact_world=contact_world,
-            target_world=target_world,
-            probe_axis=probe_axis,
-            shaft_axis=shaft_axis,
-            max_depth_mm=metadata.max_depth_mm,
-            sector_angle_deg=metadata.sector_angle_deg,
-            width=clean_rendered.sector_mask.shape[1],
-            height=clean_rendered.sector_mask.shape[0],
-            max_lateral_mm=max_lateral_mm,
+    if float(np.linalg.norm(thickness_axis)) <= 1e-9:
+        thickness_axis = (
+            None
+            if metadata.pose_axes["lateral_axis"] is None
+            else np.asarray(metadata.pose_axes["lateral_axis"], dtype=np.float64)
         )
-        is not None
-    )
-
-    contact_to_centerline_mm, contact_centerline_source = _compute_contact_to_centerline_mm(context, contact_world)
-    station_overlap_fraction_in_fan = _compute_station_overlap_fraction_in_fan(
+    metrics = compute_pose_review_metrics(
         context,
         preset_manifest=preset_manifest,
-        contact_world=contact_world,
-        probe_axis=probe_axis,
-        shaft_axis=shaft_axis,
+        target_world=np.asarray(metadata.target_world, dtype=np.float64),
+        contact_world=np.asarray(metadata.refined_contact_world, dtype=np.float64),
+        probe_axis=np.asarray(metadata.device_axes["nUS"], dtype=np.float64),
+        shaft_axis=np.asarray(metadata.device_axes["nB"], dtype=np.float64),
         thickness_axis=thickness_axis,
+        warnings=list(metadata.warnings),
         width=clean_rendered.sector_mask.shape[1],
         height=clean_rendered.sector_mask.shape[0],
         source_oblique_size_mm=metadata.source_oblique_size_mm,
         max_depth_mm=metadata.max_depth_mm,
         sector_angle_deg=metadata.sector_angle_deg,
         slice_thickness_mm=metadata.slice_thickness_mm,
+        nUS_delta_deg_from_voxel_baseline=float(metadata.pose_comparison.get("nUS_angular_difference_deg", 0.0)),
+        contact_delta_mm_from_voxel_baseline=float(metadata.pose_comparison.get("voxel_to_mesh_contact_distance_mm", 0.0)),
     )
-
-    warnings = list(metadata.warnings)
-    contact_refinement_ambiguity = any("ambiguous" in warning.lower() for warning in warnings)
-    nUS_delta_deg = float(metadata.pose_comparison.get("nUS_angular_difference_deg", 0.0))
-    contact_delta_mm = float(metadata.pose_comparison.get("voxel_to_mesh_contact_distance_mm", 0.0))
-
-    return {
-        "preset_id": metadata.preset_id,
-        "approach": metadata.approach,
-        "contact_to_mesh_mm": metadata.refined_contact_to_airway_distance_mm,
-        "contact_to_centerline_mm": contact_to_centerline_mm,
-        "contact_centerline_source": contact_centerline_source,
-        "target_depth_mm": target_depth_mm,
-        "target_lateral_offset_mm": target_lateral_offset_mm,
-        "target_in_sector": target_in_sector,
-        "target_in_forward_hemisphere": target_in_forward_hemisphere,
-        "station_overlap_fraction_in_fan": station_overlap_fraction_in_fan,
-        "nUS_delta_deg_from_voxel_baseline": nUS_delta_deg,
-        "contact_delta_mm_from_voxel_baseline": contact_delta_mm,
-        "contact_refinement_ambiguity": contact_refinement_ambiguity,
-        "warnings": warnings,
-    }
+    metrics.update(
+        {
+            "preset_id": metadata.preset_id,
+            "approach": metadata.approach,
+            "contact_to_mesh_mm": metadata.refined_contact_to_airway_distance_mm,
+        }
+    )
+    return metrics
 
 
 def _flag_review_metrics(metrics: dict[str, object]) -> list[str]:
@@ -320,6 +212,7 @@ def _render_review_entry(
             "cutaway_side": clean.metadata.preset_override_cutaway_side,
             "roll_offset_deg": clean.metadata.preset_override_roll_offset_deg,
             "branch_hint": clean.metadata.preset_override_branch_hint,
+            "branch_shift_mm": clean.metadata.preset_override_branch_shift_mm,
             "axis_sign_override": clean.metadata.preset_override_axis_sign_override,
             "reference_fov_mm": clean.metadata.preset_override_reference_fov_mm,
             "notes": clean.metadata.preset_override_notes,
@@ -330,6 +223,7 @@ def _render_review_entry(
                 "cutaway_side": preset_overrides.cutaway_side,
                 "roll_offset_deg": preset_overrides.roll_offset_deg,
                 "branch_hint": preset_overrides.branch_hint,
+                "branch_shift_mm": preset_overrides.branch_shift_mm,
                 "axis_sign_override": preset_overrides.axis_sign_override,
                 "reference_fov_mm": preset_overrides.reference_fov_mm,
                 "notes": preset_overrides.notes,

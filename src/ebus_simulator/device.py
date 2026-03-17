@@ -55,8 +55,29 @@ class ContactRefinement:
     voxel_refinement_method: str
     mesh_refinement_method: str
     candidate_hu: float | None
+    candidate_branch_graph_name: str | None
     candidate_branch_line_index: int | None
+    branch_hint: str | None
+    branch_hint_applied: bool
+    branch_hint_match: bool | None
     warnings: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class BranchHintSpec:
+    raw_value: str
+    any_lines: frozenset[int] = frozenset()
+    main_lines: frozenset[int] = frozenset()
+    network_lines: frozenset[int] = frozenset()
+
+    def matches(self, projection: CenterlineProjection) -> bool:
+        if int(projection.line_index) in self.any_lines:
+            return True
+        if projection.graph_name == "main" and int(projection.line_index) in self.main_lines:
+            return True
+        if projection.graph_name == "network" and int(projection.line_index) in self.network_lines:
+            return True
+        return False
 
 
 @dataclass(slots=True)
@@ -152,13 +173,87 @@ def _candidate_branch_projection(
     *,
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None,
+    branch_hint: str | None = None,
 ) -> CenterlineProjection | None:
-    projection = main_graph.nearest_point(point_lps)
-    if projection is not None:
-        return projection
-    if network_graph is None:
+    hint_spec = _parse_branch_hint(branch_hint)
+    projections = _candidate_branch_projections(point_lps, main_graph=main_graph, network_graph=network_graph)
+    if hint_spec is not None:
+        matching = [projection for projection in projections if hint_spec.matches(projection)]
+        if matching:
+            return min(matching, key=lambda projection: projection.distance_mm)
+    if projections:
+        main_projection = next((projection for projection in projections if projection.graph_name == "main"), None)
+        if main_projection is not None:
+            return main_projection
+        return min(projections, key=lambda projection: projection.distance_mm)
+    return None
+
+
+def _candidate_branch_projections(
+    point_lps: np.ndarray,
+    *,
+    main_graph: CenterlineGraph,
+    network_graph: CenterlineGraph | None,
+) -> list[CenterlineProjection]:
+    projections: list[CenterlineProjection] = []
+    main_projection = main_graph.nearest_point(point_lps)
+    if main_projection is not None:
+        projections.append(main_projection)
+    if network_graph is not None:
+        network_projection = network_graph.nearest_point(point_lps)
+        if network_projection is not None:
+            projections.append(network_projection)
+    return projections
+
+
+def _parse_branch_hint(branch_hint: str | None) -> BranchHintSpec | None:
+    if branch_hint is None:
         return None
-    return network_graph.nearest_point(point_lps)
+
+    any_lines: set[int] = set()
+    main_lines: set[int] = set()
+    network_lines: set[int] = set()
+    for raw_token in branch_hint.replace(";", ",").split(","):
+        token = raw_token.strip().lower()
+        if not token:
+            continue
+
+        prefix = "line"
+        value = token
+        for separator in (":", "="):
+            if separator in token:
+                prefix, value = token.split(separator, 1)
+                prefix = prefix.strip()
+                value = value.strip()
+                break
+
+        if prefix in {"line", "branch"}:
+            any_lines.add(int(value))
+            continue
+        if prefix in {"main", "main_line"}:
+            main_lines.add(int(value))
+            continue
+        if prefix in {"network", "network_line"}:
+            network_lines.add(int(value))
+            continue
+        raise ValueError(
+            f"Unsupported branch_hint token {raw_token!r}. Expected line, main:<index>, or network:<index>."
+        )
+
+    if not any_lines and not main_lines and not network_lines:
+        return None
+    return BranchHintSpec(
+        raw_value=str(branch_hint),
+        any_lines=frozenset(any_lines),
+        main_lines=frozenset(main_lines),
+        network_lines=frozenset(network_lines),
+    )
+
+
+def _projection_key(projection: CenterlineProjection | None) -> tuple[str, int] | None:
+    if projection is None:
+        return None
+    return projection.graph_name, int(projection.line_index)
 
 
 def _build_probe_axis(
@@ -187,17 +282,33 @@ def _orient_mesh_normal(
     network_graph: CenterlineGraph | None,
     shaft_axis: np.ndarray,
     fallback_probe_axis: np.ndarray,
+    branch_hint: str | None = None,
 ) -> np.ndarray:
     oriented = _normalize(normal_world)
     if oriented is None:
-        return _fallback_wall_normal(contact_world, shaft_axis, _candidate_branch_projection(contact_world, main_graph=main_graph, network_graph=network_graph), fallback_probe_axis)
+        return _fallback_wall_normal(
+            contact_world,
+            shaft_axis,
+            _candidate_branch_projection(
+                contact_world,
+                main_graph=main_graph,
+                network_graph=network_graph,
+                branch_hint=branch_hint,
+            ),
+            fallback_probe_axis,
+        )
 
     forward_sd = sample_signed_distance_mm(contact_world + (NORMAL_ORIENTATION_DELTA_MM * oriented), airway_lumen)
     backward_sd = sample_signed_distance_mm(contact_world - (NORMAL_ORIENTATION_DELTA_MM * oriented), airway_lumen)
     if forward_sd < backward_sd:
         oriented = -oriented
 
-    projection = _candidate_branch_projection(contact_world, main_graph=main_graph, network_graph=network_graph)
+    projection = _candidate_branch_projection(
+        contact_world,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
     if projection is not None:
         tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
         radial = _project_perpendicular(contact_world - projection.closest_point_lps, tangent)
@@ -260,16 +371,22 @@ def _refine_airway_contact_voxel(
     airway_solid: VolumeData,
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None = None,
-) -> tuple[np.ndarray, float, str, float | None, int | None, list[str]]:
+    branch_hint: str | None = None,
+) -> tuple[np.ndarray, float, str, float | None, str | None, int | None, list[str]]:
     original_surface_distance = _surface_distance(seed_contact_world, airway_lumen, airway_solid)
     warnings: list[str] = []
 
-    seed_projection = _candidate_branch_projection(seed_contact_world, main_graph=main_graph, network_graph=network_graph)
-    seed_branch = None if seed_projection is None else int(seed_projection.line_index)
+    seed_projection = _candidate_branch_projection(
+        seed_contact_world,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
+    seed_branch_key = _projection_key(seed_projection)
 
     offsets_us = np.arange(-CONTACT_SCAN_BACKWARD_MM, CONTACT_SCAN_FORWARD_MM + CONTACT_SCAN_STEP_MM, CONTACT_SCAN_STEP_MM, dtype=np.float64)
     offsets_b = np.arange(-CONTACT_SCAN_SHAFT_MM, CONTACT_SCAN_SHAFT_MM + CONTACT_SCAN_STEP_MM, CONTACT_SCAN_STEP_MM, dtype=np.float64)
-    candidates: list[tuple[float, np.ndarray, float, int | None]] = []
+    candidates: list[tuple[float, np.ndarray, float, str | None, int | None]] = []
 
     for offset_b in offsets_b:
         for offset_us in offsets_us:
@@ -278,15 +395,22 @@ def _refine_airway_contact_voxel(
             if hu_value <= CONTACT_HU_THRESHOLD:
                 continue
 
-            projection = _candidate_branch_projection(point_lps, main_graph=main_graph, network_graph=network_graph)
+            projection = _candidate_branch_projection(
+                point_lps,
+                main_graph=main_graph,
+                network_graph=network_graph,
+                branch_hint=branch_hint,
+            )
             surface_distance = _surface_distance(point_lps, airway_lumen, airway_solid)
             branch_penalty = 0.0
+            branch_graph_name = None
             branch_index = None
             direction_penalty = 0.0
 
             if projection is not None:
+                branch_graph_name = projection.graph_name
                 branch_index = int(projection.line_index)
-                if seed_branch is not None and branch_index != seed_branch:
+                if seed_branch_key is not None and _projection_key(projection) != seed_branch_key:
                     branch_penalty = 1.5
                 radial_vector = point_lps - projection.closest_point_lps
                 tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
@@ -295,31 +419,68 @@ def _refine_airway_contact_voxel(
                     direction_penalty = max(0.0, 0.75 - float(np.dot(radial_unit, probe_axis)))
 
             score = surface_distance + (0.10 * abs(float(offset_us))) + (0.15 * abs(float(offset_b))) + branch_penalty + direction_penalty
-            candidates.append((score, point_lps, hu_value, branch_index))
+            candidates.append((score, point_lps, hu_value, branch_graph_name, branch_index))
             break
 
     if not candidates:
         warnings.append("Voxel contact refinement found no tissue candidate above the HU threshold; the markup contact was retained.")
-        return seed_contact_world.copy(), float(original_surface_distance), "seed_fallback", None, seed_branch, warnings
+        seed_branch_graph_name = None if seed_projection is None else seed_projection.graph_name
+        seed_branch_index = None if seed_projection is None else int(seed_projection.line_index)
+        return (
+            seed_contact_world.copy(),
+            float(original_surface_distance),
+            "seed_fallback",
+            None,
+            seed_branch_graph_name,
+            seed_branch_index,
+            warnings,
+        )
 
     candidates.sort(key=lambda item: item[0])
-    best_score, best_point, best_hu, best_branch = candidates[0]
+    best_score, best_point, best_hu, best_branch_graph_name, best_branch = candidates[0]
     refined_surface_distance = _surface_distance(best_point, airway_lumen, airway_solid)
 
     if len(candidates) > 1:
-        second_score, second_point, _, _ = candidates[1]
+        second_score, second_point, _, second_branch_graph_name, second_branch = candidates[1]
         separation = float(np.linalg.norm(second_point - best_point))
-        if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0:
+        second_branch_key = (
+            None
+            if second_branch is None or second_branch_graph_name is None
+            else (second_branch_graph_name, int(second_branch))
+        )
+        best_branch_key = (
+            None
+            if best_branch is None or best_branch_graph_name is None
+            else (best_branch_graph_name, int(best_branch))
+        )
+        same_branch_ambiguity = best_branch_key is None or second_branch_key is None or best_branch_key == second_branch_key
+        if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0 and same_branch_ambiguity:
             warnings.append("Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.")
 
     if refined_surface_distance > (original_surface_distance + 0.75):
         warnings.append("Voxel contact refinement did not improve airway-wall proximity; the markup contact was retained.")
-        return seed_contact_world.copy(), float(original_surface_distance), "seed_retained", float(best_hu), best_branch, warnings
+        return (
+            seed_contact_world.copy(),
+            float(original_surface_distance),
+            "seed_retained",
+            float(best_hu),
+            best_branch_graph_name,
+            best_branch,
+            warnings,
+        )
 
     if refined_surface_distance > 2.0:
         warnings.append(f"Voxel-refined contact remains {refined_surface_distance:.2f} mm from the airway wall.")
 
-    return np.asarray(best_point, dtype=np.float64), float(refined_surface_distance), "ct_threshold_wall_search", float(best_hu), best_branch, warnings
+    return (
+        np.asarray(best_point, dtype=np.float64),
+        float(refined_surface_distance),
+        "ct_threshold_wall_search",
+        float(best_hu),
+        best_branch_graph_name,
+        best_branch,
+        warnings,
+    )
 
 
 def _score_mesh_candidate(
@@ -330,13 +491,20 @@ def _score_mesh_candidate(
     mesh_normal_world: np.ndarray,
     probe_axis: np.ndarray,
     shaft_axis: np.ndarray,
-    seed_branch: int | None,
+    seed_branch_key: tuple[str, int] | None,
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None,
+    branch_hint: str | None,
     offset_us: float,
     offset_b: float,
-) -> tuple[float, int | None]:
-    projection = _candidate_branch_projection(mesh_contact_world, main_graph=main_graph, network_graph=network_graph)
+) -> tuple[float, str | None, int | None]:
+    projection = _candidate_branch_projection(
+        mesh_contact_world,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
+    branch_graph_name = None
     branch_index = None
     branch_penalty = 0.0
     radial_penalty = 0.0
@@ -344,8 +512,9 @@ def _score_mesh_candidate(
     normal_penalty = 0.0
 
     if projection is not None:
+        branch_graph_name = projection.graph_name
         branch_index = int(projection.line_index)
-        if seed_branch is not None and branch_index != seed_branch:
+        if seed_branch_key is not None and _projection_key(projection) != seed_branch_key:
             branch_penalty = 1.5
         tangent = projection.tangent_lps if projection.tangent_lps is not None else shaft_axis
         radial_vector = _project_perpendicular(mesh_contact_world - projection.closest_point_lps, tangent)
@@ -365,6 +534,7 @@ def _score_mesh_candidate(
         + radial_penalty
         + centerline_penalty
         + normal_penalty,
+        branch_graph_name,
         branch_index,
     )
 
@@ -379,15 +549,21 @@ def _refine_airway_contact_mesh(
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None,
     fallback_probe_axis: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, float, str, int | None, list[str]]:
+    branch_hint: str | None = None,
+) -> tuple[np.ndarray, np.ndarray, float, str, str | None, int | None, list[str]]:
     surface = get_mesh_surface(raw_airway_mesh)
     warnings: list[str] = []
-    seed_projection = _candidate_branch_projection(seed_contact_world, main_graph=main_graph, network_graph=network_graph)
-    seed_branch = None if seed_projection is None else int(seed_projection.line_index)
+    seed_projection = _candidate_branch_projection(
+        seed_contact_world,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
+    seed_branch_key = _projection_key(seed_projection)
 
     offsets_us = np.arange(-MESH_SCAN_BACKWARD_MM, MESH_SCAN_FORWARD_MM + MESH_SCAN_STEP_MM, MESH_SCAN_STEP_MM, dtype=np.float64)
     offsets_b = np.arange(-MESH_SCAN_SHAFT_MM, MESH_SCAN_SHAFT_MM + MESH_SCAN_STEP_MM, MESH_SCAN_STEP_MM, dtype=np.float64)
-    candidates: list[tuple[float, np.ndarray, np.ndarray, float, int | None]] = []
+    candidates: list[tuple[float, np.ndarray, np.ndarray, float, str | None, int | None]] = []
 
     for offset_b in offsets_b:
         for offset_us in offsets_us:
@@ -404,28 +580,40 @@ def _refine_airway_contact_mesh(
                 network_graph=network_graph,
                 shaft_axis=shaft_axis,
                 fallback_probe_axis=fallback_probe_axis,
+                branch_hint=branch_hint,
             )
-            score, branch_index = _score_mesh_candidate(
+            score, branch_graph_name, branch_index = _score_mesh_candidate(
                 seed_point=sample_point,
                 mesh_query=query,
                 mesh_contact_world=query.closest_point_lps,
                 mesh_normal_world=oriented_normal,
                 probe_axis=probe_axis,
                 shaft_axis=shaft_axis,
-                seed_branch=seed_branch,
+                seed_branch_key=seed_branch_key,
                 main_graph=main_graph,
                 network_graph=network_graph,
+                branch_hint=branch_hint,
                 offset_us=float(offset_us),
                 offset_b=float(offset_b),
             )
-            candidates.append((score, query.closest_point_lps, oriented_normal, float(query.distance_mm), branch_index))
+            candidates.append((score, query.closest_point_lps, oriented_normal, float(query.distance_mm), branch_graph_name, branch_index))
 
     if not candidates:
         query = surface.nearest_point(seed_contact_world)
         normal = query.point_normal_lps if query.point_normal_lps is not None else query.face_normal_lps
         if normal is None:
             warnings.append("Mesh contact refinement found no valid surface normal; the seed contact was retained.")
-            return seed_contact_world.copy(), np.asarray(fallback_probe_axis, dtype=np.float64), float("inf"), "mesh_seed_fallback", seed_branch, warnings
+            seed_branch_graph_name = None if seed_projection is None else seed_projection.graph_name
+            seed_branch_index = None if seed_projection is None else int(seed_projection.line_index)
+            return (
+                seed_contact_world.copy(),
+                np.asarray(fallback_probe_axis, dtype=np.float64),
+                float("inf"),
+                "mesh_seed_fallback",
+                seed_branch_graph_name,
+                seed_branch_index,
+                warnings,
+            )
         oriented_normal = _orient_mesh_normal(
             normal,
             contact_world=query.closest_point_lps,
@@ -434,16 +622,38 @@ def _refine_airway_contact_mesh(
             network_graph=network_graph,
             shaft_axis=shaft_axis,
             fallback_probe_axis=fallback_probe_axis,
+            branch_hint=branch_hint,
         )
         warnings.append("Mesh contact refinement fell back to the nearest raw-mesh projection from the seed contact.")
-        return np.asarray(query.closest_point_lps, dtype=np.float64), oriented_normal, float(query.distance_mm), "mesh_nearest_projection", seed_branch, warnings
+        seed_branch_graph_name = None if seed_projection is None else seed_projection.graph_name
+        seed_branch_index = None if seed_projection is None else int(seed_projection.line_index)
+        return (
+            np.asarray(query.closest_point_lps, dtype=np.float64),
+            oriented_normal,
+            float(query.distance_mm),
+            "mesh_nearest_projection",
+            seed_branch_graph_name,
+            seed_branch_index,
+            warnings,
+        )
 
     candidates.sort(key=lambda item: item[0])
-    best_score, best_contact, best_normal, best_distance, best_branch = candidates[0]
+    best_score, best_contact, best_normal, best_distance, best_branch_graph_name, best_branch = candidates[0]
     if len(candidates) > 1:
-        second_score, second_contact, _, _, _ = candidates[1]
+        second_score, second_contact, _, _, second_branch_graph_name, second_branch = candidates[1]
         separation = float(np.linalg.norm(second_contact - best_contact))
-        if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0:
+        second_branch_key = (
+            None
+            if second_branch is None or second_branch_graph_name is None
+            else (second_branch_graph_name, int(second_branch))
+        )
+        best_branch_key = (
+            None
+            if best_branch is None or best_branch_graph_name is None
+            else (best_branch_graph_name, int(best_branch))
+        )
+        same_branch_ambiguity = best_branch_key is None or second_branch_key is None or best_branch_key == second_branch_key
+        if abs(second_score - best_score) <= CONTACT_AMBIGUITY_SCORE_DELTA and separation > 1.0 and same_branch_ambiguity:
             warnings.append("Mesh contact refinement was ambiguous; the best raw-mesh candidate was chosen deterministically.")
 
     if best_distance > 2.0:
@@ -454,6 +664,7 @@ def _refine_airway_contact_mesh(
         np.asarray(best_normal, dtype=np.float64),
         float(best_distance),
         "raw_mesh_projection_search",
+        best_branch_graph_name,
         best_branch,
         warnings,
     )
@@ -472,24 +683,43 @@ def build_device_pose(
     refine_contact: bool = True,
     roll_offset_deg: float = 0.0,
     axis_sign_override: str | None = None,
+    branch_hint: str | None = None,
+    contact_seed_world: np.ndarray | None = None,
+    shaft_axis_override: np.ndarray | None = None,
+    depth_axis_override: np.ndarray | None = None,
 ) -> DevicePose:
     model = get_cp_ebus_device_model(device_name)
 
     original_contact = np.asarray(pose.contact_world, dtype=np.float64)
+    seed_contact = original_contact if contact_seed_world is None else np.asarray(contact_seed_world, dtype=np.float64)
     target_world = np.asarray(pose.target_world, dtype=np.float64)
-    shaft_axis = _normalize(np.asarray(pose.shaft_axis, dtype=np.float64))
+    shaft_axis_source = pose.shaft_axis if shaft_axis_override is None else shaft_axis_override
+    shaft_axis = _normalize(np.asarray(shaft_axis_source, dtype=np.float64))
     if shaft_axis is None:
         raise ValueError(f"Preset {pose.preset_id!r} approach {pose.contact_approach!r} does not have a valid shaft axis.")
 
-    fallback_probe_axis = _normalize(np.asarray(pose.depth_axis if pose.depth_axis is not None else pose.default_depth_axis, dtype=np.float64))
+    depth_axis_source = (
+        (pose.depth_axis if pose.depth_axis is not None else pose.default_depth_axis)
+        if depth_axis_override is None
+        else depth_axis_override
+    )
+    fallback_probe_axis = _normalize(np.asarray(depth_axis_source, dtype=np.float64))
     if fallback_probe_axis is None:
         raise ValueError(f"Preset {pose.preset_id!r} approach {pose.contact_approach!r} does not have a valid depth/probe axis.")
 
     original_surface_distance = _surface_distance(original_contact, airway_lumen, airway_solid)
 
     if refine_contact:
-        voxel_contact, voxel_distance, voxel_method, candidate_hu, voxel_branch, refinement_warnings = _refine_airway_contact_voxel(
-            original_contact,
+        (
+            voxel_contact,
+            voxel_distance,
+            voxel_method,
+            candidate_hu,
+            voxel_branch_graph_name,
+            voxel_branch,
+            refinement_warnings,
+        ) = _refine_airway_contact_voxel(
+            seed_contact,
             shaft_axis=shaft_axis,
             probe_axis=fallback_probe_axis,
             ct_volume=ct_volume,
@@ -497,16 +727,23 @@ def build_device_pose(
             airway_solid=airway_solid,
             main_graph=main_graph,
             network_graph=network_graph,
+            branch_hint=branch_hint,
         )
     else:
-        voxel_contact = original_contact.copy()
+        voxel_contact = seed_contact.copy()
         voxel_distance = original_surface_distance
         voxel_method = "disabled"
         candidate_hu = None
+        voxel_branch_graph_name = None if pose.centerline_query is None else pose.centerline_query.graph_name
         voxel_branch = None if pose.centerline_query is None else pose.centerline_query.line_index
         refinement_warnings = []
 
-    voxel_projection = _candidate_branch_projection(voxel_contact, main_graph=main_graph, network_graph=network_graph)
+    voxel_projection = _candidate_branch_projection(
+        voxel_contact,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
     voxel_wall_normal = _estimate_voxel_wall_normal(voxel_contact, airway_solid)
     if voxel_wall_normal is None:
         voxel_wall_normal = _fallback_wall_normal(voxel_contact, shaft_axis, voxel_projection, fallback_probe_axis)
@@ -523,8 +760,16 @@ def build_device_pose(
         refinement_warnings.append("Voxel wall-normal projection was degenerate; the fallback probe axis was used.")
 
     if raw_airway_mesh is not None:
-        mesh_contact, mesh_wall_normal, mesh_distance, mesh_method, mesh_branch, mesh_warnings = _refine_airway_contact_mesh(
-            voxel_contact if refine_contact else original_contact,
+        (
+            mesh_contact,
+            mesh_wall_normal,
+            mesh_distance,
+            mesh_method,
+            mesh_branch_graph_name,
+            mesh_branch,
+            mesh_warnings,
+        ) = _refine_airway_contact_mesh(
+            voxel_contact if refine_contact else seed_contact,
             probe_axis=voxel_probe_axis,
             shaft_axis=shaft_axis,
             raw_airway_mesh=raw_airway_mesh,
@@ -532,6 +777,7 @@ def build_device_pose(
             main_graph=main_graph,
             network_graph=network_graph,
             fallback_probe_axis=fallback_probe_axis,
+            branch_hint=branch_hint,
         )
         refinement_warnings.extend(mesh_warnings)
     else:
@@ -539,6 +785,7 @@ def build_device_pose(
         mesh_wall_normal = voxel_wall_normal.copy()
         mesh_distance = float("nan")
         mesh_method = "mesh_unavailable"
+        mesh_branch_graph_name = voxel_branch_graph_name
         mesh_branch = voxel_branch
         refinement_warnings.append("Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained.")
 
@@ -575,6 +822,20 @@ def build_device_pose(
     video_axis = _rotation_toward(shaft_axis, probe_axis, model.video_axis_offset_deg)
     tip_start_world = mesh_contact - (shaft_axis * model.probe_origin_offset_mm)
 
+    final_branch_projection = _candidate_branch_projection(
+        mesh_contact,
+        main_graph=main_graph,
+        network_graph=network_graph,
+        branch_hint=branch_hint,
+    )
+    branch_hint_spec = _parse_branch_hint(branch_hint)
+    branch_hint_match = None if branch_hint_spec is None or final_branch_projection is None else branch_hint_spec.matches(final_branch_projection)
+    branch_hint_applied = bool(branch_hint_spec is not None and branch_hint_match)
+    if branch_hint_spec is not None and not branch_hint_applied:
+        refinement_warnings.append(
+            f"Branch hint {branch_hint_spec.raw_value!r} could not be matched during contact refinement; the closest branch candidate was retained."
+        )
+
     refinement = ContactRefinement(
         original_contact_world=[float(value) for value in original_contact.tolist()],
         voxel_refined_contact_world=[float(value) for value in voxel_contact.tolist()],
@@ -591,7 +852,11 @@ def build_device_pose(
         voxel_refinement_method=voxel_method,
         mesh_refinement_method=mesh_method,
         candidate_hu=candidate_hu,
+        candidate_branch_graph_name=(mesh_branch_graph_name if mesh_branch_graph_name is not None else voxel_branch_graph_name),
         candidate_branch_line_index=(mesh_branch if mesh_branch is not None else voxel_branch),
+        branch_hint=branch_hint,
+        branch_hint_applied=branch_hint_applied,
+        branch_hint_match=branch_hint_match,
         warnings=refinement_warnings,
     )
 

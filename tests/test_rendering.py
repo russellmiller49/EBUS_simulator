@@ -26,6 +26,10 @@ def test_clean_mode_disables_overlays_by_default(tmp_path):
     assert output_path.exists()
     assert output_path.with_suffix(".json").exists()
     assert image.shape == (96, 96, 3)
+    assert rendered.metadata.engine == "localizer"
+    assert rendered.metadata.engine_version == "localizer-v1"
+    assert rendered.metadata.seed is None
+    assert rendered.metadata.view_kind == "localizer_simulated"
     assert rendered.metadata.mode == "clean"
     assert rendered.metadata.airway_overlay_enabled is False
     assert rendered.metadata.airway_lumen_overlay_enabled is False
@@ -51,6 +55,8 @@ def test_debug_mode_enables_expected_contour_overlays_and_thin_slab(tmp_path):
 
     image = np.asarray(Image.open(output_path))
     assert np.any(image > 0)
+    assert rendered.metadata.engine == "localizer"
+    assert rendered.metadata.view_kind == "localizer_virtual"
     assert rendered.metadata.mode == "debug"
     assert rendered.metadata.airway_overlay_enabled is True
     assert rendered.metadata.airway_lumen_overlay_enabled is True
@@ -61,7 +67,11 @@ def test_debug_mode_enables_expected_contour_overlays_and_thin_slab(tmp_path):
     assert rendered.metadata.vessel_overlay_names == ["aorta", "superior_vena_cava"]
     assert rendered.metadata.slice_thickness_mm == 1.5
     assert rendered.metadata.voxel_refined_contact_to_airway_distance_mm is not None
-    assert np.allclose(rendered.metadata.device_axes["nB"], rendered.metadata.pose_axes["shaft_axis"])
+    nB = np.asarray(rendered.metadata.device_axes["nB"], dtype=np.float64)
+    shaft_axis = np.asarray(rendered.metadata.pose_axes["shaft_axis"], dtype=np.float64)
+    assert np.isclose(np.linalg.norm(nB), 1.0)
+    assert np.isclose(np.linalg.norm(shaft_axis), 1.0)
+    assert float(np.dot(nB, shaft_axis)) > 0.99
     assert "wall_normal" in rendered.metadata.device_axes
     assert rendered.metadata.pose_comparison["mesh_refinement_method"] is not None
     assert rendered.metadata.overlays_enabled == [
@@ -89,6 +99,10 @@ def test_debug_mode_uses_manifest_vessel_defaults_when_cli_override_is_absent(tm
     assert rendered.metadata.vessel_overlay_names == ["superior_vena_cava", "azygous", "pulmonary_artery"]
     assert rendered.metadata.preset_override_applied is True
     assert rendered.metadata.preset_override_vessel_overlays == ["superior_vena_cava", "azygous", "pulmonary_artery"]
+    assert rendered.metadata.preset_override_branch_hint == "network:0"
+    assert rendered.metadata.preset_override_branch_shift_mm == -4.0
+    assert rendered.metadata.pose_comparison["branch_hint"] == "network:0"
+    assert "not yet consumed" not in " ".join(rendered.metadata.warnings)
 
 
 def test_diagnostic_panel_writes_panel_image_and_metadata(tmp_path):
@@ -177,9 +191,12 @@ def test_render_all_presets_writes_index_and_all_outputs(tmp_path):
     payload = json.loads(index_json.read_text())
 
     assert index.render_count == 16
+    assert index.engine == "localizer"
     assert index_json.exists()
     assert index_csv.exists()
     assert payload["render_count"] == 16
+    assert payload["engine"] == "localizer"
     assert len(payload["renders"]) == 16
+    assert all(entry["engine"] == "localizer" for entry in payload["renders"])
     assert all(Path(entry["output_image_path"]).exists() for entry in payload["renders"])
     assert all(Path(entry["sidecar_path"]).exists() for entry in payload["renders"])

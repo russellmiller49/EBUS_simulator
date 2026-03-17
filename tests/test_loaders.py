@@ -20,9 +20,13 @@ def test_manifest_loads_presets():
     station_4r_node_b = next(preset for preset in manifest.presets if preset.id == "station_4r_node_b")
     assert station_4r_node_b.overrides is not None
     assert station_4r_node_b.overrides.vessel_overlays == ["superior_vena_cava", "azygous", "pulmonary_artery"]
+    assert station_4r_node_b.overrides.branch_hint == "network:0"
+    assert station_4r_node_b.overrides.branch_shift_mm == -4.0
     station_7_node_a = next(preset for preset in manifest.presets if preset.id == "station_7_node_a")
     assert station_7_node_a.approach_overrides["lms"].vessel_overlays == ["left_atrium", "pulmonary_artery", "aorta"]
     assert station_7_node_a.approach_overrides["rms"].vessel_overlays == ["left_atrium", "pulmonary_artery", "azygous"]
+    assert station_7_node_a.approach_overrides["lms"].branch_hint == "network:1"
+    assert station_7_node_a.approach_overrides["lms"].branch_shift_mm == 8.0
 
 
 def test_mrk_loader_normalizes_to_lps():

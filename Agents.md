@@ -1,51 +1,75 @@
 # AGENTS.md
 
 ## Project
-Build a standalone local **linear EBUS simulator** from exported imaging assets.
+Build and refine a standalone local **linear / convex-probe EBUS simulator** from exported imaging assets.
+
+Treat the current repo as a **working geometry-first scaffold**, not a throwaway prototype. It already supports case loading, validation, preset pose generation, localizer-style rendering, cutaway/context views, and review exports. The next work should extend and reorganize that base rather than rebuilding it.
 
 This project is for **linear / convex EBUS only**.
-It is **not** for radial EBUS, 360-degree EBUS, or general bronchoscopy navigation.
-
-The simulator should use:
-- CT volume
-- airway masks
-- vessel / organ masks
-- station masks
-- airway centerline / network
-- curated contact and target markups
+It is **not** for:
+- radial EBUS
+- 360-degree EBUS
+- full bronchoscopy navigation
+- Slicer module/runtime development
+- web deployment
+- procedural scoring in v1
 
 The simulator should run **outside 3D Slicer**.
-3D Slicer may be used later only for optional QA / visual cross-checking, not as the runtime application.
+3D Slicer may still be used later for optional QA or cross-checking, not as the runtime application.
+
+---
+
+## Current repo state
+What is already implemented and should be preserved unless there is a hard blocker:
+- manifest-driven case loading
+- CT, mask, VTP, and `.mrk.json` IO
+- geometry validation with machine-readable reports
+- centerline graph abstraction and tangent lookup
+- preset-driven contact/target handling
+- station 7 with distinct `lms` and `rms` approaches
+- CP-EBUS device pose generation
+- airway-wall contact refinement against voxel data and airway meshes
+- direct probe-centered CT/localizer rendering
+- clean/debug render modes, overlay controls, metadata sidecars, and diagnostic panels
+- batch rendering, cutaway/context views, and preset review workflows
+
+What is **not** implemented yet:
+- portable manifest roots
+- explicit render-engine abstraction
+- a separated `localizer` renderer module
+- CI automation
+- PySide6 desktop UI
+- a physics-based CP-EBUS image engine
+
+Do **not** reopen the scaffold / loader / validation / pose-generation phases from scratch. Reuse them.
 
 ---
 
 ## Core intent
-The main goal is to create a realistic, educationally useful **linear EBUS view** for known lymph node targets.
+The educational goal remains the same:
+- correct geometry first
+- correct airway-wall / node / vessel relationships
+- stable preset-driven outputs
+- a usable local desktop workflow
 
-Version 1 should prioritize:
-1. correct geometry
-2. correct relationship between airway wall, target node, and vessels
-3. stable preset-driven rendering
-4. a usable local desktop UI
-
-Version 1 should **not** prioritize:
-- full ultrasound physics
-- free-navigation bronchoscopy
-- radial EBUS
-- procedural scoring engine
-- web deployment
-- Slicer module development
+Current repo reality:
+- the existing renderer is best treated as a **CT localizer / QA renderer**
+- future ultrasound realism work should arrive as a **separate physics renderer**, not by overloading the current renderer indefinitely
 
 ---
 
 ## Data location
-Primary case data root:
+The working case currently used by the repo is the checked-in dataset copy referenced by:
 
-`/Users/russellmiller/Downloads/3D_slicer_files`
+`configs/3D_slicer_files.yaml`
+
+and currently rooted at:
+
+`/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files`
 
 Use the files there directly.
-Do **not** rename user files unless explicitly asked.
-Use a manifest/config file so current filenames remain valid.
+Do **not** rename source assets unless explicitly asked.
+The manifest should be made more portable over time, but the filenames should remain valid.
 
 ---
 
@@ -57,47 +81,42 @@ Treat these as authoritative unless the user says otherwise:
 - `centerlines/airway_network.vtp` -> airway branch graph
 - `markups/*.mrk.json` -> authoritative contact / target points
 - `masks/airway.nii.gz` -> airway lumen mask
-- `masks/airway_solid.nii.gz` -> airway solid mask / airway wall helper
+- `masks/airway_solid.nii.gz` -> airway wall helper
 - `masks/station_*.nii.gz` -> station-level region masks
-- vessel / organ masks -> context overlays only unless explicitly promoted to active logic
+- vessel / organ masks -> context overlays unless explicitly promoted to active render logic
 
-The many `Network curve_1 (...).mrk.json` files are secondary / fallback / debugging aids, not primary source-of-truth geometry.
+The many `Network curve_1 (...).mrk.json` files remain secondary / fallback / debugging aids, not the primary source-of-truth geometry.
 
 ---
 
 ## Clinical / geometry model
-### Important
-The simulator must be **contact-anchored** and **target-directed**.
+The simulator must remain **contact-anchored** and **target-directed**.
 
-Do **not** build the image as:
-- oblique CT slice first
-- then apply a 2D fan mask as the main method
-
-That earlier approach produced geometry that looked wrong.
+Do **not** make the final render path:
+- a rectangular oblique CT reslice first
+- then a pasted 2D fan mask
 
 Instead:
-- contact markup = simulated probe contact location on airway wall
-- target markup = intended node focus point
+- contact markup = simulated probe contact on the airway wall
+- target markup = intended lymph-node focus
 - centerline tangent = shaft direction reference
-- rendered sector = sampled **directly in probe coordinates** from the CT volume
+- rendered sector = sampled in **probe coordinates**
 
-### Required pose logic
-For each preset:
+Required pose logic for each preset:
 - `contact_world` comes from the selected contact markup
 - `target_world` comes from the target markup
-- `shaft_axis` comes from local centerline tangent near the contact
-- `depth_axis` is target direction projected perpendicular to shaft axis
-- optional fine roll rotates around shaft axis
+- `shaft_axis` comes from the local centerline tangent near contact
+- `depth_axis` is the target direction projected perpendicular to `shaft_axis`
+- optional fine roll rotates around `shaft_axis`
 
-The image apex / near field must originate at the **contact point**, not at the centerline midpoint and not at an arbitrary screen location.
-
-The airway wall should appear in the near field.
-The node should appear in a believable sector direction relative to the airway and vessels.
+The image apex / near field must originate at the **contact point**.
+The airway wall should remain visible in the near field.
+The node should appear in a believable direction relative to airway and vessels.
 
 ---
 
 ## Preset-driven workflow
-Version 1 is **preset-driven**, not free-navigation-first.
+Version 1 remains **preset-driven**, not free-navigation-first.
 
 Each active preset corresponds to:
 - one station
@@ -108,174 +127,181 @@ Examples:
 - `station_4r_node_b`
 - `station_7_node_a` with approaches `lms` and `rms`
 
-This is intentional.
-The curated contacts and targets are high-value inputs and should drive the build.
+The curated contacts and targets are a feature, not a limitation.
 
 ---
 
-## Active v1 stations / nodes
-Implement only presets that have both:
-- a target markup
-- at least one contact markup
+## Active presets
+The current dataset/manifest supports these as first-class presets:
+- `station_2l_node_a`
+- `station_2r_node_a`
+- `station_4l_node_a`
+- `station_4l_node_b`
+- `station_4l_node_c`
+- `station_4r_node_a`
+- `station_4r_node_b`
+- `station_4r_node_c`
+- `station_7_node_a` with `lms`
+- `station_7_node_a` with `rms`
+- `station_10r_node_a`
+- `station_10r_node_b`
+- `station_11l_node_a`
+- `station_11ri_node_a`
+- `station_11rs_node_a`
+- `station_11rs_node_b`
 
-Use the current dataset to support:
-- 2L node a
-- 2R node a
-- 4L nodes a, b, c
-- 4R nodes a, b, c
-- 7 node a with two approaches: lms and rms
-- 10R nodes a, b
-- 11L node a
-- 11Ri node a
-- 11Rs nodes a, b
-
-Treat other station masks without matching contact/target presets as context overlays only for now.
+Other masks without matching curated preset pairs remain context overlays for now.
 
 ---
 
 ## Coordinate handling
-Be extremely careful with coordinate systems.
+Be careful with coordinate systems.
 
-All imported data must be normalized into one internal world coordinate system before any geometry computations.
-Prefer one canonical internal world frame for the whole application.
-
-Do not hard-code blind RAS/LPS assumptions.
+All imported data must normalize into one internal world coordinate system before geometry computations.
+Do **not** hard-code blind RAS/LPS assumptions.
 Instead:
 - inspect metadata where available
-- read markup coordinate system from `.mrk.json`
-- validate registration using geometry checks
+- read markup coordinate-system metadata from `.mrk.json`
+- validate registration with geometry checks
 
-Every build should include geometry QA:
-- contact is near airway surface
-- target is near or inside its station mask
-- contact and target are inside CT bounds
+Every significant change must preserve geometry QA:
+- contact near airway surface
+- target near or inside station mask
+- contact and target inside CT bounds
 - contact projects onto centerline successfully
-- centerline tangent is defined at that location
+- centerline tangent is defined
 
 ---
 
-## Architecture
-Use a clean local Python project.
+## Current repo truths
+- The project is already **CP-EBUS / convex-probe only**.
+- The current device model is effectively **`bf_uc180f` only**.
+- Current device defaults are approximately:
+  - sector angle `60°`
+  - displayed range `40 mm`
+  - probe origin offset `6 mm`
+  - video axis offset `20°`
+- The checked-in manifest still uses an **absolute local dataset root**.
+- Current render defaults still keep `use_speckle: false` and `use_edge_enhancement: false`.
+- Existing airway assets already include:
+  - raw endoluminal mesh
+  - smoothed display mesh
+- The data model supports cutaway display meshes, but the current config does not explicitly provide one.
 
-Recommended package layout:
+---
 
-- config / manifest loading
-- volume / mask IO
-- VTP IO
-- MRK JSON IO
-- centerline graph + tangent lookup
-- preset / pose generation
-- direct sector sampler
-- overlays
-- renderer
-- local desktop UI
-- tests
-- CLI entry points
+## Architecture direction
+Preserve and reuse:
+- `src/ebus_simulator/models.py`
+- `src/ebus_simulator/manifest.py`
+- `src/ebus_simulator/centerline.py`
+- `src/ebus_simulator/poses.py`
+- `src/ebus_simulator/device.py`
+- `src/ebus_simulator/validation.py`
+- `src/ebus_simulator/cutaway.py`
+- `src/ebus_simulator/review.py`
 
-Preferred runtime:
-- Python
-- NumPy
-- nibabel / SimpleITK as needed
-- VTK / PyVista as needed
-- PySide6 for desktop UI
+Refactor / split before adding major renderer complexity:
+- `src/ebus_simulator/rendering.py`
+- `src/ebus_simulator/render_cli.py`
+- `src/ebus_simulator/render_all_cli.py`
 
-Keep components modular.
-The sampling engine must be reusable independently of the UI.
+Preferred additions for the next major passes:
+- `src/ebus_simulator/render_engines.py`
+- `src/ebus_simulator/localizer_renderer.py`
+- `src/ebus_simulator/acoustic_properties.py`
+- `src/ebus_simulator/physics_renderer.py`
+- `src/ebus_simulator/artifacts.py`
+- `src/ebus_simulator/eval.py`
+- `src/ebus_simulator/app.py`
+- `.github/workflows/ci.yml`
+
+The current renderer should become the explicit **localizer** engine.
+Any future ultrasound-like renderer should be a separate **physics** engine.
+
+---
+
+## Next-pass priorities
+Preferred order for remaining work:
+1. manifest portability and environment-variable support
+2. render-engine abstraction and localizer extraction
+3. CI smoke tests
+4. physics CP-EBUS renderer
+5. evaluation / calibration hooks and review-pack support
+6. PySide6 preset browser
+
+Trainer/quiz layers are deferred until the above are stable.
 
 ---
 
 ## Rendering requirements
-### Required for v1
-- direct probe-centered CT sampling
-- linear EBUS sector output
-- airway / target / vessel overlays
-- adjustable depth
-- adjustable sector angle
-- adjustable gain / attenuation
-- optional fine roll
+For the current localizer / geometry path:
+- keep direct probe-centered sampling
+- keep overlay and metadata support
+- keep deterministic, preset-driven outputs
 
-### Not required for v1
-- true acoustic simulation
-- Doppler
-- advanced posterior shadow physics
-- procedural tool animation
-- radial EBUS mode
+For the future physics path:
+- use a fast, inspectable scanline model
+- start with label-first tissue logic
+- add reflection, backscatter, attenuation, TGC/log compression
+- add seeded speckle, reverberation/comet-tail, and simple shadowing
+- do **not** start with GAN-first rendering
 
-Start simple:
-- soft-tissue windowing
-- contrast mapping
-- optional mild attenuation
-- optional mild speckle
-- optional light edge enhancement
-
-Do not chase cosmetics before geometry is correct.
+Do not chase appearance ahead of geometry correctness.
 
 ---
 
-## UI requirements
-Build a local desktop UI with:
+## UI guidance
+The first desktop UI should be a **stable preset browser**, not unrestricted free navigation.
+
+Desired controls:
 - preset selector
-- contact approach selector
-- depth control
-- sector angle control
-- roll fine-adjustment
-- gain / attenuation controls
+- approach selector
+- depth
+- sector angle
+- fine roll
+- gain
+- attenuation
 - overlay toggles
-- 2D EBUS pane
-- 3D context pane
 - screenshot export
 
-Default mode should be a stable preset browser, not unrestricted free navigation.
-
----
-
-## Testing discipline
-After each phase:
-- stop
-- summarize what was completed
-- list exact files changed
-- provide run commands
-- provide validation results
-- state known limitations honestly
-
-Do not silently broaden scope.
-
-For any phase, prefer a narrow working implementation over a large speculative one.
+The app should expose:
+- a 2D EBUS pane
+- a 3D context pane
 
 ---
 
 ## Commands
-Expected commands should work from repo root:
-
-- environment setup
-- case validation
-- render single preset
-- launch app
-- run tests
-
-Design CLI entry points such as:
-- `validate-case`
-- `render-preset`
-- `launch-app`
+These commands should already work from repo root or remain working as the repo evolves:
+- `validate-case configs/3D_slicer_files.yaml`
+- `generate-poses configs/3D_slicer_files.yaml`
+- `render-preset configs/3D_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
+- `render-all-presets configs/3D_slicer_files.yaml --output-dir reports/renders/all_debug`
+- `review-presets configs/3D_slicer_files.yaml --output-dir reports/preset_review`
+- later: `launch-app configs/3D_slicer_files.yaml`
+- `pytest -q`
 
 ---
 
-## Constraints
-- Do not convert this into a Slicer scripted module
-- Do not add radial EBUS
-- Do not rename source assets unless user explicitly asks
-- Do not replace curated contact / target markups with inferred positions
-- Do not use rectangular reslice + 2D wedge mask as the primary renderer
-- Do not optimize prematurely for web deployment
+## Working style
+- Work in small, mergeable changes.
+- Do not silently broaden scope.
+- Prefer extending existing modules over rewrites.
+- At the end of each bounded pass:
+  - summarize what changed
+  - list exact files changed
+  - list commands to run
+  - list validation or test results
+  - state known limitations honestly
 
 ---
 
-## Definition of success for v1
+## Definition of success
 The project is successful when:
-- the dataset loads through a manifest
+- the dataset loads through a portable manifest
 - all intended presets validate
-- each preset produces a believable linear EBUS sector
-- the near field is anchored to the airway contact point
-- station 7 correctly supports separate LMS and RMS approaches
-- the desktop app can switch presets and render consistently
-- screenshots can be exported for review
+- station 7 `lms` and `rms` remain distinct and correct
+- the localizer renderer stays reliable for geometry review
+- the near field remains anchored to the airway contact point
+- a physics renderer can produce believable CP-EBUS-like sector images
+- the desktop app can browse presets and export screenshots consistently

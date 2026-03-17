@@ -1,0 +1,53 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "rms",
+  "required_comparison_case": true,
+  "auto_flagged": false,
+  "flag_reasons": [],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_voxel_panel.json",
+  "mesh_contact_world": [
+    -28.07447116393732,
+    -154.12867303329799,
+    1197.4698879708417
+  ],
+  "voxel_contact_world": [
+    -26.960457709165812,
+    -154.30208149808783,
+    1196.8012000192875
+  ],
+  "mesh_nUS_world": [
+    0.8563931740605895,
+    -0.06975746380952165,
+    -0.5115902927785985
+  ],
+  "voxel_nUS_world": [
+    0.8461337821153405,
+    -0.11109120933953666,
+    -0.5212641997784507
+  ],
+  "contact_delta_mm": 1.3108165583430835,
+  "nUS_delta_deg": 2.502469078012399,
+  "review_metrics": {
+    "contact_to_centerline_mm": 4.321017586336224,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 12.294288614807211,
+    "target_lateral_offset_mm": -5.598121649940108,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.42584562012142235,
+    "nUS_delta_deg_from_voxel_baseline": 2.5024690780128362,
+    "contact_delta_mm_from_voxel_baseline": 1.3108165583430835,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_7_node_a",
+    "approach": "rms",
+    "contact_to_mesh_mm": 0.19221097287123254
+  },
+  "mesh_warnings": [],
+  "voxel_warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

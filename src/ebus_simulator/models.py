@@ -13,6 +13,7 @@ class ManifestPresetOverrides:
     cutaway_side: str | None = None
     roll_offset_deg: float | None = None
     branch_hint: str | None = None
+    branch_shift_mm: float | None = None
     axis_sign_override: str | None = None
     reference_fov_mm: float | None = None
     notes: str | None = None

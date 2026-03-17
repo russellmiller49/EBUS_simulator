@@ -1,0 +1,1458 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "output_dir": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized",
+  "review_count": 16,
+  "flagged_count": 4,
+  "thresholds": {
+    "nUS_delta_deg_from_voxel_baseline": 10.0,
+    "contact_delta_mm_from_voxel_baseline": 1.5,
+    "station_overlap_fraction_in_fan": 0.003
+  },
+  "entries": [
+    {
+      "preset_id": "station_2l_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2l_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2l_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2l_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2l_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 5.896050982456939,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 4.202841193642756,
+        "target_lateral_offset_mm": -0.748817590678073,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.030355594102341718,
+        "nUS_delta_deg_from_voxel_baseline": 7.008063063063497,
+        "contact_delta_mm_from_voxel_baseline": 0.30676205382940097,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_2l_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.19617090505236165
+      },
+      "cutaway_side": "auto",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "aorta",
+        "left_common_carotid_artery",
+        "left_subclavian_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "aorta",
+          "left_common_carotid_artery",
+          "left_subclavian_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "aorta",
+            "left_common_carotid_artery",
+            "left_subclavian_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2l_node_a_review.json"
+    },
+    {
+      "preset_id": "station_2r_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2r_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2r_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2r_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2r_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 6.496498320278454,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 6.0769506735863335,
+        "target_lateral_offset_mm": 1.64449403933254,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.06851691240242845,
+        "nUS_delta_deg_from_voxel_baseline": 8.047749739414357,
+        "contact_delta_mm_from_voxel_baseline": 0.5074881745169543,
+        "contact_refinement_ambiguity": false,
+        "warnings": [
+          "Contact projects 6.35 mm away from the main centerline."
+        ],
+        "preset_id": "station_2r_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.007590374900418614
+      },
+      "cutaway_side": "auto",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "superior_vena_cava",
+        "brachiocephalic_trunk",
+        "right_common_carotid_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "superior_vena_cava",
+          "brachiocephalic_trunk",
+          "right_common_carotid_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:0",
+        "branch_shift_mm": 0.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the tracheal/right paratracheal branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "superior_vena_cava",
+            "brachiocephalic_trunk",
+            "right_common_carotid_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:0",
+          "branch_shift_mm": 0.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the tracheal/right paratracheal branch neighborhood."
+        }
+      },
+      "warnings": [
+        "Contact projects 6.35 mm away from the main centerline."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_2r_node_a_review.json"
+    },
+    {
+      "preset_id": "station_4l_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.775534450817501,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 21.8859305327397,
+        "target_lateral_offset_mm": -4.343206007704424,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.4562012142237641,
+        "nUS_delta_deg_from_voxel_baseline": 2.486351823137489,
+        "contact_delta_mm_from_voxel_baseline": 1.1959186652390599,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_4l_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.1960611167152473
+      },
+      "cutaway_side": "left",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "aorta",
+        "pulmonary_artery",
+        "left_atrium"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "aorta",
+          "pulmonary_artery",
+          "left_atrium"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:2",
+        "branch_shift_mm": 4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the left mainstem/paratracheal branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "aorta",
+            "pulmonary_artery",
+            "left_atrium"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:2",
+          "branch_shift_mm": 4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the left mainstem/paratracheal branch neighborhood."
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_a_review.json"
+    },
+    {
+      "preset_id": "station_4l_node_b",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_b_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_b_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_b_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_b_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.923541659755715,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 21.47371339410676,
+        "target_lateral_offset_mm": 5.670181339087949,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.32784041630529054,
+        "nUS_delta_deg_from_voxel_baseline": 8.989640254651427,
+        "contact_delta_mm_from_voxel_baseline": 1.1092407785514256,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_4l_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.03262127816559435
+      },
+      "cutaway_side": "left",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "aorta",
+        "pulmonary_artery",
+        "left_atrium"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "aorta",
+          "pulmonary_artery",
+          "left_atrium"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "aorta",
+            "pulmonary_artery",
+            "left_atrium"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_b_review.json"
+    },
+    {
+      "preset_id": "station_4l_node_c",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_c_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_c_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_c_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_c_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.853148616668326,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 14.251453810403568,
+        "target_lateral_offset_mm": 5.337228654516279,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.1370338248048569,
+        "nUS_delta_deg_from_voxel_baseline": 0.8551052451097562,
+        "contact_delta_mm_from_voxel_baseline": 0.035760946730570085,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_4l_node_c",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.035760946730570085
+      },
+      "cutaway_side": "left",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "aorta",
+        "pulmonary_artery",
+        "left_atrium"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "aorta",
+          "pulmonary_artery",
+          "left_atrium"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "aorta",
+            "pulmonary_artery",
+            "left_atrium"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4l_node_c_review.json"
+    },
+    {
+      "preset_id": "station_4r_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 6.31999617896946,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 10.33685045124368,
+        "target_lateral_offset_mm": -4.797955361781156,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.1873373807458803,
+        "nUS_delta_deg_from_voxel_baseline": 3.6492845677704757,
+        "contact_delta_mm_from_voxel_baseline": 0.05488634557505507,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_4r_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.05488634557505507
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "superior_vena_cava",
+          "azygous",
+          "pulmonary_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "superior_vena_cava",
+            "azygous",
+            "pulmonary_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_review.json"
+    },
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_b_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_b_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_b_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_b_clean.json",
+      "flagged": true,
+      "flag_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "metrics": {
+        "contact_to_centerline_mm": 6.153406233839823,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 10.553114624171032,
+        "target_lateral_offset_mm": -0.28636387182133527,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.209887250650477,
+        "nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+        "contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_4r_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0407480155624235
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "superior_vena_cava",
+          "azygous",
+          "pulmonary_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:0",
+        "branch_shift_mm": -4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: prefer the intended right paratracheal branch when mesh candidates are ambiguous.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "superior_vena_cava",
+            "azygous",
+            "pulmonary_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:0",
+          "branch_shift_mm": -4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: prefer the intended right paratracheal branch when mesh candidates are ambiguous."
+        }
+      },
+      "warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_b_review.json"
+    },
+    {
+      "preset_id": "station_4r_node_c",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_c_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_c_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_c_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_c_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 5.757359028213906,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 7.3791804535503855,
+        "target_lateral_offset_mm": -0.782083185546051,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.08152645273200347,
+        "nUS_delta_deg_from_voxel_baseline": 7.440413621609189,
+        "contact_delta_mm_from_voxel_baseline": 0.6758545106661423,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_4r_node_c",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.1769943010458593
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "superior_vena_cava",
+          "azygous",
+          "pulmonary_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "superior_vena_cava",
+            "azygous",
+            "pulmonary_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_c_review.json"
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_lms_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_lms_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_lms_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_lms_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.628096082081661,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 20.35744414729004,
+        "target_lateral_offset_mm": -8.064392405751857,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.7267996530789246,
+        "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+        "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_7_node_a",
+        "approach": "lms",
+        "contact_to_mesh_mm": 0.010870763241346887
+      },
+      "cutaway_side": "left",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "left_atrium",
+        "pulmonary_artery",
+        "aorta"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "left_atrium",
+          "pulmonary_artery",
+          "aorta"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:1",
+        "branch_shift_mm": 8.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "left_atrium",
+            "pulmonary_artery",
+            "aorta"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:1",
+          "branch_shift_mm": 8.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization."
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_lms_review.json"
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "rms",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_rms_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_rms_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_rms_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_rms_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.321017586336224,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 12.294288614807211,
+        "target_lateral_offset_mm": -5.598121649940108,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.42584562012142235,
+        "nUS_delta_deg_from_voxel_baseline": 2.5024690780128362,
+        "contact_delta_mm_from_voxel_baseline": 1.3108165583430835,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_7_node_a",
+        "approach": "rms",
+        "contact_to_mesh_mm": 0.19221097287123254
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "left_atrium",
+        "pulmonary_artery",
+        "azygous"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "left_atrium",
+          "pulmonary_artery",
+          "azygous"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Review LMS and RMS approaches separately because the same target is sampled from both mainstem contacts.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "left_atrium",
+            "pulmonary_artery",
+            "azygous"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Review LMS and RMS approaches separately because the same target is sampled from both mainstem contacts."
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_7_node_a_rms_review.json"
+    },
+    {
+      "preset_id": "station_10r_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 5.086286752433464,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 16.10949551027935,
+        "target_lateral_offset_mm": -1.605726882778938,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.2471812662619254,
+        "nUS_delta_deg_from_voxel_baseline": 5.339151284637525,
+        "contact_delta_mm_from_voxel_baseline": 0.6263696743868383,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_10r_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.12653614025917256
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "azygous"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "azygous"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "azygous"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_a_review.json"
+    },
+    {
+      "preset_id": "station_10r_node_b",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_b_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_b_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_b_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_b_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 5.092392105751235,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 9.184919104789461,
+        "target_lateral_offset_mm": 2.148515656101151,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.1266261925411969,
+        "nUS_delta_deg_from_voxel_baseline": 2.9049015747126825,
+        "contact_delta_mm_from_voxel_baseline": 1.0420124022358168,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_10r_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.08989841074204595
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "azygous"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "azygous"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": null,
+        "branch_shift_mm": null,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": null,
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "azygous"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": null,
+          "branch_shift_mm": null,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": null
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_10r_node_b_review.json"
+    },
+    {
+      "preset_id": "station_11l_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11l_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11l_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11l_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11l_node_a_clean.json",
+      "flagged": true,
+      "flag_reasons": [
+        "nUS delta 19.67 deg > 10.0 deg",
+        "contact delta 3.39 mm > 1.5 mm"
+      ],
+      "metrics": {
+        "contact_to_centerline_mm": 2.5910454644563075,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 12.639232275728528,
+        "target_lateral_offset_mm": -3.2590520301301136,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.031222896790980052,
+        "nUS_delta_deg_from_voxel_baseline": 19.670885677307236,
+        "contact_delta_mm_from_voxel_baseline": 3.394448808830015,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_11l_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.3856369592306546
+      },
+      "cutaway_side": "left",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "pulmonary_venous_system",
+        "left_atrium"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "pulmonary_venous_system",
+          "left_atrium"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:6",
+        "branch_shift_mm": 4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "pulmonary_venous_system",
+            "left_atrium"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:6",
+          "branch_shift_mm": 4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood."
+        }
+      },
+      "warnings": [],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11l_node_a_review.json"
+    },
+    {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11ri_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11ri_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11ri_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11ri_node_a_clean.json",
+      "flagged": true,
+      "flag_reasons": [
+        "contact delta 2.56 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "metrics": {
+        "contact_to_centerline_mm": 2.3533915612478298,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 18.381006466248532,
+        "target_lateral_offset_mm": 0.7665116823492544,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.0372940156114484,
+        "nUS_delta_deg_from_voxel_baseline": 8.25313379024058,
+        "contact_delta_mm_from_voxel_baseline": 2.5637049475918916,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_11ri_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0638532981827656
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "right_atrium"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "right_atrium"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:8",
+        "branch_shift_mm": 0.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the right interlobar branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "right_atrium"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:8",
+          "branch_shift_mm": 0.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the right interlobar branch neighborhood."
+        }
+      },
+      "warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11ri_node_a_review.json"
+    },
+    {
+      "preset_id": "station_11rs_node_a",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_a_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_a_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_a_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_a_clean.json",
+      "flagged": false,
+      "flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 4.433002309237437,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 15.507584556903613,
+        "target_lateral_offset_mm": 4.238540602464664,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.15351257588898526,
+        "nUS_delta_deg_from_voxel_baseline": 0.3254438585445646,
+        "contact_delta_mm_from_voxel_baseline": 0.7688306736465542,
+        "contact_refinement_ambiguity": false,
+        "warnings": [
+          "Contact is 2.28 mm from the airway surface."
+        ],
+        "preset_id": "station_11rs_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.074114274526493
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "azygous"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "azygous"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:4",
+        "branch_shift_mm": 4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the proximal right superior lobar branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "azygous"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:4",
+          "branch_shift_mm": 4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the proximal right superior lobar branch neighborhood."
+        }
+      },
+      "warnings": [
+        "Contact is 2.28 mm from the airway surface."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_a_review.json"
+    },
+    {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_b_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_b_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_b_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_b_clean.json",
+      "flagged": true,
+      "flag_reasons": [
+        "contact delta 2.31 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "metrics": {
+        "contact_to_centerline_mm": 3.7451410086233397,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 25.946746328386407,
+        "target_lateral_offset_mm": 0.9487230891474121,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.1899392888117953,
+        "nUS_delta_deg_from_voxel_baseline": 4.3958711097996055,
+        "contact_delta_mm_from_voxel_baseline": 2.31043560324354,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_11rs_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.1903821314406148
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "pulmonary_artery",
+        "azygous"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "pulmonary_artery",
+          "azygous"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:3",
+        "branch_shift_mm": 4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: keep refinement on the right superior lobar branch neighborhood.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "pulmonary_artery",
+            "azygous"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:3",
+          "branch_shift_mm": 4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: keep refinement on the right superior lobar branch neighborhood."
+        }
+      },
+      "warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_11rs_node_b_review.json"
+    }
+  ],
+  "comparison_bundles": [
+    {
+      "preset_id": "station_11l_node_a",
+      "approach": "default",
+      "required_comparison_case": true,
+      "auto_flagged": true,
+      "flag_reasons": [
+        "nUS delta 19.67 deg > 10.0 deg",
+        "contact delta 3.39 mm > 1.5 mm"
+      ],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11l_node_a_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11l_node_a_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11l_node_a_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11l_node_a_voxel_panel.json",
+      "mesh_contact_world": [
+        26.991286255460977,
+        -139.93620167413252,
+        1176.1195339554258
+      ],
+      "voxel_contact_world": [
+        24.022476049454205,
+        -138.45159441355807,
+        1175.4093297887757
+      ],
+      "mesh_nUS_world": [
+        0.6925305315145984,
+        -0.7063399314791727,
+        0.14657886654666596
+      ],
+      "voxel_nUS_world": [
+        0.812017949222593,
+        -0.4633407864984155,
+        0.35488331280487706
+      ],
+      "contact_delta_mm": 3.394448808830015,
+      "nUS_delta_deg": 19.670885677307215,
+      "review_metrics": {
+        "contact_to_centerline_mm": 2.5910454644563075,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 12.639232275728528,
+        "target_lateral_offset_mm": -3.2590520301301136,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.031222896790980052,
+        "nUS_delta_deg_from_voxel_baseline": 19.670885677307236,
+        "contact_delta_mm_from_voxel_baseline": 3.394448808830015,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_11l_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.3856369592306546
+      },
+      "mesh_warnings": [],
+      "voxel_warnings": [
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "required_comparison_case": true,
+      "auto_flagged": true,
+      "flag_reasons": [
+        "contact delta 2.56 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11ri_node_a_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11ri_node_a_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11ri_node_a_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11ri_node_a_voxel_panel.json",
+      "mesh_contact_world": [
+        -47.52250245859467,
+        -141.80771403801688,
+        1170.7944557653882
+      ],
+      "voxel_contact_world": [
+        -45.57760280118256,
+        -140.13742388772772,
+        1170.8033549087395
+      ],
+      "mesh_nUS_world": [
+        -0.6818105305697554,
+        -0.7248342111729079,
+        -0.09874090701192231
+      ],
+      "voxel_nUS_world": [
+        -0.7587258979390505,
+        -0.6514076432887463,
+        -0.0017589944806160435
+      ],
+      "contact_delta_mm": 2.5637049475918916,
+      "nUS_delta_deg": 8.25313379024058,
+      "review_metrics": {
+        "contact_to_centerline_mm": 2.3533915612478298,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 18.381006466248532,
+        "target_lateral_offset_mm": 0.7665116823492544,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.0372940156114484,
+        "nUS_delta_deg_from_voxel_baseline": 8.25313379024058,
+        "contact_delta_mm_from_voxel_baseline": 2.5637049475918916,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_11ri_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0638532981827656
+      },
+      "mesh_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "voxel_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_11rs_node_a",
+      "approach": "default",
+      "required_comparison_case": true,
+      "auto_flagged": false,
+      "flag_reasons": [],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_voxel_panel.json",
+      "mesh_contact_world": [
+        -33.33319590764664,
+        -153.35837393125726,
+        1210.2811660304033
+      ],
+      "voxel_contact_world": [
+        -33.591412578488395,
+        -153.00720318329869,
+        1210.9144936402683
+      ],
+      "mesh_nUS_world": [
+        -0.33403216475134234,
+        -0.6554953538062601,
+        -0.6773096441436058
+      ],
+      "voxel_nUS_world": [
+        -0.3319952852789479,
+        -0.659761782635998,
+        -0.6741613462113651
+      ],
+      "contact_delta_mm": 0.7688306736465542,
+      "nUS_delta_deg": 0.3254438585445646,
+      "review_metrics": {
+        "contact_to_centerline_mm": 4.433002309237437,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 15.507584556903613,
+        "target_lateral_offset_mm": 4.238540602464664,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.15351257588898526,
+        "nUS_delta_deg_from_voxel_baseline": 0.3254438585445646,
+        "contact_delta_mm_from_voxel_baseline": 0.7688306736465542,
+        "contact_refinement_ambiguity": false,
+        "warnings": [
+          "Contact is 2.28 mm from the airway surface."
+        ],
+        "preset_id": "station_11rs_node_a",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.074114274526493
+      },
+      "mesh_warnings": [
+        "Contact is 2.28 mm from the airway surface."
+      ],
+      "voxel_warnings": [
+        "Contact is 2.28 mm from the airway surface.",
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "required_comparison_case": false,
+      "auto_flagged": true,
+      "flag_reasons": [
+        "contact delta 2.31 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_b_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_b_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_b_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_b_voxel_panel.json",
+      "mesh_contact_world": [
+        -31.49674674007004,
+        -149.15790274372318,
+        1195.313700299779
+      ],
+      "voxel_contact_world": [
+        -30.172051173006523,
+        -147.27220080544586,
+        1195.479297797691
+      ],
+      "mesh_nUS_world": [
+        -0.6347530412458486,
+        -0.7719096932807504,
+        -0.03527041321509639
+      ],
+      "voxel_nUS_world": [
+        -0.5790940752247407,
+        -0.8123165417990856,
+        -0.06922346393511901
+      ],
+      "contact_delta_mm": 2.31043560324354,
+      "nUS_delta_deg": 4.395871109799356,
+      "review_metrics": {
+        "contact_to_centerline_mm": 3.7451410086233397,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 25.946746328386407,
+        "target_lateral_offset_mm": 0.9487230891474121,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.1899392888117953,
+        "nUS_delta_deg_from_voxel_baseline": 4.3958711097996055,
+        "contact_delta_mm_from_voxel_baseline": 2.31043560324354,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_11rs_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.1903821314406148
+      },
+      "mesh_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "voxel_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "required_comparison_case": true,
+      "auto_flagged": true,
+      "flag_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_4r_node_b_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_4r_node_b_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_4r_node_b_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_4r_node_b_voxel_panel.json",
+      "mesh_contact_world": [
+        -9.636363156573237,
+        -176.90970309686261,
+        1246.8590180116103
+      ],
+      "voxel_contact_world": [
+        -9.629247513122516,
+        -176.8703926906566,
+        1246.8670467322104
+      ],
+      "mesh_nUS_world": [
+        -0.1626692921437076,
+        -0.9453390033753615,
+        -0.28261788706793384
+      ],
+      "voxel_nUS_world": [
+        -0.22478226186348166,
+        -0.9387759720723368,
+        -0.26109884911882747
+      ],
+      "contact_delta_mm": 0.0407480155624235,
+      "nUS_delta_deg": 3.785751792561363,
+      "review_metrics": {
+        "contact_to_centerline_mm": 6.153406233839823,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 10.553114624171032,
+        "target_lateral_offset_mm": -0.28636387182133527,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.209887250650477,
+        "nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+        "contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_4r_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0407480155624235
+      },
+      "mesh_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "voxel_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "required_comparison_case": true,
+      "auto_flagged": false,
+      "flag_reasons": [],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_lms_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_lms_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_lms_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_lms_voxel_panel.json",
+      "mesh_contact_world": [
+        -31.724918025766197,
+        -156.27486896900623,
+        1210.728067582357
+      ],
+      "voxel_contact_world": [
+        -32.159987641970176,
+        -156.16674784705285,
+        1210.51473317694
+      ],
+      "mesh_nUS_world": [
+        0.4986583767984052,
+        0.34120764078109644,
+        -0.7968168981148542
+      ],
+      "voxel_nUS_world": [
+        0.4971256158305955,
+        0.3004664679807346,
+        -0.813993872031131
+      ],
+      "contact_delta_mm": 0.496474890091123,
+      "nUS_delta_deg": 2.535013071491338,
+      "review_metrics": {
+        "contact_to_centerline_mm": 4.628096082081661,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 20.35744414729004,
+        "target_lateral_offset_mm": -8.064392405751857,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.7267996530789246,
+        "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+        "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_7_node_a",
+        "approach": "lms",
+        "contact_to_mesh_mm": 0.010870763241346887
+      },
+      "mesh_warnings": [],
+      "voxel_warnings": [
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "rms",
+      "required_comparison_case": true,
+      "auto_flagged": false,
+      "flag_reasons": [],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_7_node_a_rms_voxel_panel.json",
+      "mesh_contact_world": [
+        -28.07447116393732,
+        -154.12867303329799,
+        1197.4698879708417
+      ],
+      "voxel_contact_world": [
+        -26.960457709165812,
+        -154.30208149808783,
+        1196.8012000192875
+      ],
+      "mesh_nUS_world": [
+        0.8563931740605895,
+        -0.06975746380952165,
+        -0.5115902927785985
+      ],
+      "voxel_nUS_world": [
+        0.8461337821153405,
+        -0.11109120933953666,
+        -0.5212641997784507
+      ],
+      "contact_delta_mm": 1.3108165583430835,
+      "nUS_delta_deg": 2.502469078012399,
+      "review_metrics": {
+        "contact_to_centerline_mm": 4.321017586336224,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 12.294288614807211,
+        "target_lateral_offset_mm": -5.598121649940108,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.42584562012142235,
+        "nUS_delta_deg_from_voxel_baseline": 2.5024690780128362,
+        "contact_delta_mm_from_voxel_baseline": 1.3108165583430835,
+        "contact_refinement_ambiguity": false,
+        "warnings": [],
+        "preset_id": "station_7_node_a",
+        "approach": "rms",
+        "contact_to_mesh_mm": 0.19221097287123254
+      },
+      "mesh_warnings": [],
+      "voxel_warnings": [
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,895 @@
+from __future__ import annotations
+
+from dataclasses import asdict
+import json
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+from scipy import ndimage
+
+from ebus_simulator.acoustic_properties import AcousticField, map_acoustic_properties
+from ebus_simulator.artifacts import PhysicsArtifactConfig, apply_physics_artifacts
+from ebus_simulator.device import build_device_pose
+from ebus_simulator.eval import summarize_bmode_regions
+from ebus_simulator.manifest import resolve_preset_overrides
+from ebus_simulator.render_engines import RenderEngine, RenderRequest, RenderResult
+from ebus_simulator.rendering import (
+    AIRWAY_LUMEN_COLOR,
+    AIRWAY_WALL_COLOR,
+    CONTACT_MARKER_COLOR,
+    DEFAULT_SLAB_SAMPLES,
+    OPTIMIZATION_EPSILON,
+    STATION_COLOR,
+    TARGET_MARKER_COLOR,
+    VESSEL_OVERLAY_PALETTE,
+    OverlayLayer,
+    RenderContext,
+    RenderMetadata,
+    RenderedPreset,
+    _LOCAL_POSE_OPTIMIZATION_CACHE,
+    _annotate_legend_and_labels,
+    _apply_contour_overlay,
+    _build_sector_grid,
+    _draw_cross_marker,
+    _fan_target_row_col,
+    _filter_mask_components,
+    _get_mask_volume,
+    _optimize_flagged_pose_locally,
+    _overlay_summary,
+    _resolve_branch_shift_seed,
+    _resolve_cutaway_config,
+    _resolve_overlay_config,
+    _resolve_pose,
+    _resolve_preset_manifest,
+    _resolve_slice_thickness_mm,
+    _sample_slab,
+    build_render_context,
+)
+
+
+PHYSICS_ENGINE_VERSION = "physics-v1"
+TARGET_FOCUS_SIGMA_MM = 4.5
+
+
+def _resolve_artifact_config(request: RenderRequest) -> PhysicsArtifactConfig:
+    defaults = PhysicsArtifactConfig()
+    return PhysicsArtifactConfig(
+        speckle_strength=max(0.0, (
+            defaults.speckle_strength
+            if request.speckle_strength is None
+            else float(request.speckle_strength)
+        )),
+        reverberation_strength=max(0.0, (
+            defaults.reverberation_strength
+            if request.reverberation_strength is None
+            else float(request.reverberation_strength)
+        )),
+        shadow_strength=max(0.0, (
+            defaults.shadow_strength
+            if request.shadow_strength is None
+            else float(request.shadow_strength)
+        )),
+    )
+
+
+def _simulate_bmode_with_diagnostics(
+    field: AcousticField,
+    *,
+    depth_step_mm: float,
+    gain: float,
+    attenuation_scale: float,
+    seed: int | None,
+    artifact_config: PhysicsArtifactConfig,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    if depth_step_mm <= 0.0:
+        raise ValueError(f"depth_step_mm must be positive, got {depth_step_mm!r}.")
+
+    rng = np.random.default_rng(0 if seed is None else seed)
+
+    impedance = np.asarray(field.impedance, dtype=np.float32)
+    scatter = np.asarray(field.scatter, dtype=np.float32)
+    attenuation = np.asarray(field.attenuation, dtype=np.float32)
+    lumen = np.asarray(field.airway_lumen_mask, dtype=np.float32)
+    vessel = np.asarray(field.vessel_mask, dtype=np.float32)
+    target_focus = np.asarray(field.target_focus, dtype=np.float32)
+
+    boundary = np.abs(np.diff(impedance, axis=0, prepend=impedance[[0], :]))
+    boundary = np.maximum(boundary, np.asarray(field.airway_wall_mask, dtype=np.float32) * 0.18)
+    air_interface_map = boundary * np.maximum(lumen, np.pad(lumen[1:, :], ((0, 1), (0, 0)), mode="constant"))
+
+    boundary_texture = (0.95 + (0.35 * rng.random(boundary.shape))).astype(np.float32)
+    scatter_component = scatter * 0.72
+    boundary_component = boundary * boundary_texture
+
+    depth_step_cm = float(depth_step_mm) / 10.0
+    cumulative_attenuation = np.cumsum(attenuation * float(attenuation_scale), axis=0) * depth_step_cm
+    transmission = np.exp(-cumulative_attenuation).astype(np.float32)
+    vessel_suppression = (1.0 - (0.18 * vessel)).astype(np.float32)
+
+    base_signal = ((0.65 * scatter_component) + (1.45 * boundary_component)) * transmission * vessel_suppression
+    if np.any(target_focus > 0.0):
+        base_signal *= (1.0 - (0.12 * target_focus))
+
+    raw_with_artifacts, artifact_maps = apply_physics_artifacts(
+        base_signal,
+        air_interface_map=air_interface_map,
+        airway_lumen_mask=field.airway_lumen_mask,
+        vessel_mask=field.vessel_mask,
+        depth_step_mm=depth_step_mm,
+        config=artifact_config,
+        rng=rng,
+    )
+    smoothed = ndimage.gaussian_filter(np.asarray(raw_with_artifacts, dtype=np.float32), sigma=(0.85, 0.45))
+    smoothed *= np.linspace(0.92, 1.10, smoothed.shape[0], dtype=np.float32)[:, None]
+
+    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (6.0 * float(gain)))
+    percentile = float(np.percentile(compressed, 99.5)) if np.any(compressed > 0.0) else 0.0
+    scale = 1.0 if percentile <= 0.0 else percentile
+
+    diagnostics = {
+        "boundary_map": boundary.astype(np.float32),
+        "transmission_map": transmission.astype(np.float32),
+        "shadow_map": artifact_maps.shadow_map.astype(np.float32),
+        "reverberation_map": artifact_maps.reverberation_map.astype(np.float32),
+        "speckle_map": artifact_maps.speckle_map.astype(np.float32),
+        "precompression_map": smoothed.astype(np.float32),
+    }
+    return np.clip(compressed / scale, 0.0, 1.0).astype(np.float32), diagnostics
+
+
+def simulate_bmode_from_acoustic_field(
+    field: AcousticField,
+    *,
+    depth_step_mm: float,
+    gain: float,
+    attenuation_scale: float,
+    seed: int | None,
+    speckle_strength: float | None = None,
+    reverberation_strength: float | None = None,
+    shadow_strength: float | None = None,
+) -> np.ndarray:
+    defaults = PhysicsArtifactConfig()
+    artifact_config = PhysicsArtifactConfig(
+        speckle_strength=max(0.0, defaults.speckle_strength if speckle_strength is None else float(speckle_strength)),
+        reverberation_strength=max(0.0, defaults.reverberation_strength if reverberation_strength is None else float(reverberation_strength)),
+        shadow_strength=max(0.0, defaults.shadow_strength if shadow_strength is None else float(shadow_strength)),
+    )
+    image, _ = _simulate_bmode_with_diagnostics(
+        field,
+        depth_step_mm=depth_step_mm,
+        gain=gain,
+        attenuation_scale=attenuation_scale,
+        seed=seed,
+        artifact_config=artifact_config,
+    )
+    return image
+
+
+def _build_polar_grid(height: int, width: int, *, max_depth_mm: float, sector_angle_deg: float) -> tuple[np.ndarray, np.ndarray]:
+    depths_mm = np.linspace(0.0, max_depth_mm, height, dtype=np.float64)
+    half_angle_rad = np.deg2rad(sector_angle_deg / 2.0)
+    angles_rad = np.linspace(-half_angle_rad, half_angle_rad, width, dtype=np.float64)
+    depth_grid = np.broadcast_to(depths_mm[:, None], (height, width))
+    angle_grid = np.broadcast_to(angles_rad[None, :], (height, width))
+    return depth_grid, angle_grid
+
+
+def _scan_convert_polar_to_sector(
+    polar_values: np.ndarray,
+    *,
+    depth_grid_mm: np.ndarray,
+    lateral_grid_mm: np.ndarray,
+    sector_mask: np.ndarray,
+    max_depth_mm: float,
+    sector_angle_deg: float,
+    order: int,
+    cval: float,
+) -> np.ndarray:
+    mapped = np.full(depth_grid_mm.shape, cval, dtype=np.float32)
+    if not np.any(sector_mask):
+        return mapped
+
+    half_angle_rad = np.deg2rad(sector_angle_deg / 2.0)
+    phi = np.arctan2(lateral_grid_mm, np.maximum(depth_grid_mm, 1e-9))
+    source_rows = (depth_grid_mm[sector_mask] / max(max_depth_mm, 1e-6)) * max(1, polar_values.shape[0] - 1)
+    source_cols = ((phi[sector_mask] + half_angle_rad) / max(half_angle_rad * 2.0, 1e-6)) * max(1, polar_values.shape[1] - 1)
+    sampled = ndimage.map_coordinates(
+        np.asarray(polar_values, dtype=np.float32),
+        [source_rows, source_cols],
+        order=order,
+        mode="constant",
+        cval=cval,
+    )
+    mapped[sector_mask] = sampled
+    return mapped
+
+
+def _sample_mask_ray_domain(
+    context: RenderContext,
+    *,
+    mask_path: Path,
+    ray_points_world: np.ndarray,
+    thickness_axis: np.ndarray,
+    slice_thickness_mm: float,
+) -> np.ndarray:
+    mask_volume = _get_mask_volume(context, mask_path)
+    samples = _sample_slab(
+        np.asarray(mask_volume.data, dtype=np.float32),
+        base_points_lps=ray_points_world.reshape((-1, 3)),
+        thickness_axis=thickness_axis,
+        inverse_affine_lps=mask_volume.inverse_affine_lps,
+        sample_count=DEFAULT_SLAB_SAMPLES,
+        slab_thickness_mm=slice_thickness_mm,
+        order=0,
+        cval=0.0,
+    )
+    return samples.reshape(ray_points_world.shape[:2]) > 0.5
+
+
+def _combine_vessel_masks(
+    context: RenderContext,
+    *,
+    ray_points_world: np.ndarray,
+    thickness_axis: np.ndarray,
+    slice_thickness_mm: float,
+) -> np.ndarray:
+    combined = np.zeros(ray_points_world.shape[:2], dtype=bool)
+    for mask_path in context.manifest.overlay_masks.values():
+        combined |= _sample_mask_ray_domain(
+            context,
+            mask_path=mask_path,
+            ray_points_world=ray_points_world,
+            thickness_axis=thickness_axis,
+            slice_thickness_mm=slice_thickness_mm,
+        )
+    return combined
+
+
+def _scan_convert_display_mask(
+    mask: np.ndarray,
+    *,
+    depth_grid_mm: np.ndarray,
+    lateral_grid_mm: np.ndarray,
+    sector_mask: np.ndarray,
+    max_depth_mm: float,
+    sector_angle_deg: float,
+    min_area_px: float,
+    min_length_px: float,
+) -> np.ndarray:
+    display_mask = _scan_convert_polar_to_sector(
+        mask.astype(np.float32),
+        depth_grid_mm=depth_grid_mm,
+        lateral_grid_mm=lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=max_depth_mm,
+        sector_angle_deg=sector_angle_deg,
+        order=0,
+        cval=0.0,
+    ) > 0.5
+    display_mask &= sector_mask
+    return _filter_mask_components(
+        display_mask,
+        min_area_px=min_area_px,
+        min_length_px=min_length_px,
+    )
+
+
+def _write_debug_map_png(values: np.ndarray, path: Path) -> None:
+    image = np.asarray(values, dtype=np.float32)
+    finite = image[np.isfinite(image)]
+    if finite.size == 0:
+        normalized = np.zeros_like(image, dtype=np.float32)
+    else:
+        lower = float(np.min(finite))
+        upper = float(np.percentile(finite, 99.5))
+        if upper <= lower:
+            normalized = np.clip(image, 0.0, 1.0)
+        else:
+            normalized = np.clip((image - lower) / (upper - lower), 0.0, 1.0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray((normalized * 255.0).astype(np.uint8), mode="L").save(path)
+
+
+def render_physics_preset(
+    request: RenderRequest,
+    *,
+    context: RenderContext | None = None,
+) -> RenderResult:
+    if request.engine is not RenderEngine.PHYSICS:
+        raise ValueError(f"render_physics_preset expected engine=physics, got {request.engine.value!r}.")
+
+    render_context = build_render_context(request.manifest_path, roll_deg=request.roll_deg) if context is None else context
+    manifest = render_context.manifest
+    defaults = manifest.render_defaults
+    pose = _resolve_pose(render_context.pose_report, preset_id=request.preset_id, approach=request.approach)
+    preset_manifest = _resolve_preset_manifest(manifest, pose.preset_id)
+    preset_overrides = resolve_preset_overrides(preset_manifest, approach=pose.contact_approach)
+
+    overlay_config = _resolve_overlay_config(
+        manifest,
+        mode=request.mode,
+        airway_overlay=request.airway_overlay,
+        airway_lumen_overlay=request.airway_lumen_overlay,
+        airway_wall_overlay=request.airway_wall_overlay,
+        target_overlay=(False if request.target_overlay is None else request.target_overlay),
+        contact_overlay=(request.show_contact if request.contact_overlay is None else request.contact_overlay),
+        station_overlay=request.station_overlay,
+        vessel_overlay_names=request.vessel_overlay_names,
+        diagnostic_panel=False,
+        virtual_ebus=False,
+        simulated_ebus=True,
+        show_legend=request.show_legend,
+        label_overlays=request.label_overlays,
+        show_frustum=False,
+        min_contour_area_px=request.min_contour_area_px,
+        min_contour_length_px=request.min_contour_length_px,
+        single_vessel_name=request.single_vessel,
+        preset_default_vessel_names=(None if preset_overrides is None else preset_overrides.vessel_overlays),
+    )
+    cutaway_config = _resolve_cutaway_config(
+        cutaway_mode=request.cutaway_mode,
+        cutaway_side=request.cutaway_side,
+        cutaway_depth_mm=request.cutaway_depth_mm,
+        cutaway_origin=request.cutaway_origin,
+        show_full_airway=request.show_full_airway,
+        default_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
+    )
+    if not request.virtual_ebus and not request.simulated_ebus:
+        raise ValueError("At least one of virtual_ebus or simulated_ebus must be enabled.")
+
+    resolved_width = int(defaults.get("image_size", [512, 512])[0] if request.width is None else request.width)
+    resolved_height = int(defaults.get("image_size", [512, 512])[1] if request.height is None else request.height)
+    preset_roll_offset_deg = 0.0 if preset_overrides is None or preset_overrides.roll_offset_deg is None else float(preset_overrides.roll_offset_deg)
+    configured_axis_sign_override = None if preset_overrides is None else preset_overrides.axis_sign_override
+    configured_branch_hint = None if preset_overrides is None else preset_overrides.branch_hint
+    configured_branch_shift_mm = None if preset_overrides is None else preset_overrides.branch_shift_mm
+    resolved_gain = float(defaults.get("gain", 1.0))
+    resolved_attenuation = float(defaults.get("attenuation", 0.15))
+    resolved_slice_thickness_mm = _resolve_slice_thickness_mm(overlay_config.mode, request.slice_thickness_mm)
+    fallback_probe_axis_world = np.asarray(
+        pose.depth_axis if pose.depth_axis is not None else pose.default_depth_axis,
+        dtype=np.float64,
+    )
+    branch_shift_seed = (
+        None
+        if configured_branch_hint is None or configured_branch_shift_mm is None
+        else _resolve_branch_shift_seed(
+            render_context,
+            pose=pose,
+            branch_hint=configured_branch_hint,
+            branch_shift_mm=float(configured_branch_shift_mm),
+            fallback_contact_world=np.asarray(pose.contact_world, dtype=np.float64),
+            fallback_probe_axis_world=fallback_probe_axis_world,
+        )
+    )
+    device_pose = build_device_pose(
+        pose,
+        device_name=request.device,
+        ct_volume=render_context.ct_volume,
+        airway_lumen=render_context.airway_lumen_volume,
+        airway_solid=render_context.airway_solid_volume,
+        raw_airway_mesh=render_context.airway_geometry_mesh,
+        main_graph=render_context.main_graph,
+        network_graph=render_context.network_graph,
+        refine_contact=request.refine_contact,
+        roll_offset_deg=preset_roll_offset_deg,
+        axis_sign_override=configured_axis_sign_override,
+        branch_hint=configured_branch_hint,
+        contact_seed_world=(None if branch_shift_seed is None else branch_shift_seed[0]),
+        shaft_axis_override=(None if branch_shift_seed is None else branch_shift_seed[1]),
+        depth_axis_override=(None if branch_shift_seed is None else branch_shift_seed[2]),
+    )
+    baseline_device_pose = device_pose
+
+    resolved_sector_angle_deg = float(device_pose.device_model.sector_angle_deg if request.sector_angle_deg is None else request.sector_angle_deg)
+    resolved_max_depth_mm = float(device_pose.device_model.displayed_range_mm if request.max_depth_mm is None else request.max_depth_mm)
+    resolved_source_oblique_size_mm = float(device_pose.device_model.source_oblique_size_mm if request.source_oblique_size_mm is None else request.source_oblique_size_mm)
+    optimization_cache_key = None if configured_branch_hint is None or configured_branch_shift_mm is not None else (
+        str(render_context.manifest.manifest_path),
+        pose.preset_id,
+        pose.contact_approach,
+        request.device,
+        configured_branch_hint,
+        resolved_width,
+        resolved_height,
+        round(resolved_source_oblique_size_mm, 4),
+        round(resolved_max_depth_mm, 4),
+        round(resolved_sector_angle_deg, 4),
+        round(resolved_slice_thickness_mm, 4),
+        round(preset_roll_offset_deg, 4),
+        configured_axis_sign_override,
+    )
+    optimization_result = None if optimization_cache_key is None else _LOCAL_POSE_OPTIMIZATION_CACHE.get(optimization_cache_key)
+    if optimization_result is None and configured_branch_hint is not None and configured_branch_shift_mm is None:
+        optimization_result = _optimize_flagged_pose_locally(
+            render_context,
+            pose=pose,
+            preset_manifest=preset_manifest,
+            device=request.device,
+            branch_hint=configured_branch_hint,
+            base_device_pose=device_pose,
+            base_roll_offset_deg=preset_roll_offset_deg,
+            base_axis_sign_override=configured_axis_sign_override,
+            width=resolved_width,
+            height=resolved_height,
+            source_oblique_size_mm=resolved_source_oblique_size_mm,
+            max_depth_mm=resolved_max_depth_mm,
+            sector_angle_deg=resolved_sector_angle_deg,
+            slice_thickness_mm=resolved_slice_thickness_mm,
+        )
+        if optimization_cache_key is not None and optimization_result is not None:
+            _LOCAL_POSE_OPTIMIZATION_CACHE[optimization_cache_key] = optimization_result
+    if optimization_result is not None:
+        device_pose = optimization_result.device_pose
+        preset_roll_offset_deg = float(optimization_result.roll_offset_deg)
+        configured_axis_sign_override = optimization_result.axis_sign_override
+    resolved_roll_deg = float(pose.roll_deg + preset_roll_offset_deg)
+    resolved_reference_fov_mm = float(
+        (
+            device_pose.device_model.reference_fov_mm
+            if preset_overrides is None or preset_overrides.reference_fov_mm is None
+            else preset_overrides.reference_fov_mm
+        )
+        if request.reference_fov_mm is None
+        else request.reference_fov_mm
+    )
+
+    contact_world = np.asarray(device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
+    target_world = np.asarray(device_pose.target_world, dtype=np.float64)
+    probe_axis = np.asarray(device_pose.probe_axis_world, dtype=np.float64)
+    shaft_axis = np.asarray(device_pose.shaft_axis_world, dtype=np.float64)
+    lateral_axis = np.asarray(device_pose.lateral_axis_world, dtype=np.float64)
+
+    ray_depth_grid_mm, ray_angle_grid_rad = _build_polar_grid(
+        resolved_height,
+        resolved_width,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+    )
+    ray_directions = (
+        np.cos(ray_angle_grid_rad)[:, :, None] * probe_axis[None, None, :]
+        + np.sin(ray_angle_grid_rad)[:, :, None] * shaft_axis[None, None, :]
+    )
+    ray_points_world = contact_world[None, None, :] + ray_depth_grid_mm[:, :, None] * ray_directions
+
+    ct_ray = _sample_slab(
+        np.asarray(render_context.ct_volume.data, dtype=np.float32),
+        base_points_lps=ray_points_world.reshape((-1, 3)),
+        thickness_axis=lateral_axis,
+        inverse_affine_lps=render_context.ct_volume.inverse_affine_lps,
+        sample_count=DEFAULT_SLAB_SAMPLES,
+        slab_thickness_mm=resolved_slice_thickness_mm,
+        order=1,
+        cval=-1000.0,
+    ).reshape((resolved_height, resolved_width))
+    lumen_ray = _sample_mask_ray_domain(
+        render_context,
+        mask_path=manifest.airway_lumen_mask,
+        ray_points_world=ray_points_world,
+        thickness_axis=lateral_axis,
+        slice_thickness_mm=resolved_slice_thickness_mm,
+    )
+    wall_ray = _sample_mask_ray_domain(
+        render_context,
+        mask_path=manifest.airway_solid_mask,
+        ray_points_world=ray_points_world,
+        thickness_axis=lateral_axis,
+        slice_thickness_mm=resolved_slice_thickness_mm,
+    )
+    wall_ray &= ~lumen_ray
+    station_ray = _sample_mask_ray_domain(
+        render_context,
+        mask_path=preset_manifest.station_mask,
+        ray_points_world=ray_points_world,
+        thickness_axis=lateral_axis,
+        slice_thickness_mm=resolved_slice_thickness_mm,
+    )
+    all_vessels_ray = _combine_vessel_masks(
+        render_context,
+        ray_points_world=ray_points_world,
+        thickness_axis=lateral_axis,
+        slice_thickness_mm=resolved_slice_thickness_mm,
+    )
+
+    target_distance_mm = np.linalg.norm(ray_points_world - target_world[None, None, :], axis=2)
+    target_focus = np.exp(-0.5 * ((target_distance_mm / TARGET_FOCUS_SIGMA_MM) ** 2)).astype(np.float32)
+    if np.any(station_ray):
+        target_focus *= np.where(station_ray, 1.0, 0.35).astype(np.float32)
+
+    acoustic_field = map_acoustic_properties(
+        ct_hu=ct_ray,
+        airway_lumen_mask=lumen_ray,
+        airway_wall_mask=wall_ray,
+        vessel_mask=all_vessels_ray,
+        station_mask=station_ray,
+        target_focus=target_focus,
+    )
+    depth_step_mm = float(resolved_max_depth_mm / max(1, resolved_height - 1))
+    artifact_config = _resolve_artifact_config(request)
+    polar_bmode, polar_diagnostics = _simulate_bmode_with_diagnostics(
+        acoustic_field,
+        depth_step_mm=depth_step_mm,
+        gain=resolved_gain,
+        attenuation_scale=(1.0 + (resolved_attenuation * 2.0)),
+        seed=request.seed,
+        artifact_config=artifact_config,
+    )
+    polar_diagnostics["target_focus_map"] = target_focus.astype(np.float32)
+
+    display_depth_grid_mm, display_lateral_grid_mm, sector_mask, max_lateral_mm = _build_sector_grid(
+        resolved_width,
+        resolved_height,
+        resolved_max_depth_mm,
+        resolved_sector_angle_deg,
+    )
+    display_bmode = _scan_convert_polar_to_sector(
+        polar_bmode,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        order=1,
+        cval=0.0,
+    )
+    display_diagnostics = {
+        name: _scan_convert_polar_to_sector(
+            values,
+            depth_grid_mm=display_depth_grid_mm,
+            lateral_grid_mm=display_lateral_grid_mm,
+            sector_mask=sector_mask,
+            max_depth_mm=resolved_max_depth_mm,
+            sector_angle_deg=resolved_sector_angle_deg,
+            order=1,
+            cval=0.0,
+        )
+        for name, values in polar_diagnostics.items()
+    }
+    display_lumen_mask = _scan_convert_display_mask(
+        lumen_ray,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        min_area_px=overlay_config.min_contour_area_px,
+        min_length_px=overlay_config.min_contour_length_px,
+    )
+    display_wall_mask = _scan_convert_display_mask(
+        wall_ray,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        min_area_px=overlay_config.min_contour_area_px,
+        min_length_px=overlay_config.min_contour_length_px,
+    )
+    display_station_mask = _scan_convert_display_mask(
+        station_ray,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        min_area_px=overlay_config.min_contour_area_px,
+        min_length_px=overlay_config.min_contour_length_px,
+    )
+    display_vessel_mask = _scan_convert_display_mask(
+        all_vessels_ray,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        min_area_px=overlay_config.min_contour_area_px,
+        min_length_px=overlay_config.min_contour_length_px,
+    )
+    display_target_region_mask = _scan_convert_display_mask(
+        target_focus > 0.35,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        min_area_px=overlay_config.min_contour_area_px,
+        min_length_px=overlay_config.min_contour_length_px,
+    )
+
+    image_rgb = np.zeros((resolved_height, resolved_width, 3), dtype=np.float32)
+    image_rgb[sector_mask] = np.repeat(display_bmode[sector_mask, None], 3, axis=1)
+
+    visible_layers: list[OverlayLayer] = []
+    legend_entries: list[tuple[str, np.ndarray]] = []
+
+    def _overlay_display_mask(mask: np.ndarray, *, key: str, label: str, color_rgb: np.ndarray, enabled: bool) -> None:
+        if not enabled:
+            return
+        if not np.any(mask):
+            return
+        _apply_contour_overlay(image_rgb, mask, color_rgb)
+        visible_layers.append(OverlayLayer(key=key, label=label, color_rgb=color_rgb, mask=mask))
+        legend_entries.append((label, color_rgb))
+
+    _overlay_display_mask(
+        display_lumen_mask,
+        key="airway_lumen",
+        label="Airway lumen",
+        color_rgb=AIRWAY_LUMEN_COLOR,
+        enabled=overlay_config.airway_lumen_enabled,
+    )
+    _overlay_display_mask(
+        display_wall_mask,
+        key="airway_wall",
+        label="Airway wall",
+        color_rgb=AIRWAY_WALL_COLOR,
+        enabled=overlay_config.airway_wall_enabled,
+    )
+    _overlay_display_mask(
+        display_station_mask,
+        key="station",
+        label=f"Station {pose.station.upper()}",
+        color_rgb=STATION_COLOR,
+        enabled=overlay_config.station_enabled,
+    )
+    for index, vessel_name in enumerate(overlay_config.vessel_names):
+        vessel_mask = _sample_mask_ray_domain(
+            render_context,
+            mask_path=manifest.overlay_masks[vessel_name],
+            ray_points_world=ray_points_world,
+            thickness_axis=lateral_axis,
+            slice_thickness_mm=resolved_slice_thickness_mm,
+        )
+        display_selected_vessel_mask = _scan_convert_display_mask(
+            vessel_mask,
+            depth_grid_mm=display_depth_grid_mm,
+            lateral_grid_mm=display_lateral_grid_mm,
+            sector_mask=sector_mask,
+            max_depth_mm=resolved_max_depth_mm,
+            sector_angle_deg=resolved_sector_angle_deg,
+            min_area_px=overlay_config.min_contour_area_px,
+            min_length_px=overlay_config.min_contour_length_px,
+        )
+        _overlay_display_mask(
+            display_selected_vessel_mask,
+            key=vessel_name,
+            label=vessel_name.replace("_", " ").title(),
+            color_rgb=VESSEL_OVERLAY_PALETTE[index % len(VESSEL_OVERLAY_PALETTE)],
+            enabled=True,
+        )
+
+    if overlay_config.target_enabled:
+        target_row_col = _fan_target_row_col(
+            contact_world=contact_world,
+            target_world=target_world,
+            probe_axis=probe_axis,
+            shaft_axis=shaft_axis,
+            max_depth_mm=resolved_max_depth_mm,
+            sector_angle_deg=resolved_sector_angle_deg,
+            width=resolved_width,
+            height=resolved_height,
+            max_lateral_mm=max_lateral_mm,
+        )
+        if target_row_col is not None:
+            display_target_region_mask[target_row_col[0], target_row_col[1]] = True
+            _draw_cross_marker(image_rgb, row=target_row_col[0], column=target_row_col[1], color_rgb=TARGET_MARKER_COLOR, radius=4)
+            target_mask = np.zeros((resolved_height, resolved_width), dtype=bool)
+            target_mask[target_row_col[0], target_row_col[1]] = True
+            visible_layers.append(OverlayLayer(key="target", label="Target", color_rgb=TARGET_MARKER_COLOR, mask=target_mask, label_enabled=False))
+            legend_entries.append(("Target", TARGET_MARKER_COLOR))
+
+    if overlay_config.contact_enabled:
+        _draw_cross_marker(image_rgb, row=0, column=resolved_width // 2, color_rgb=CONTACT_MARKER_COLOR, radius=4)
+        contact_mask = np.zeros((resolved_height, resolved_width), dtype=bool)
+        contact_mask[0, resolved_width // 2] = True
+        visible_layers.append(OverlayLayer(key="contact", label="Contact", color_rgb=CONTACT_MARKER_COLOR, mask=contact_mask, label_enabled=False))
+        legend_entries.append(("Contact", CONTACT_MARKER_COLOR))
+
+    output_path = Path(request.output_path).expanduser().resolve()
+    metadata_path = output_path.with_suffix(".json") if request.metadata_path is None else Path(request.metadata_path).expanduser().resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+
+    output_image_uint8 = _annotate_legend_and_labels(
+        image_rgb,
+        visible_layers=visible_layers,
+        show_legend=overlay_config.show_legend,
+        label_overlays=overlay_config.label_overlays,
+        legend_entries=legend_entries,
+    )
+    Image.fromarray(output_image_uint8, mode="RGB").save(output_path)
+
+    debug_map_paths: dict[str, str] = {}
+    if request.debug_map_dir is not None:
+        debug_dir = Path(request.debug_map_dir).expanduser().resolve()
+        for name, values in display_diagnostics.items():
+            debug_path = debug_dir / f"{output_path.stem}_{name}.png"
+            _write_debug_map_png(values, debug_path)
+            debug_map_paths[name] = str(debug_path)
+
+    eval_summary = summarize_bmode_regions(
+        display_bmode,
+        sector_mask=sector_mask,
+        target_mask=display_target_region_mask,
+        wall_mask=display_wall_mask,
+        vessel_mask=display_vessel_mask,
+    )
+    engine_diagnostics = {
+        "artifact_settings": {
+            "speckle_strength": float(artifact_config.speckle_strength),
+            "reverberation_strength": float(artifact_config.reverberation_strength),
+            "shadow_strength": float(artifact_config.shadow_strength),
+        },
+        "eval_summary": eval_summary,
+        "debug_map_paths": debug_map_paths,
+    }
+
+    warnings = list(pose.warnings) + list(device_pose.contact_refinement.warnings)
+    if request.virtual_ebus:
+        warnings.append("Physics engine currently renders only the simulated B-mode sector; virtual_ebus was ignored.")
+    if request.diagnostic_panel:
+        warnings.append("Physics engine does not yet provide a diagnostic panel; rendered the sector view only.")
+    optimization_applied = (
+        optimization_result is not None
+        and (
+            abs(float(optimization_result.branch_shift_mm)) > OPTIMIZATION_EPSILON
+            or abs(float(optimization_result.roll_offset_deg) - float(0.0 if preset_overrides is None or preset_overrides.roll_offset_deg is None else preset_overrides.roll_offset_deg)) > OPTIMIZATION_EPSILON
+            or optimization_result.axis_sign_override != (None if preset_overrides is None else preset_overrides.axis_sign_override)
+            or float(
+                np.linalg.norm(
+                    np.asarray(optimization_result.device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
+                    - np.asarray(baseline_device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
+                )
+            )
+            > OPTIMIZATION_EPSILON
+        )
+    )
+    if optimization_applied and optimization_result is not None:
+        warnings.append(
+            "Flagged local pose optimization selected "
+            f"branch_shift_mm={optimization_result.branch_shift_mm:.1f}, "
+            f"roll_offset_deg={optimization_result.roll_offset_deg:.1f}, "
+            f"axis_sign_override={optimization_result.axis_sign_override!r}."
+        )
+    if overlay_config.single_vessel_name is not None and not any(layer.key == overlay_config.single_vessel_name for layer in visible_layers):
+        warnings.append(f"Single-vessel mode requested '{overlay_config.single_vessel_name}' but no contour intersected the displayed fan.")
+
+    cutaway_origin = (
+        np.asarray(request.cutaway_custom_origin_world, dtype=np.float64)
+        if cutaway_config.origin_mode == "custom" and request.cutaway_custom_origin_world is not None
+        else contact_world
+    )
+    cutaway_side = cutaway_config.side
+    cutaway_open_side = "left" if cutaway_side == "auto" else cutaway_side
+
+    metadata = RenderMetadata(
+        manifest_path=str(manifest.manifest_path),
+        case_id=manifest.case_id,
+        preset_id=pose.preset_id,
+        approach=pose.contact_approach,
+        mode=overlay_config.mode,
+        output_path=str(output_path),
+        metadata_path=str(metadata_path),
+        engine=RenderEngine.PHYSICS.value,
+        engine_version=PHYSICS_ENGINE_VERSION,
+        seed=request.seed,
+        view_kind="physics_bmode",
+        image_size=[int(output_image_uint8.shape[1]), int(output_image_uint8.shape[0])],
+        device_model=device_pose.device_model.name,
+        device_label=device_pose.device_model.shaft_label,
+        sector_angle_deg=resolved_sector_angle_deg,
+        max_depth_mm=resolved_max_depth_mm,
+        roll_deg=resolved_roll_deg,
+        gain=resolved_gain,
+        attenuation=resolved_attenuation,
+        slice_thickness_mm=resolved_slice_thickness_mm,
+        slice_samples=DEFAULT_SLAB_SAMPLES,
+        source_oblique_size_mm=resolved_source_oblique_size_mm,
+        reference_fov_mm=resolved_reference_fov_mm,
+        source_plane="probe_ray_domain_nUS_nB",
+        display_plane="nUS_nB_fan",
+        reference_plane="probe_ray_domain_nUS_nB",
+        refine_contact_enabled=bool(request.refine_contact),
+        diagnostic_panel_enabled=False,
+        diagnostic_panel_layout=[],
+        virtual_ebus_enabled=False,
+        simulated_ebus_enabled=True,
+        contact_world=list(device_pose.contact_refinement.refined_contact_world),
+        original_contact_world=list(device_pose.contact_refinement.original_contact_world),
+        voxel_refined_contact_world=list(device_pose.contact_refinement.voxel_refined_contact_world),
+        refined_contact_world=list(device_pose.contact_refinement.refined_contact_world),
+        tip_start_world=list(device_pose.tip_start_world),
+        target_world=list(device_pose.target_world),
+        nearest_centerline_point=pose.nearest_centerline_point,
+        pose_axes={
+            "shaft_axis": (None if pose.shaft_axis is None else [float(value) for value in pose.shaft_axis]),
+            "depth_axis": (None if pose.depth_axis is None else [float(value) for value in pose.depth_axis]),
+            "lateral_axis": (None if pose.lateral_axis is None else [float(value) for value in pose.lateral_axis]),
+        },
+        device_axes={
+            "nB": list(device_pose.shaft_axis_world),
+            "nC": list(device_pose.video_axis_world),
+            "nUS": list(device_pose.probe_axis_world),
+            "wall_normal": list(device_pose.wall_normal_world),
+        },
+        target_in_default_forward_hemisphere=pose.target_in_default_forward_hemisphere,
+        contact_to_airway_distance_mm=float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
+        original_contact_to_airway_distance_mm=float(device_pose.contact_refinement.original_contact_to_airway_distance_mm),
+        voxel_refined_contact_to_airway_distance_mm=float(device_pose.contact_refinement.voxel_refined_contact_to_airway_distance_mm),
+        refined_contact_to_airway_distance_mm=float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
+        centerline_projection_distance_mm=pose.centerline_projection_distance_mm,
+        contact_refinement_method=device_pose.contact_refinement.refinement_method,
+        pose_comparison={
+            "markup_contact_world": list(device_pose.contact_refinement.original_contact_world),
+            "voxel_refined_contact_world": list(device_pose.contact_refinement.voxel_refined_contact_world),
+            "mesh_refined_contact_world": list(device_pose.contact_refinement.refined_contact_world),
+            "voxel_to_mesh_contact_distance_mm": float(device_pose.contact_refinement.voxel_to_mesh_contact_distance_mm),
+            "voxel_contact_to_airway_distance_mm": float(device_pose.contact_refinement.voxel_refined_contact_to_airway_distance_mm),
+            "mesh_contact_to_airway_distance_mm": float(device_pose.contact_refinement.refined_contact_to_airway_distance_mm),
+            "voxel_refinement_method": device_pose.contact_refinement.voxel_refinement_method,
+            "mesh_refinement_method": device_pose.contact_refinement.mesh_refinement_method,
+            "candidate_branch_graph_name": device_pose.contact_refinement.candidate_branch_graph_name,
+            "candidate_branch_line_index": device_pose.contact_refinement.candidate_branch_line_index,
+            "branch_hint": device_pose.contact_refinement.branch_hint,
+            "branch_hint_applied": device_pose.contact_refinement.branch_hint_applied,
+            "branch_hint_match": device_pose.contact_refinement.branch_hint_match,
+            "voxel_wall_normal_world": list(device_pose.voxel_wall_normal_world),
+            "mesh_wall_normal_world": list(device_pose.wall_normal_world),
+            "voxel_nUS_world": list(device_pose.voxel_probe_axis_world),
+            "mesh_nUS_world": list(device_pose.probe_axis_world),
+            "final_nB_world": list(device_pose.shaft_axis_world),
+            "final_nUS_world": list(device_pose.probe_axis_world),
+            "final_nC_world": list(device_pose.video_axis_world),
+            "optimized_branch_shift_mm": (None if optimization_result is None else float(optimization_result.branch_shift_mm)),
+            "optimized_roll_offset_deg": (None if optimization_result is None else float(optimization_result.roll_offset_deg)),
+            "optimized_axis_sign_override": (None if optimization_result is None else optimization_result.axis_sign_override),
+            "optimized_objective": (None if optimization_result is None else list(optimization_result.objective)),
+            "warnings": list(device_pose.contact_refinement.warnings),
+        },
+        airway_overlay_enabled=(overlay_config.airway_lumen_enabled or overlay_config.airway_wall_enabled),
+        airway_lumen_overlay_enabled=overlay_config.airway_lumen_enabled,
+        airway_wall_overlay_enabled=overlay_config.airway_wall_enabled,
+        target_overlay_enabled=overlay_config.target_enabled,
+        contact_overlay_enabled=overlay_config.contact_enabled,
+        station_overlay_enabled=overlay_config.station_enabled,
+        vessel_overlay_names=list(overlay_config.vessel_names),
+        single_vessel_name=overlay_config.single_vessel_name,
+        show_legend=overlay_config.show_legend,
+        label_overlays=overlay_config.label_overlays,
+        show_frustum=False,
+        cutaway_mode=cutaway_config.mode,
+        cutaway_side=cutaway_side,
+        cutaway_side_source="physics_placeholder",
+        cutaway_open_side=cutaway_open_side,
+        cutaway_depth_mm=cutaway_config.depth_mm,
+        cutaway_origin_mode=cutaway_config.origin_mode,
+        cutaway_origin=[float(value) for value in cutaway_origin.tolist()],
+        cutaway_normal=[float(value) for value in lateral_axis.tolist()],
+        cutaway_mesh_source="none",
+        show_full_airway=cutaway_config.show_full_airway,
+        overlays_enabled=_overlay_summary(overlay_config),
+        preset_override_applied=(preset_overrides is not None),
+        preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
+        preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
+        preset_override_roll_offset_deg=preset_roll_offset_deg,
+        preset_override_branch_hint=(None if preset_overrides is None else preset_overrides.branch_hint),
+        preset_override_branch_shift_mm=(None if preset_overrides is None else preset_overrides.branch_shift_mm),
+        preset_override_axis_sign_override=(None if preset_overrides is None else preset_overrides.axis_sign_override),
+        preset_override_reference_fov_mm=(None if preset_overrides is None else preset_overrides.reference_fov_mm),
+        preset_override_notes=(None if preset_overrides is None else preset_overrides.notes),
+        warnings=warnings,
+        engine_diagnostics=engine_diagnostics,
+    )
+    metadata_path.write_text(json.dumps(asdict(metadata), indent=2))
+
+    rendered = RenderedPreset(
+        image_rgb=output_image_uint8,
+        sector_mask=sector_mask,
+        metadata=metadata,
+    )
+    return RenderResult(
+        engine=RenderEngine.PHYSICS,
+        engine_version=PHYSICS_ENGINE_VERSION,
+        rendered_preset=rendered,
+    )

@@ -1,6 +1,6 @@
 manifest_version: 1
 case_id: 3D_slicer_files
-root: "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files"
+root: "${REPO_ROOT}/3D_slicer_files"
 
 ct:
   image: "ct.nii.gz"

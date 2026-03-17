@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - "codex/**"
+
+jobs:
+  test-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Bootstrap environment
+        run: make bootstrap
+
+      - name: Run test suite
+        run: make test
+
+      - name: Run CLI smoke checks
+        run: make ci-smoke
+
+      - name: Upload CI reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-reports
+          path: |
+            reports/ci_validation_report.json
+            reports/ci_pose_report.json
+            reports/ci_station_4r_node_b.png
+            reports/ci_station_4r_node_b.json
+          if-no-files-found: warn

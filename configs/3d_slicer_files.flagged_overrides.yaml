@@ -1,0 +1,52 @@
+# Supplemental preset-stabilization overrides used by validation/render smoke tests.
+manifest_version: 1
+
+presets:
+  - id: "station_2r_node_a"
+    overrides:
+      branch_hint: "network:0"
+      branch_shift_mm: 0.0
+      notes: "Flagged stabilization pass: keep refinement on the tracheal/right paratracheal branch neighborhood."
+
+  - id: "station_4l_node_a"
+    overrides:
+      branch_hint: "network:2"
+      branch_shift_mm: 4.0
+      notes: "Flagged stabilization pass: keep refinement on the left mainstem/paratracheal branch neighborhood."
+
+  - id: "station_4r_node_b"
+    overrides:
+      branch_hint: "network:0"
+      branch_shift_mm: -4.0
+      notes: "Flagged stabilization pass: prefer the intended right paratracheal branch when mesh candidates are ambiguous."
+
+  - id: "station_7_node_a"
+    approach_overrides:
+      lms:
+        branch_hint: "network:1"
+        branch_shift_mm: 8.0
+        notes: "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization."
+
+  - id: "station_11l_node_a"
+    overrides:
+      branch_hint: "network:6"
+      branch_shift_mm: 4.0
+      notes: "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood."
+
+  - id: "station_11ri_node_a"
+    overrides:
+      branch_hint: "network:8"
+      branch_shift_mm: 0.0
+      notes: "Flagged stabilization pass: keep refinement on the right interlobar branch neighborhood."
+
+  - id: "station_11rs_node_a"
+    overrides:
+      branch_hint: "network:4"
+      branch_shift_mm: 4.0
+      notes: "Flagged stabilization pass: keep refinement on the proximal right superior lobar branch neighborhood."
+
+  - id: "station_11rs_node_b"
+    overrides:
+      branch_hint: "network:3"
+      branch_shift_mm: 4.0
+      notes: "Flagged stabilization pass: keep refinement on the right superior lobar branch neighborhood."

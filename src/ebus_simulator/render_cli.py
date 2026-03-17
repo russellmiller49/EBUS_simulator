@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 
+from ebus_simulator.render_engines import RenderEngine
 from ebus_simulator.rendering import render_preset
 
 
@@ -28,6 +29,8 @@ def main() -> int:
     parser.add_argument("--approach", help="Contact approach key for presets with multiple contacts.")
     parser.add_argument("--output", required=True, help="PNG output path.")
     parser.add_argument("--metadata-json", help="Optional JSON sidecar path. Defaults to <output>.json.")
+    parser.add_argument("--engine", choices=[engine.value for engine in RenderEngine], default=RenderEngine.LOCALIZER.value, help="Render engine. Default: localizer.")
+    parser.add_argument("--seed", type=int, help="Optional deterministic seed recorded in render metadata.")
     parser.add_argument("--width", type=int, help="Output image width in pixels.")
     parser.add_argument("--height", type=int, help="Output image height in pixels.")
     parser.add_argument("--sector-angle-deg", type=float, help="Sector angle in degrees.")
@@ -61,6 +64,10 @@ def main() -> int:
     parser.add_argument("--cutaway-depth-mm", type=float, help="Additional cutaway depth in millimeters along the selected cutaway normal.")
     parser.add_argument("--cutaway-origin", choices=["contact", "probe_origin", "custom"], default=None, help="Reference origin used to derive the cutaway plane.")
     parser.add_argument("--show-full-airway", type=_parse_bool, default=None, help="Show the full smoothed airway mesh instead of clipping it for the 3D context panel.")
+    parser.add_argument("--debug-map-dir", help="Optional directory for engine-specific debug map exports.")
+    parser.add_argument("--speckle-strength", type=float, help="Optional physics speckle strength override.")
+    parser.add_argument("--reverberation-strength", type=float, help="Optional physics reverberation strength override.")
+    parser.add_argument("--shadow-strength", type=float, help="Optional physics distal shadow strength override.")
     args = parser.parse_args()
 
     rendered = render_preset(
@@ -69,6 +76,8 @@ def main() -> int:
         approach=args.approach,
         output_path=args.output,
         metadata_path=args.metadata_json,
+        engine=args.engine,
+        seed=args.seed,
         width=args.width,
         height=args.height,
         sector_angle_deg=args.sector_angle_deg,
@@ -102,10 +111,17 @@ def main() -> int:
         cutaway_depth_mm=args.cutaway_depth_mm,
         cutaway_origin=args.cutaway_origin,
         show_full_airway=args.show_full_airway,
+        debug_map_dir=args.debug_map_dir,
+        speckle_strength=args.speckle_strength,
+        reverberation_strength=args.reverberation_strength,
+        shadow_strength=args.shadow_strength,
     )
 
     print(f"preset_id: {rendered.metadata.preset_id}")
     print(f"approach: {rendered.metadata.approach}")
+    print(f"engine: {rendered.metadata.engine}")
+    print(f"engine_version: {rendered.metadata.engine_version}")
+    print(f"view_kind: {rendered.metadata.view_kind}")
     print(f"mode: {rendered.metadata.mode}")
     print(f"diagnostic_panel: {rendered.metadata.diagnostic_panel_enabled}")
     print(f"device_model: {rendered.metadata.device_model}")
@@ -131,6 +147,8 @@ def main() -> int:
     print(f"cutaway_mesh_source: {rendered.metadata.cutaway_mesh_source}")
     print(f"show_full_airway: {rendered.metadata.show_full_airway}")
     print(f"overlays_enabled: {rendered.metadata.overlays_enabled}")
+    if rendered.metadata.engine_diagnostics:
+        print(f"engine_diagnostics: {sorted(rendered.metadata.engine_diagnostics.keys())}")
     print(f"warnings: {len(rendered.metadata.warnings)}")
     for warning in rendered.metadata.warnings:
         print(f"  - {warning}")

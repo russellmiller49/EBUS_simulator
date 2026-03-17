@@ -1,0 +1,58 @@
+{
+  "preset_id": "station_11rs_node_a",
+  "approach": "default",
+  "required_comparison_case": true,
+  "auto_flagged": false,
+  "flag_reasons": [],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/comparisons/station_11rs_node_a_voxel_panel.json",
+  "mesh_contact_world": [
+    -33.33319590764664,
+    -153.35837393125726,
+    1210.2811660304033
+  ],
+  "voxel_contact_world": [
+    -33.591412578488395,
+    -153.00720318329869,
+    1210.9144936402683
+  ],
+  "mesh_nUS_world": [
+    -0.33403216475134234,
+    -0.6554953538062601,
+    -0.6773096441436058
+  ],
+  "voxel_nUS_world": [
+    -0.3319952852789479,
+    -0.659761782635998,
+    -0.6741613462113651
+  ],
+  "contact_delta_mm": 0.7688306736465542,
+  "nUS_delta_deg": 0.3254438585445646,
+  "review_metrics": {
+    "contact_to_centerline_mm": 4.433002309237437,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 15.507584556903613,
+    "target_lateral_offset_mm": 4.238540602464664,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.15351257588898526,
+    "nUS_delta_deg_from_voxel_baseline": 0.3254438585445646,
+    "contact_delta_mm_from_voxel_baseline": 0.7688306736465542,
+    "contact_refinement_ambiguity": false,
+    "warnings": [
+      "Contact is 2.28 mm from the airway surface."
+    ],
+    "preset_id": "station_11rs_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.074114274526493
+  },
+  "mesh_warnings": [
+    "Contact is 2.28 mm from the airway surface."
+  ],
+  "voxel_warnings": [
+    "Contact is 2.28 mm from the airway surface.",
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

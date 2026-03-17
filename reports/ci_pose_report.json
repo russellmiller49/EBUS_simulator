@@ -1,0 +1,1786 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "dataset_root": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files",
+  "internal_world_frame": "LPS",
+  "roll_deg": 0.0,
+  "preset_count": 15,
+  "approach_count": 16,
+  "status": "warning",
+  "centerlines": {
+    "main_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/centerlines/airway_centerline.vtp",
+    "network_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/centerlines/airway_network.vtp",
+    "main_line_count": 20,
+    "main_point_count": 6179,
+    "main_segment_count": 5528,
+    "network_line_count": 39,
+    "network_point_count": 484,
+    "network_segment_count": 445
+  },
+  "poses": [
+    {
+      "preset_id": "station_2l_node_a",
+      "station": "2l",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2L__node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2L__node_a_target.mrk.json",
+      "contact_world": [
+        -4.448239819038278,
+        -170.1421271888561,
+        1247.34521484375
+      ],
+      "target_world": [
+        0.798289522383806,
+        -169.22106966432835,
+        1246.3818368829645
+      ],
+      "contact_to_target_distance_mm": 5.4131796745738265,
+      "nearest_centerline_point": [
+        -8.904301906025907,
+        -170.98274813112738,
+        1248.5184404275853
+      ],
+      "nearest_network_point": [
+        -8.875186434724995,
+        -171.13687766217987,
+        1248.4441239619405
+      ],
+      "shaft_axis": [
+        -0.2748019860118619,
+        0.3468663174054622,
+        -0.8967539385659311
+      ],
+      "depth_axis": [
+        0.9571890742373647,
+        0.18691915428715494,
+        -0.22102105311755182
+      ],
+      "lateral_axis": [
+        0.09095572903645686,
+        -0.9191000966217706,
+        -0.38338240406322605
+      ],
+      "default_depth_axis": [
+        0.9571890742373645,
+        0.18691915428715491,
+        -0.2210210531175518
+      ],
+      "default_lateral_axis": [
+        0.09095572903645686,
+        -0.9191000966217706,
+        -0.38338240406322605
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": -2.7755575615628914e-17,
+        "shaft_lateral_dot": -5.551115123125783e-17,
+        "depth_lateral_dot": -2.7755575615628914e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9988603728876325,
+      "contact_to_airway_distance_mm": 1.799335950644362,
+      "centerline_projection_distance_mm": 4.683971729444935,
+      "network_projection_distance_mm": 4.668510050579317,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 4.683971729444935,
+        "closest_point_lps": [
+          -8.904301906025907,
+          -170.98274813112738,
+          1248.5184404275853
+        ],
+        "tangent_lps": [
+          -0.2748019860118619,
+          0.3468663174054622,
+          -0.8967539385659311
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 119,
+        "line_arclength_mm": 76.0580081824188
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 4.668510050579317,
+        "closest_point_lps": [
+          -8.875186434724995,
+          -171.13687766217987,
+          1248.4441239619405
+        ],
+        "tangent_lps": [
+          -0.28266020120806024,
+          0.32638473530901124,
+          -0.9019845981003698
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 56,
+        "line_arclength_mm": 80.04796951108197
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_2r_node_a",
+      "station": "2r",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "warning",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2r__node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_2r__node_a_target.mrk.json",
+      "contact_world": [
+        -8.438694891447685,
+        -175.06677891224422,
+        1281.0961872222829
+      ],
+      "target_world": [
+        -13.647973590408863,
+        -171.57171722444872,
+        1282.8934773581566
+      ],
+      "contact_to_target_distance_mm": 6.525510907006096,
+      "nearest_centerline_point": [
+        -5.291911779639822,
+        -180.2619022363761,
+        1279.250471385198
+      ],
+      "nearest_network_point": [
+        -5.235874579330092,
+        -180.30708577123787,
+        1279.4699547871257
+      ],
+      "shaft_axis": [
+        -0.05736132461855567,
+        0.273496916602246,
+        -0.9601609839225237
+      ],
+      "depth_axis": [
+        -0.8045328369960296,
+        0.5567919145718581,
+        0.20666319958455284
+      ],
+      "lateral_axis": [
+        0.5911316203969508,
+        0.7843355152461661,
+        0.18809892846692802
+      ],
+      "default_depth_axis": [
+        -0.8045328369960296,
+        0.5567919145718581,
+        0.20666319958455284
+      ],
+      "default_lateral_axis": [
+        0.5911316203969508,
+        0.7843355152461661,
+        0.18809892846692802
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": 2.7755575615628914e-17,
+        "max_abs_dot": 2.7755575615628914e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9973918796375348,
+      "contact_to_airway_distance_mm": 0.0,
+      "centerline_projection_distance_mm": 6.348087685040639,
+      "network_projection_distance_mm": 6.3532279875104445,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 6.348087685040639,
+        "closest_point_lps": [
+          -5.291911779639822,
+          -180.2619022363761,
+          1279.250471385198
+        ],
+        "tangent_lps": [
+          -0.05736132461855567,
+          0.273496916602246,
+          -0.9601609839225237
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 70,
+        "line_arclength_mm": 42.815006530487565
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 6.3532279875104445,
+        "closest_point_lps": [
+          -5.235874579330092,
+          -180.30708577123787,
+          1279.4699547871257
+        ],
+        "tangent_lps": [
+          -0.0537244755718734,
+          0.28289440267144395,
+          -0.9576452566904377
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 43,
+        "line_arclength_mm": 47.323484291973614
+      },
+      "roll_deg": 0.0,
+      "warnings": [
+        "Contact projects 6.35 mm away from the main centerline."
+      ],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4l_node_a",
+      "station": "4l",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_a_target.mrk.json",
+      "contact_world": [
+        -4.220783998391388,
+        -159.430371428266,
+        1210.5482851436466
+      ],
+      "target_world": [
+        -1.5909734767025014,
+        -173.6342078853047,
+        1211.6319215638061
+      ],
+      "contact_to_target_distance_mm": 14.485825532891925,
+      "nearest_centerline_point": [
+        -6.555278538201906,
+        -157.16387791890213,
+        1209.456414481193
+      ],
+      "nearest_network_point": [
+        -6.874563426468323,
+        -157.26515265276106,
+        1209.825741121965
+      ],
+      "shaft_axis": [
+        0.5288311526998513,
+        0.19830184716037066,
+        -0.8252357174449805
+      ],
+      "depth_axis": [
+        0.26972822952447223,
+        -0.9611808726942719,
+        -0.0581206689936712
+      ],
+      "lateral_axis": [
+        -0.8047262230918913,
+        -0.19185334862718256,
+        -0.5617899950059599
+      ],
+      "default_depth_axis": [
+        0.26972822952447223,
+        -0.9611808726942719,
+        -0.0581206689936712
+      ],
+      "default_lateral_axis": [
+        -0.8047262230918913,
+        -0.19185334862718256,
+        -0.5617899950059599
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": -5.551115123125783e-17,
+        "depth_lateral_dot": 0.0,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9870896450623605,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 3.4320604784765365,
+      "network_projection_distance_mm": 3.5003981861998694,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 3.4320604784765365,
+        "closest_point_lps": [
+          -6.555278538201906,
+          -157.16387791890213,
+          1209.456414481193
+        ],
+        "tangent_lps": [
+          0.5288311526998511,
+          0.19830184716037064,
+          -0.8252357174449804
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 188,
+        "line_arclength_mm": 121.86017082216237
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.5003981861998694,
+        "closest_point_lps": [
+          -6.874563426468323,
+          -157.26515265276106,
+          1209.825741121965
+        ],
+        "tangent_lps": [
+          0.5754986908281063,
+          0.2162820674233235,
+          -0.7886845530161147
+        ],
+        "tangent_defined": true,
+        "line_index": 2,
+        "segment_index": 1,
+        "line_arclength_mm": 9.886050293032884
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4l_node_b",
+      "station": "4l",
+      "node": "b",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_b_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_b_target.mrk.json",
+      "contact_world": [
+        -6.707188164472079,
+        -160.0879503179101,
+        1213.60249242078
+      ],
+      "target_world": [
+        13.68159584204524,
+        -173.55347636539645,
+        1214.2044049702147
+      ],
+      "contact_to_target_distance_mm": 24.441464843931033,
+      "nearest_centerline_point": [
+        -8.800363540649414,
+        -158.138916015625,
+        1213.015380859375
+      ],
+      "nearest_network_point": [
+        -8.353572003010626,
+        -157.94092366543265,
+        1212.2490250497451
+      ],
+      "shaft_axis": [
+        0.500911401445398,
+        0.2253342207920879,
+        -0.8356507983853244
+      ],
+      "depth_axis": [
+        0.7249380546867026,
+        -0.6366844273098613,
+        0.2628645219275005
+      ],
+      "lateral_axis": [
+        -0.47281347777857063,
+        -0.7374669002478258,
+        -0.4822758404376034
+      ],
+      "default_depth_axis": [
+        0.7249380546867027,
+        -0.6366844273098614,
+        0.26286452192750054
+      ],
+      "default_lateral_axis": [
+        -0.47281347777857063,
+        -0.7374669002478258,
+        -0.4822758404376034
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 8.326672684688674e-17,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": -2.7755575615628914e-17,
+        "max_abs_dot": 8.326672684688674e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.961976614730987,
+      "contact_to_airway_distance_mm": 1.799335950644362,
+      "centerline_projection_distance_mm": 2.9197290717555435,
+      "network_projection_distance_mm": 3.0252565370073135,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 2.9197290717555435,
+        "closest_point_lps": [
+          -8.800363540649414,
+          -158.138916015625,
+          1213.015380859375
+        ],
+        "tangent_lps": [
+          0.5009114014453979,
+          0.22533422079208784,
+          -0.8356507983853242
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 180,
+        "line_arclength_mm": 117.4908825475267
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.0252565370073135,
+        "closest_point_lps": [
+          -8.353572003010626,
+          -157.94092366543265,
+          1212.2490250497451
+        ],
+        "tangent_lps": [
+          0.6400888620092838,
+          0.2138455812429188,
+          -0.7379405911823379
+        ],
+        "tangent_defined": true,
+        "line_index": 2,
+        "segment_index": 0,
+        "line_arclength_mm": 6.925131666080297
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4l_node_c",
+      "station": "4l",
+      "node": "c",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_c_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4l_node_c_target.mrk.json",
+      "contact_world": [
+        -3.4643454135842067,
+        -158.1477615221757,
+        1209.5397003639039
+      ],
+      "target_world": [
+        13.418924520143378,
+        -156.12623131510122,
+        1214.6490083775839
+      ],
+      "contact_to_target_distance_mm": 17.754898377965414,
+      "nearest_centerline_point": [
+        -6.0650289702175835,
+        -156.93420301028627,
+        1208.5092415214165
+      ],
+      "nearest_network_point": [
+        -5.950273774421482,
+        -156.83350533677316,
+        1208.21831339746
+      ],
+      "shaft_axis": [
+        0.53938157711824,
+        0.2018661262218741,
+        -0.817506930459684
+      ],
+      "depth_axis": [
+        0.8270093498694338,
+        0.05574893550987495,
+        0.5594171890620204
+      ],
+      "lateral_axis": [
+        0.15850252204295256,
+        -0.9778252007765449,
+        -0.13687522504943375
+      ],
+      "default_depth_axis": [
+        0.8270093498694338,
+        0.05574893550987495,
+        0.5594171890620204
+      ],
+      "default_lateral_axis": [
+        0.15850252204295256,
+        -0.9778252007765449,
+        -0.13687522504943375
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": -1.3877787807814457e-17,
+        "depth_lateral_dot": -1.3877787807814457e-17,
+        "max_abs_dot": 1.3877787807814457e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9537398984377092,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 3.0492826450794954,
+      "network_projection_distance_mm": 3.106955527710659,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 3.0492826450794954,
+        "closest_point_lps": [
+          -6.0650289702175835,
+          -156.93420301028627,
+          1208.5092415214165
+        ],
+        "tangent_lps": [
+          0.5393815771182399,
+          0.20186612622187408,
+          -0.8175069304596839
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 190,
+        "line_arclength_mm": 122.9538657097064
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.106955527710659,
+        "closest_point_lps": [
+          -5.950273774421482,
+          -156.83350533677316,
+          1208.21831339746
+        ],
+        "tangent_lps": [
+          0.5378574872812011,
+          0.22144293220613384,
+          -0.8134324502695367
+        ],
+        "tangent_defined": true,
+        "line_index": 2,
+        "segment_index": 2,
+        "line_arclength_mm": 11.793875224232082
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4r_node_a",
+      "station": "4r",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_a_target.mrk.json",
+      "contact_world": [
+        -14.58272097460835,
+        -165.93892909391602,
+        1220.0412926391382
+      ],
+      "target_world": [
+        -17.060216670665696,
+        -177.95478321979417,
+        1220.0412926391382
+      ],
+      "contact_to_target_distance_mm": 12.268607716377831,
+      "nearest_centerline_point": [
+        -13.240164756774902,
+        -161.31845092773438,
+        1222.447265625
+      ],
+      "nearest_network_point": [
+        -13.33443197935939,
+        -161.01673778448924,
+        1221.6513367478583
+      ],
+      "shaft_axis": [
+        0.11819137851460841,
+        0.3747639364673288,
+        -0.9195557568567164
+      ],
+      "depth_axis": [
+        -0.1691989334384399,
+        -0.904903546674006,
+        -0.39053974463567664
+      ],
+      "lateral_axis": [
+        -0.9784694777907542,
+        0.20174628408056752,
+        -0.0435421392626958
+      ],
+      "default_depth_axis": [
+        -0.16919893343843986,
+        -0.9049035466740059,
+        -0.3905397446356766
+      ],
+      "default_lateral_axis": [
+        -0.9784694777907542,
+        0.20174628408056752,
+        -0.0435421392626958
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 5.551115123125783e-17,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": 4.5102810375396984e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9204286994294574,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 5.379589360806389,
+      "network_projection_distance_mm": 5.327141328543901,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 5.379589360806389,
+        "closest_point_lps": [
+          -13.240164756774902,
+          -161.31845092773438,
+          1222.447265625
+        ],
+        "tangent_lps": [
+          0.11819137851460841,
+          0.3747639364673288,
+          -0.9195557568567164
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 161,
+        "line_arclength_mm": 106.16603309428686
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 5.327141328543901,
+        "closest_point_lps": [
+          -13.33443197935939,
+          -161.01673778448924,
+          1221.6513367478583
+        ],
+        "tangent_lps": [
+          -0.05629323065150304,
+          0.33379777946744005,
+          -0.9409623343181294
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 68,
+        "line_arclength_mm": 109.21725675686478
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4r_node_b",
+      "station": "4r",
+      "node": "b",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_b_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_b_target.mrk.json",
+      "contact_world": [
+        -10.265640157961904,
+        -175.2366040932753,
+        1243.5311017646502
+      ],
+      "target_world": [
+        -10.990352215325188,
+        -186.9976425104035,
+        1244.0412926391382
+      ],
+      "contact_to_target_distance_mm": 11.794385399149196,
+      "nearest_centerline_point": [
+        -9.659440994262695,
+        -170.2908935546875,
+        1245.952392578125
+      ],
+      "nearest_network_point": [
+        -9.877068778639671,
+        -170.0413762454493,
+        1245.4855136334918
+      ],
+      "shaft_axis": [
+        -0.28269703935897195,
+        0.37522291026852317,
+        -0.882774122608548
+      ],
+      "depth_axis": [
+        -0.1884253039717394,
+        -0.9241063964911027,
+        -0.33245040650807867
+      ],
+      "lateral_axis": [
+        -0.940520222409295,
+        0.07235423673738064,
+        0.33194363326523013
+      ],
+      "default_depth_axis": [
+        -0.1884253039717394,
+        -0.9241063964911027,
+        -0.33245040650807867
+      ],
+      "default_lateral_axis": [
+        -0.940520222409295,
+        0.07235423673738064,
+        0.33194363326523013
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": 2.7755575615628914e-17,
+        "max_abs_dot": 2.7755575615628914e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9186906642467185,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 5.539871781998707,
+      "network_projection_distance_mm": 5.56427046976727,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 5.539871781998707,
+        "closest_point_lps": [
+          -9.659440994262695,
+          -170.2908935546875,
+          1245.952392578125
+        ],
+        "tangent_lps": [
+          -0.28269703935897195,
+          0.37522291026852317,
+          -0.882774122608548
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 123,
+        "line_arclength_mm": 78.82325665112995
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 5.56427046976727,
+        "closest_point_lps": [
+          -9.877068778639671,
+          -170.0413762454493,
+          1245.4855136334918
+        ],
+        "tangent_lps": [
+          -0.27922385356443946,
+          0.3774220060020311,
+          -0.8829420530170863
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 58,
+        "line_arclength_mm": 83.35868385958236
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_4r_node_c",
+      "station": "4r",
+      "node": "c",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_c_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_4r_node_c_target.mrk.json",
+      "contact_world": [
+        -10.139732344868465,
+        -176.9993134765835,
+        1259.5311017646502
+      ],
+      "target_world": [
+        -17.8034653794829,
+        -181.17552762466872,
+        1260.0412926391382
+      ],
+      "contact_to_target_distance_mm": 8.742646244983186,
+      "nearest_centerline_point": [
+        -6.248964095483489,
+        -174.88238362186107,
+        1259.6445184060253
+      ],
+      "nearest_network_point": [
+        -6.225913723686098,
+        -174.91204092368122,
+        1259.7390158010062
+      ],
+      "shaft_axis": [
+        -0.12523409864000787,
+        0.3038729084534902,
+        -0.9444456977750715
+      ],
+      "depth_axis": [
+        -0.8915822628114051,
+        -0.4520400771065405,
+        -0.02721832709054456
+      ],
+      "lateral_axis": [
+        -0.4351982182614259,
+        0.8386423696651213,
+        0.3275385269316429
+      ],
+      "default_depth_axis": [
+        -0.8915822628114051,
+        -0.4520400771065405,
+        -0.02721832709054456
+      ],
+      "default_lateral_axis": [
+        -0.4351982182614259,
+        0.8386423696651213,
+        0.3275385269316429
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": -3.469446951953614e-18,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": -1.0408340855860843e-17,
+        "max_abs_dot": 1.0408340855860843e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9958973313135862,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 4.430838850012283,
+      "network_projection_distance_mm": 4.440485464014816,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 4.430838850012283,
+        "closest_point_lps": [
+          -6.248964095483489,
+          -174.88238362186107,
+          1259.6445184060253
+        ],
+        "tangent_lps": [
+          -0.12523409864000784,
+          0.30387290845349013,
+          -0.9444456977750714
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 100,
+        "line_arclength_mm": 63.81004287965088
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 4.440485464014816,
+        "closest_point_lps": [
+          -6.225913723686098,
+          -174.91204092368122,
+          1259.7390158010062
+        ],
+        "tangent_lps": [
+          -0.11799792580327131,
+          0.3086461396494492,
+          -0.9438294602234126
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 51,
+        "line_arclength_mm": 67.82731952266187
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "station": "7",
+      "node": "a",
+      "contact_approach": "lms",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_contact_lms.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_target.mrk.json",
+      "contact_world": [
+        2.5769567775691584,
+        -152.82501336264266,
+        1193.5311017646502
+      ],
+      "target_world": [
+        -14.706595759411217,
+        -155.7811967400809,
+        1196.0412926391382
+      ],
+      "contact_to_target_distance_mm": 17.713307615630843,
+      "nearest_centerline_point": [
+        4.246675685824592,
+        -153.04078988596697,
+        1196.6546689076647
+      ],
+      "nearest_network_point": [
+        4.775361366446292,
+        -152.89819569086148,
+        1196.3856211814746
+      ],
+      "shaft_axis": [
+        0.8084871258781331,
+        0.2002629234297274,
+        -0.553392563004505
+      ],
+      "depth_axis": [
+        -0.5697889115718577,
+        0.031052711460359757,
+        -0.8212041922449723
+      ],
+      "lateral_axis": [
+        -0.14727241268843816,
+        0.9792499632935091,
+        0.13921331060853187
+      ],
+      "default_depth_axis": [
+        -0.5697889115718576,
+        0.031052711460359754,
+        -0.8212041922449722
+      ],
+      "default_lateral_axis": [
+        -0.14727241268843816,
+        0.9792499632935091,
+        0.13921331060853187
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": -5.551115123125783e-17,
+        "shaft_lateral_dot": 1.3877787807814457e-17,
+        "depth_lateral_dot": 1.3877787807814457e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.43440784613500383,
+      "contact_to_airway_distance_mm": 0.8046875,
+      "centerline_projection_distance_mm": 3.548407028163961,
+      "network_projection_distance_mm": 3.6036952549552312,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 3.548407028163961,
+        "closest_point_lps": [
+          4.246675685824592,
+          -153.04078988596697,
+          1196.6546689076647
+        ],
+        "tangent_lps": [
+          0.808487125878133,
+          0.20026292342972737,
+          -0.5533925630045049
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 222,
+        "line_arclength_mm": 139.68959615255903
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.6036952549552312,
+        "closest_point_lps": [
+          4.775361366446292,
+          -152.89819569086148,
+          1196.3856211814746
+        ],
+        "tangent_lps": [
+          0.7930968049779759,
+          0.21765077984965112,
+          -0.5688810033430236
+        ],
+        "tangent_defined": true,
+        "line_index": 2,
+        "segment_index": 9,
+        "line_arclength_mm": 28.386329161896537
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "station": "7",
+      "node": "a",
+      "contact_approach": "rms",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_contact_rms.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_7_node_a_target.mrk.json",
+      "contact_world": [
+        -28.27045743032407,
+        -154.335907119764,
+        1197.5311017646502
+      ],
+      "target_world": [
+        -14.706595759411217,
+        -155.7811967400809,
+        1196.0412926391382
+      ],
+      "contact_to_target_distance_mm": 13.721761430104863,
+      "nearest_centerline_point": [
+        -31.80726861598288,
+        -153.94593851695646,
+        1199.6390511514112
+      ],
+      "nearest_network_point": [
+        -33.09128460351249,
+        -153.14009305103335,
+        1198.2464628457667
+      ],
+      "shaft_axis": [
+        -0.468849561091067,
+        0.30995229072456415,
+        -0.8271092228595381
+      ],
+      "depth_axis": [
+        0.8733331474388368,
+        0.02255041445076658,
+        -0.4866011635751331
+      ],
+      "lateral_axis": [
+        -0.1321714895478168,
+        -0.9504846428442144,
+        -0.28126436153202455
+      ],
+      "default_depth_axis": [
+        0.8733331474388368,
+        0.02255041445076658,
+        -0.4866011635751331
+      ],
+      "default_lateral_axis": [
+        -0.1321714895478168,
+        -0.9504846428442144,
+        -0.28126436153202455
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": 0.0,
+        "max_abs_dot": 0.0,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9137399044859331,
+      "contact_to_airway_distance_mm": 1.609375,
+      "centerline_projection_distance_mm": 4.1357658893272715,
+      "network_projection_distance_mm": 5.018175704088307,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 4.1357658893272715,
+        "closest_point_lps": [
+          -31.80726861598288,
+          -153.94593851695646,
+          1199.6390511514112
+        ],
+        "tangent_lps": [
+          -0.468849561091067,
+          0.30995229072456415,
+          -0.8271092228595381
+        ],
+        "tangent_defined": true,
+        "line_index": 8,
+        "segment_index": 225,
+        "line_arclength_mm": 137.27431527458967
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 5.018175704088307,
+        "closest_point_lps": [
+          -33.09128460351249,
+          -153.14009305103335,
+          1198.2464628457667
+        ],
+        "tangent_lps": [
+          -0.17257102152127948,
+          0.3077829423876806,
+          -0.9356756397952678
+        ],
+        "tangent_defined": true,
+        "line_index": 3,
+        "segment_index": 0,
+        "line_arclength_mm": 5.668717843911405
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_10r_node_a",
+      "station": "10r",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_a_target.mrk.json",
+      "contact_world": [
+        -22.72197112659498,
+        -161.30334405275985,
+        1206.9392536471091
+      ],
+      "target_world": [
+        -22.437059121548383,
+        -177.81774049496937,
+        1204.8884496977441
+      ],
+      "contact_to_target_distance_mm": 16.643685335279955,
+      "nearest_centerline_point": [
+        -22.920314658967463,
+        -157.01338424744313,
+        1208.9442706576735
+      ],
+      "nearest_network_point": [
+        -23.12323576299779,
+        -157.03894229137376,
+        1208.8739101424587
+      ],
+      "shaft_axis": [
+        -0.7347568331105221,
+        0.16635154984763686,
+        -0.657616573742394
+      ],
+      "depth_axis": [
+        -0.05411733752218819,
+        -0.9807485913314934,
+        -0.1876259960154805
+      ],
+      "lateral_axis": [
+        -0.6761684035629778,
+        -0.10227102456013976,
+        0.7296142320147774
+      ],
+      "default_depth_axis": [
+        -0.05411733752218819,
+        -0.9807485913314934,
+        -0.1876259960154805
+      ],
+      "default_lateral_axis": [
+        -0.6761684035629778,
+        -0.10227102456013976,
+        0.7296142320147774
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 1.3877787807814457e-17,
+        "shaft_lateral_dot": 5.551115123125783e-17,
+        "depth_lateral_dot": -2.7755575615628914e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9953226204512969,
+      "contact_to_airway_distance_mm": 0.0,
+      "centerline_projection_distance_mm": 4.73953462912972,
+      "network_projection_distance_mm": 4.6998969612044394,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 4.73953462912972,
+        "closest_point_lps": [
+          -22.920314658967463,
+          -157.01338424744313,
+          1208.9442706576735
+        ],
+        "tangent_lps": [
+          -0.7347568331105221,
+          0.16635154984763686,
+          -0.657616573742394
+        ],
+        "tangent_defined": true,
+        "line_index": 8,
+        "segment_index": 199,
+        "line_arclength_mm": 123.58988713885759
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 4.6998969612044394,
+        "closest_point_lps": [
+          -23.12323576299779,
+          -157.03894229137376,
+          1208.8739101424587
+        ],
+        "tangent_lps": [
+          -0.7651194913647017,
+          0.1748022113680949,
+          -0.6197066651526706
+        ],
+        "tangent_defined": true,
+        "line_index": 1,
+        "segment_index": 3,
+        "line_arclength_mm": 12.508018394970208
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_10r_node_b",
+      "station": "10r",
+      "node": "b",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_b_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_10r_node_b_target.mrk.json",
+      "contact_world": [
+        -22.149400772710955,
+        -159.76729672120433,
+        1215.0067655836267
+      ],
+      "target_world": [
+        -29.671346554035843,
+        -168.09168225995703,
+        1215.6287981625358
+      ],
+      "contact_to_target_distance_mm": 11.236635949616348,
+      "nearest_centerline_point": [
+        -19.170770059094718,
+        -157.88882413615775,
+        1212.7291744290849
+      ],
+      "nearest_network_point": [
+        -19.513792037963867,
+        -157.7840118408203,
+        1212.58251953125
+      ],
+      "shaft_axis": [
+        -0.6227139673800045,
+        0.18691786197119417,
+        -0.7597953854202936
+      ],
+      "depth_axis": [
+        -0.5374773922133528,
+        -0.8078803193192808,
+        0.2417590588087873
+      ],
+      "lateral_axis": [
+        -0.5686346522059561,
+        0.5589195850323143,
+        0.6035424838219071
+      ],
+      "default_depth_axis": [
+        -0.5374773922133527,
+        -0.8078803193192807,
+        0.24175905880878729
+      ],
+      "default_lateral_axis": [
+        -0.5686346522059561,
+        0.5589195850323143,
+        0.6035424838219071
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 8.326672684688674e-17,
+        "shaft_lateral_dot": -5.551115123125783e-17,
+        "depth_lateral_dot": 1.3877787807814457e-16,
+        "max_abs_dot": 1.3877787807814457e-16,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9716756073510863,
+      "contact_to_airway_distance_mm": 0.8046875,
+      "centerline_projection_distance_mm": 4.193843302761408,
+      "network_projection_distance_mm": 4.093509648443377,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 4.193843302761408,
+        "closest_point_lps": [
+          -19.170770059094718,
+          -157.88882413615775,
+          1212.7291744290849
+        ],
+        "tangent_lps": [
+          -0.6227139673800045,
+          0.18691786197119417,
+          -0.7597953854202936
+        ],
+        "tangent_defined": true,
+        "line_index": 8,
+        "segment_index": 182,
+        "line_arclength_mm": 118.13509932623765
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 4.093509648443377,
+        "closest_point_lps": [
+          -19.513792037963867,
+          -157.7840118408203,
+          1212.58251953125
+        ],
+        "tangent_lps": [
+          -0.7534645174349502,
+          0.1749493467896283,
+          -0.6337854108642765
+        ],
+        "tangent_defined": true,
+        "line_index": 1,
+        "segment_index": 0,
+        "line_arclength_mm": 7.254580394919038
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_11l_node_a",
+      "station": "11l",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11l__node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11l__node_a_target.mrk.json",
+      "contact_world": [
+        28.850094766006293,
+        -144.1040912632297,
+        1182.1315844670362
+      ],
+      "target_world": [
+        34.898386391024445,
+        -148.92565036362996,
+        1181.6709307147491
+      ],
+      "contact_to_target_distance_mm": 7.748642824354047,
+      "nearest_centerline_point": [
+        26.90923500061035,
+        -143.4440460205078,
+        1179.7337646484375
+      ],
+      "nearest_network_point": [
+        26.50417427120204,
+        -143.89024853449354,
+        1179.7118487381945
+      ],
+      "shaft_axis": [
+        0.5207208290764209,
+        0.44465144551549196,
+        -0.7287900316050903
+      ],
+      "depth_axis": [
+        0.7010074884431248,
+        -0.7099308440118717,
+        0.06772516420987054
+      ],
+      "lateral_axis": [
+        -0.4872764300811473,
+        -0.5461531733145703,
+        -0.681379770734205
+      ],
+      "default_depth_axis": [
+        0.7010074884431248,
+        -0.7099308440118717,
+        0.06772516420987054
+      ],
+      "default_lateral_axis": [
+        -0.4872764300811473,
+        -0.5461531733145703,
+        -0.681379770734205
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 1.3877787807814457e-17,
+        "shaft_lateral_dot": 1.1102230246251565e-16,
+        "depth_lateral_dot": -3.469446951953614e-17,
+        "max_abs_dot": 1.1102230246251565e-16,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9849045265090678,
+      "contact_to_airway_distance_mm": 0.0,
+      "centerline_projection_distance_mm": 3.154700656771928,
+      "network_projection_distance_mm": 3.377009428178889,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 3.154700656771928,
+        "closest_point_lps": [
+          26.90923500061035,
+          -143.4440460205078,
+          1179.7337646484375
+        ],
+        "tangent_lps": [
+          0.5207208290764209,
+          0.44465144551549196,
+          -0.7287900316050903
+        ],
+        "tangent_defined": true,
+        "line_index": 0,
+        "segment_index": 277,
+        "line_arclength_mm": 171.97751828543676
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.377009428178889,
+        "closest_point_lps": [
+          26.50417427120204,
+          -143.89024853449354,
+          1179.7118487381945
+        ],
+        "tangent_lps": [
+          0.5244188021545593,
+          0.4687036016845513,
+          -0.7108458719826026
+        ],
+        "tangent_defined": true,
+        "line_index": 6,
+        "segment_index": 3,
+        "line_arclength_mm": 10.267488801100123
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_11ri_node_a",
+      "station": "11ri",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11ri__node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11ri__node_a_target.mrk.json",
+      "contact_world": [
+        -50.10602431292355,
+        -145.67261063242938,
+        1168.9616784009131
+      ],
+      "target_world": [
+        -58.571725422348635,
+        -156.1657563181315,
+        1166.3350107574483
+      ],
+      "contact_to_target_distance_mm": 13.73585034006687,
+      "nearest_centerline_point": [
+        -49.05962769090958,
+        -144.04727705100336,
+        1168.6965525738108
+      ],
+      "nearest_network_point": [
+        -48.7965664836218,
+        -143.77283206696677,
+        1169.5102655145138
+      ],
+      "shaft_axis": [
+        -0.3637687439391599,
+        0.3248598214099582,
+        -0.8730053822093058
+      ],
+      "depth_axis": [
+        -0.5701701694876503,
+        -0.8187817084181658,
+        -0.06710060943280735
+      ],
+      "lateral_axis": [
+        -0.7365991303004302,
+        0.4733525223269863,
+        0.4830725730646793
+      ],
+      "default_depth_axis": [
+        -0.5701701694876503,
+        -0.8187817084181658,
+        -0.06710060943280735
+      ],
+      "default_lateral_axis": [
+        -0.7365991303004302,
+        0.4733525223269863,
+        0.4830725730646793
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": 5.551115123125783e-17,
+        "depth_lateral_dot": -7.632783294297951e-17,
+        "max_abs_dot": 7.632783294297951e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9897266387368286,
+      "contact_to_airway_distance_mm": 0.8046875,
+      "centerline_projection_distance_mm": 1.951139883675715,
+      "network_projection_distance_mm": 2.371663177122656,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 1.951139883675715,
+        "closest_point_lps": [
+          -49.05962769090958,
+          -144.04727705100336,
+          1168.6965525738108
+        ],
+        "tangent_lps": [
+          -0.3637687439391599,
+          0.3248598214099582,
+          -0.8730053822093058
+        ],
+        "tangent_defined": true,
+        "line_index": 14,
+        "segment_index": 293,
+        "line_arclength_mm": 175.82014601505807
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 2.371663177122656,
+        "closest_point_lps": [
+          -48.7965664836218,
+          -143.77283206696677,
+          1169.5102655145138
+        ],
+        "tangent_lps": [
+          -0.43919908908398125,
+          0.5135468549964289,
+          -0.737138920333934
+        ],
+        "tangent_defined": true,
+        "line_index": 8,
+        "segment_index": 3,
+        "line_arclength_mm": 9.842885919638864
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "preset_id": "station_11rs_node_a",
+      "station": "11rs",
+      "node": "a",
+      "contact_approach": "default",
+      "status": "warning",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_a_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_a_target.mrk.json",
+      "contact_world": [
+        -36.495496950164465,
+        -155.9857841433858,
+        1201.4710221259602
+      ],
+      "target_world": [
+        -44.68960240920485,
+        -158.5468347864842,
+        1198.007359511826
+      ],
+      "contact_to_target_distance_mm": 9.257391823561354,
+      "nearest_centerline_point": [
+        -35.07637405395508,
+        -154.55279541015625,
+        1206.22509765625
+      ],
+      "nearest_network_point": [
+        -34.582893001309245,
+        -154.78062444211483,
+        1204.8125515763218
+      ],
+      "shaft_axis": [
+        -0.9894176968676036,
+        0.026481480182251747,
+        0.1426581660213112
+      ],
+      "depth_axis": [
+        -0.13582964501200936,
+        -0.5147657943196762,
+        -0.8465025011979259
+      ],
+      "lateral_axis": [
+        0.051018904938449086,
+        -0.8569217631766566,
+        0.5129153566945444
+      ],
+      "default_depth_axis": [
+        -0.13582964501200936,
+        -0.5147657943196762,
+        -0.8465025011979259
+      ],
+      "default_lateral_axis": [
+        0.051018904938449086,
+        -0.8569217631766566,
+        0.5129153566945444
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": 0.0,
+        "shaft_lateral_dot": 0.0,
+        "depth_lateral_dot": -5.551115123125783e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.5793578658731628,
+      "contact_to_airway_distance_mm": 2.2759999519442,
+      "centerline_projection_distance_mm": 5.164165048854358,
+      "network_projection_distance_mm": 4.034387541917348,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 5.164165048854358,
+        "closest_point_lps": [
+          -35.07637405395508,
+          -154.55279541015625,
+          1206.22509765625
+        ],
+        "tangent_lps": [
+          -0.9894176968676036,
+          0.026481480182251747,
+          0.1426581660213112
+        ],
+        "tangent_defined": true,
+        "line_index": 11,
+        "segment_index": 217,
+        "line_arclength_mm": 138.19632554161004
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 4.034387541917348,
+        "closest_point_lps": [
+          -34.582893001309245,
+          -154.78062444211483,
+          1204.8125515763218
+        ],
+        "tangent_lps": [
+          -0.8605839064827817,
+          -0.04166262331079525,
+          0.5076017786825592
+        ],
+        "tangent_defined": true,
+        "line_index": 4,
+        "segment_index": 0,
+        "line_arclength_mm": 2.224582368244421
+      },
+      "roll_deg": 0.0,
+      "warnings": [
+        "Contact is 2.28 mm from the airway surface."
+      ],
+      "errors": []
+    },
+    {
+      "preset_id": "station_11rs_node_b",
+      "station": "11rs",
+      "node": "b",
+      "contact_approach": "default",
+      "status": "passed",
+      "contact_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_b_contact.mrk.json",
+      "target_markup_path": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files/markups/station_11rs_node_b_target.mrk.json",
+      "contact_world": [
+        -35.76505905207159,
+        -155.7397975522529,
+        1197.269169925975
+      ],
+      "target_world": [
+        -47.8420757222722,
+        -169.23750298841807,
+        1193.2762707905492
+      ],
+      "contact_to_target_distance_mm": 18.546849522209136,
+      "nearest_centerline_point": [
+        -32.95451084175837,
+        -152.91653012915253,
+        1197.169509800714
+      ],
+      "nearest_network_point": [
+        -33.123127991896794,
+        -153.02352466741885,
+        1197.8370114612328
+      ],
+      "shaft_axis": [
+        -0.3974061900957063,
+        0.3405971169661614,
+        -0.8520926733565747
+      ],
+      "depth_axis": [
+        -0.5850839323100636,
+        -0.809389413915148,
+        -0.05065144415202935
+      ],
+      "lateral_axis": [
+        -0.7069265253378233,
+        0.47841653457675587,
+        0.5209342638158481
+      ],
+      "default_depth_axis": [
+        -0.5850839323100636,
+        -0.809389413915148,
+        -0.05065144415202935
+      ],
+      "default_lateral_axis": [
+        -0.7069265253378233,
+        0.47841653457675587,
+        0.5209342638158481
+      ],
+      "orthogonality": {
+        "shaft_axis_norm": 1.0,
+        "depth_axis_norm": 1.0,
+        "lateral_axis_norm": 1.0,
+        "shaft_depth_dot": -3.469446951953614e-17,
+        "shaft_lateral_dot": -5.551115123125783e-17,
+        "depth_lateral_dot": -1.0408340855860843e-17,
+        "max_abs_dot": 5.551115123125783e-17,
+        "max_norm_error": 0.0,
+        "within_tolerance": true
+      },
+      "target_in_default_forward_hemisphere": true,
+      "target_forward_dot": 0.9809328739055778,
+      "contact_to_airway_distance_mm": 1.1379999759721,
+      "centerline_projection_distance_mm": 3.984965787231006,
+      "network_projection_distance_mm": 3.8314986781630287,
+      "centerline_query": {
+        "graph_name": "main",
+        "distance_mm": 3.984965787231006,
+        "closest_point_lps": [
+          -32.95451084175837,
+          -152.91653012915253,
+          1197.169509800714
+        ],
+        "tangent_lps": [
+          -0.3974061900957063,
+          0.3405971169661614,
+          -0.8520926733565747
+        ],
+        "tangent_defined": true,
+        "line_index": 8,
+        "segment_index": 231,
+        "line_arclength_mm": 140.19548831756987
+      },
+      "network_query": {
+        "graph_name": "network",
+        "distance_mm": 3.8314986781630287,
+        "closest_point_lps": [
+          -33.123127991896794,
+          -153.02352466741885,
+          1197.8370114612328
+        ],
+        "tangent_lps": [
+          -0.18561485613379583,
+          0.3114450275463151,
+          -0.93195982745991
+        ],
+        "tangent_defined": true,
+        "line_index": 3,
+        "segment_index": 0,
+        "line_arclength_mm": 6.095628403325214
+      },
+      "roll_deg": 0.0,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

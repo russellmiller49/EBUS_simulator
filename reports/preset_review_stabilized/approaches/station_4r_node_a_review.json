@@ -1,0 +1,63 @@
+{
+  "preset_id": "station_4r_node_a",
+  "approach": "default",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_stabilized/approaches/station_4r_node_a_clean.json",
+  "flagged": false,
+  "flag_reasons": [],
+  "metrics": {
+    "contact_to_centerline_mm": 6.31999617896946,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 10.33685045124368,
+    "target_lateral_offset_mm": -4.797955361781156,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.1873373807458803,
+    "nUS_delta_deg_from_voxel_baseline": 3.6492845677704757,
+    "contact_delta_mm_from_voxel_baseline": 0.05488634557505507,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_4r_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.05488634557505507
+  },
+  "cutaway_side": "right",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "superior_vena_cava",
+    "azygous",
+    "pulmonary_artery"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "superior_vena_cava",
+      "azygous",
+      "pulmonary_artery"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "branch_shift_mm": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": null,
+    "raw_override_block": {
+      "vessel_overlays": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "branch_shift_mm": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": null
+    }
+  },
+  "warnings": []
+}

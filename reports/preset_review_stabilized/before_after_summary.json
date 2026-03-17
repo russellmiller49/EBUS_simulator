@@ -1,0 +1,200 @@
+{
+  "before_flagged_count": 8,
+  "after_flagged_count": 4,
+  "rows": [
+    {
+      "preset_id": "station_2r_node_a",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": false,
+      "before_reasons": [
+        "nUS delta 20.23 deg > 10.0 deg"
+      ],
+      "after_reasons": [],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.0694706289248464,
+      "after_station_overlap_fraction_in_fan": 0.06851691240242845,
+      "before_nUS_delta_deg_from_voxel_baseline": 20.228677561253093,
+      "after_nUS_delta_deg_from_voxel_baseline": 8.047749739414357,
+      "before_contact_delta_mm_from_voxel_baseline": 0.23357873650851538,
+      "after_contact_delta_mm_from_voxel_baseline": 0.5074881745169543,
+      "before_contact_refinement_ambiguity": false,
+      "after_contact_refinement_ambiguity": false,
+      "before_target_lateral_offset_mm": -0.45829297034695005,
+      "after_target_lateral_offset_mm": 1.64449403933254
+    },
+    {
+      "preset_id": "station_4l_node_a",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": false,
+      "before_reasons": [
+        "nUS delta 16.38 deg > 10.0 deg"
+      ],
+      "after_reasons": [],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.34164304412103785,
+      "after_station_overlap_fraction_in_fan": 0.4562012142237641,
+      "before_nUS_delta_deg_from_voxel_baseline": 16.37899416247417,
+      "after_nUS_delta_deg_from_voxel_baseline": 2.486351823137489,
+      "before_contact_delta_mm_from_voxel_baseline": 0.5538156905560541,
+      "after_contact_delta_mm_from_voxel_baseline": 1.1959186652390599,
+      "before_contact_refinement_ambiguity": false,
+      "after_contact_refinement_ambiguity": false,
+      "before_target_lateral_offset_mm": -2.3164095325255003,
+      "after_target_lateral_offset_mm": -4.343206007704424
+    },
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": true,
+      "before_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "after_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.19780547681373678,
+      "after_station_overlap_fraction_in_fan": 0.209887250650477,
+      "before_nUS_delta_deg_from_voxel_baseline": 6.7884652113566935,
+      "after_nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+      "before_contact_delta_mm_from_voxel_baseline": 0.23040319619918848,
+      "after_contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+      "before_contact_refinement_ambiguity": true,
+      "after_contact_refinement_ambiguity": true,
+      "before_target_lateral_offset_mm": -5.148093615090742,
+      "after_target_lateral_offset_mm": -0.28636387182133527
+    },
+    {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "before_flagged": true,
+      "after_flagged": false,
+      "before_reasons": [
+        "nUS delta 15.00 deg > 10.0 deg",
+        "target not in displayed fan sector"
+      ],
+      "after_reasons": [],
+      "before_target_in_sector": false,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.30353049681943334,
+      "after_station_overlap_fraction_in_fan": 0.7267996530789246,
+      "before_nUS_delta_deg_from_voxel_baseline": 15.00484803427674,
+      "after_nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+      "before_contact_delta_mm_from_voxel_baseline": 0.4076628088302039,
+      "after_contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+      "before_contact_refinement_ambiguity": false,
+      "after_contact_refinement_ambiguity": false,
+      "before_target_lateral_offset_mm": -15.94672303529539,
+      "after_target_lateral_offset_mm": -8.064392405751857
+    },
+    {
+      "preset_id": "station_11l_node_a",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": true,
+      "before_reasons": [
+        "nUS delta 44.72 deg > 10.0 deg",
+        "contact delta 2.38 mm > 1.5 mm",
+        "station overlap 0.0000 < 0.0030"
+      ],
+      "after_reasons": [
+        "nUS delta 19.67 deg > 10.0 deg",
+        "contact delta 3.39 mm > 1.5 mm"
+      ],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.0,
+      "after_station_overlap_fraction_in_fan": 0.031222896790980052,
+      "before_nUS_delta_deg_from_voxel_baseline": 44.71896254841585,
+      "after_nUS_delta_deg_from_voxel_baseline": 19.670885677307236,
+      "before_contact_delta_mm_from_voxel_baseline": 2.3816495079140934,
+      "after_contact_delta_mm_from_voxel_baseline": 3.394448808830015,
+      "before_contact_refinement_ambiguity": false,
+      "after_contact_refinement_ambiguity": false,
+      "before_target_lateral_offset_mm": -0.6443288946858082,
+      "after_target_lateral_offset_mm": -3.2590520301301136
+    },
+    {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": true,
+      "before_reasons": [
+        "nUS delta 13.10 deg > 10.0 deg",
+        "contact delta 2.11 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "after_reasons": [
+        "contact delta 2.56 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.049885391094413326,
+      "after_station_overlap_fraction_in_fan": 0.0372940156114484,
+      "before_nUS_delta_deg_from_voxel_baseline": 13.10019224074777,
+      "after_nUS_delta_deg_from_voxel_baseline": 8.25313379024058,
+      "before_contact_delta_mm_from_voxel_baseline": 2.108564655030162,
+      "after_contact_delta_mm_from_voxel_baseline": 2.5637049475918916,
+      "before_contact_refinement_ambiguity": true,
+      "after_contact_refinement_ambiguity": true,
+      "before_target_lateral_offset_mm": 3.9659718921449585,
+      "after_target_lateral_offset_mm": 0.7665116823492544
+    },
+    {
+      "preset_id": "station_11rs_node_a",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": false,
+      "before_reasons": [
+        "nUS delta 13.15 deg > 10.0 deg",
+        "target not in displayed fan sector"
+      ],
+      "after_reasons": [],
+      "before_target_in_sector": false,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.127168414056884,
+      "after_station_overlap_fraction_in_fan": 0.15351257588898526,
+      "before_nUS_delta_deg_from_voxel_baseline": 13.154575804045765,
+      "after_nUS_delta_deg_from_voxel_baseline": 0.3254438585445646,
+      "before_contact_delta_mm_from_voxel_baseline": 1.109802275186132,
+      "after_contact_delta_mm_from_voxel_baseline": 0.7688306736465542,
+      "before_contact_refinement_ambiguity": false,
+      "after_contact_refinement_ambiguity": false,
+      "before_target_lateral_offset_mm": 6.540566905620878,
+      "after_target_lateral_offset_mm": 4.238540602464664
+    },
+    {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "before_flagged": true,
+      "after_flagged": true,
+      "before_reasons": [
+        "contact delta 1.76 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "after_reasons": [
+        "contact delta 2.31 mm > 1.5 mm",
+        "contact refinement remained ambiguous"
+      ],
+      "before_target_in_sector": true,
+      "after_target_in_sector": true,
+      "before_station_overlap_fraction_in_fan": 0.172008300668665,
+      "after_station_overlap_fraction_in_fan": 0.1899392888117953,
+      "before_nUS_delta_deg_from_voxel_baseline": 5.213835267551767,
+      "after_nUS_delta_deg_from_voxel_baseline": 4.3958711097996055,
+      "before_contact_delta_mm_from_voxel_baseline": 1.7618912923257024,
+      "after_contact_delta_mm_from_voxel_baseline": 2.31043560324354,
+      "before_contact_refinement_ambiguity": true,
+      "after_contact_refinement_ambiguity": true,
+      "before_target_lateral_offset_mm": 3.0940773008334053,
+      "after_target_lateral_offset_mm": 0.9487230891474121
+    }
+  ]
+}
