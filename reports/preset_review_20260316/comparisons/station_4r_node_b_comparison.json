@@ -1,0 +1,60 @@
+{
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "required_comparison_case": true,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "contact refinement remained ambiguous"
+  ],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_4r_node_b_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_4r_node_b_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_4r_node_b_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_4r_node_b_voxel_panel.json",
+  "mesh_contact_world": [
+    -10.539466936772728,
+    -175.72781231363354,
+    1242.8554184308293
+  ],
+  "voxel_contact_world": [
+    -10.50120132962726,
+    -175.5110458363866,
+    1242.9234895000918
+  ],
+  "mesh_nUS_world": [
+    -0.1550425871532719,
+    -0.9260872814147593,
+    -0.3439827660953969
+  ],
+  "voxel_nUS_world": [
+    -0.04206412960952322,
+    -0.924278581990119,
+    -0.37939387432393784
+  ],
+  "contact_delta_mm": 0.23040319619918848,
+  "nUS_delta_deg": 6.7884652113566935,
+  "review_metrics": {
+    "preset_id": "station_4r_node_b",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.23040319619918848,
+    "contact_to_centerline_mm": 6.318684999261135,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 10.098832538613479,
+    "target_lateral_offset_mm": -5.148093615090742,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.19780547681373678,
+    "nUS_delta_deg_from_voxel_baseline": 6.7884652113566935,
+    "contact_delta_mm_from_voxel_baseline": 0.23040319619918848,
+    "contact_refinement_ambiguity": true,
+    "warnings": [
+      "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+    ]
+  },
+  "mesh_warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ],
+  "voxel_warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

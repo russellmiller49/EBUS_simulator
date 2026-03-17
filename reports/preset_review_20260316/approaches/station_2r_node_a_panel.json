@@ -1,0 +1,235 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_2r_node_a",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2r_node_a_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2r_node_a_panel.json",
+  "image_size": [
+    768,
+    768
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -8.704237119496913,
+    -174.97179153001105,
+    1281.1523296655648
+  ],
+  "original_contact_world": [
+    -8.438694891447685,
+    -175.06677891224422,
+    1281.0961872222829
+  ],
+  "voxel_refined_contact_world": [
+    -8.8409613099457,
+    -174.78838295495828,
+    1281.199518822075
+  ],
+  "refined_contact_world": [
+    -8.704237119496913,
+    -174.97179153001105,
+    1281.1523296655648
+  ],
+  "tip_start_world": [
+    -8.360069171785579,
+    -176.61277302962452,
+    1286.9132955691
+  ],
+  "target_world": [
+    -13.647973590408863,
+    -171.57171722444872,
+    1282.8934773581566
+  ],
+  "nearest_centerline_point": [
+    -5.291911779639822,
+    -180.2619022363761,
+    1279.250471385198
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.05736132461855567,
+      0.273496916602246,
+      -0.9601609839225237
+    ],
+    "depth_axis": [
+      -0.8045328369960296,
+      0.5567919145718581,
+      0.20666319958455284
+    ],
+    "lateral_axis": [
+      0.5911316203969508,
+      0.7843355152461661,
+      0.18809892846692802
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.05736132461855567,
+      0.273496916602246,
+      -0.9601609839225237
+    ],
+    "nC": [
+      -0.25283277456062214,
+      0.5212190196730817,
+      -0.815111232678712
+    ],
+    "nUS": [
+      -0.5816346346263007,
+      0.7725158605137121,
+      0.25479481364009043
+    ],
+    "wall_normal": [
+      -0.583536024862109,
+      0.7833609791527559,
+      0.21408242344705397
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.23357873650851538,
+  "original_contact_to_airway_distance_mm": 0.0,
+  "voxel_refined_contact_to_airway_distance_mm": 0.0,
+  "refined_contact_to_airway_distance_mm": 0.23357873650851538,
+  "centerline_projection_distance_mm": 6.348087685040639,
+  "contact_refinement_method": "raw_mesh_projection_search",
+  "pose_comparison": {
+    "markup_contact_world": [
+      -8.438694891447685,
+      -175.06677891224422,
+      1281.0961872222829
+    ],
+    "voxel_refined_contact_world": [
+      -8.8409613099457,
+      -174.78838295495828,
+      1281.199518822075
+    ],
+    "mesh_refined_contact_world": [
+      -8.704237119496913,
+      -174.97179153001105,
+      1281.1523296655648
+    ],
+    "voxel_to_mesh_contact_distance_mm": 0.23357873650851538,
+    "voxel_contact_to_airway_distance_mm": 0.0,
+    "mesh_contact_to_airway_distance_mm": 0.23357873650851538,
+    "voxel_refinement_method": "ct_threshold_wall_search",
+    "mesh_refinement_method": "raw_mesh_projection_search",
+    "voxel_wall_normal_world": [
+      -0.26129402718061184,
+      0.9050308554819005,
+      0.33562565751956
+    ],
+    "mesh_wall_normal_world": [
+      -0.583536024862109,
+      0.7833609791527559,
+      0.21408242344705397
+    ],
+    "voxel_nUS_world": [
+      -0.26519468275838004,
+      0.9230191986281996,
+      0.27876036160192935
+    ],
+    "mesh_nUS_world": [
+      -0.5816346346263007,
+      0.7725158605137121,
+      0.25479481364009043
+    ],
+    "nUS_angular_difference_deg": 20.228677561253093,
+    "final_nB_world": [
+      -0.05736132461855567,
+      0.273496916602246,
+      -0.9601609839225237
+    ],
+    "final_nUS_world": [
+      -0.5816346346263007,
+      0.7725158605137121,
+      0.25479481364009043
+    ],
+    "final_nC_world": [
+      -0.25283277456062214,
+      0.5212190196730817,
+      -0.815111232678712
+    ],
+    "warnings": []
+  },
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "auto",
+  "cutaway_side_source": "visibility_auto",
+  "cutaway_open_side": "right",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -8.704237119496913,
+    -174.97179153001105,
+    1281.1523296655648
+  ],
+  "cutaway_normal": [
+    -0.8114251846234096,
+    -0.5730782510825402,
+    -0.11476274611145729
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery",
+    "target",
+    "contact"
+  ],
+  "preset_override_applied": true,
+  "preset_override_vessel_overlays": [
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery"
+  ],
+  "preset_override_cutaway_side": null,
+  "preset_override_roll_offset_deg": 0.0,
+  "preset_override_branch_hint": null,
+  "preset_override_axis_sign_override": null,
+  "preset_override_reference_fov_mm": null,
+  "preset_override_notes": null,
+  "warnings": [
+    "Contact projects 6.35 mm away from the main centerline."
+  ]
+}

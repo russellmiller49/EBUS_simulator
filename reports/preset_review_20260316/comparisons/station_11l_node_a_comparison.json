@@ -1,0 +1,57 @@
+{
+  "preset_id": "station_11l_node_a",
+  "approach": "default",
+  "required_comparison_case": true,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "nUS delta 44.72 deg > 10.0 deg",
+    "contact delta 2.38 mm > 1.5 mm",
+    "station overlap 0.0000 < 0.0030"
+  ],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_11l_node_a_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_11l_node_a_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_11l_node_a_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_11l_node_a_voxel_panel.json",
+  "mesh_contact_world": [
+    27.350454136195278,
+    -140.64907911505878,
+    1180.4435469308712
+  ],
+  "voxel_contact_world": [
+    25.685491493500386,
+    -138.9552033081275,
+    1180.2676534185669
+  ],
+  "mesh_nUS_world": [
+    0.10897893723631238,
+    -0.8812935349694752,
+    -0.4598318132315881
+  ],
+  "voxel_nUS_world": [
+    0.6732303738291601,
+    -0.7388135167679187,
+    0.030256424026472318
+  ],
+  "contact_delta_mm": 2.3816495079140934,
+  "nUS_delta_deg": 44.71896254841585,
+  "review_metrics": {
+    "preset_id": "station_11l_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.18394568189597296,
+    "contact_to_centerline_mm": 2.723992464924974,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 7.552264257671337,
+    "target_lateral_offset_mm": -0.6443288946858082,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.0,
+    "nUS_delta_deg_from_voxel_baseline": 44.71896254841585,
+    "contact_delta_mm_from_voxel_baseline": 2.3816495079140934,
+    "contact_refinement_ambiguity": false,
+    "warnings": []
+  },
+  "mesh_warnings": [],
+  "voxel_warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

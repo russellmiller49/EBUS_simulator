@@ -8,6 +8,17 @@ import numpy as np
 
 
 @dataclass(slots=True)
+class ManifestPresetOverrides:
+    vessel_overlays: list[str] | None = None
+    cutaway_side: str | None = None
+    roll_offset_deg: float | None = None
+    branch_hint: str | None = None
+    axis_sign_override: str | None = None
+    reference_fov_mm: float | None = None
+    notes: str | None = None
+
+
+@dataclass(slots=True)
 class ManifestPreset:
     id: str
     station: str
@@ -15,6 +26,8 @@ class ManifestPreset:
     station_mask: Path
     target: Path
     contacts: dict[str, Path]
+    overrides: ManifestPresetOverrides | None = None
+    approach_overrides: dict[str, ManifestPresetOverrides] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

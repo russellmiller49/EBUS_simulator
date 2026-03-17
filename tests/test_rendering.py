@@ -75,6 +75,22 @@ def test_debug_mode_enables_expected_contour_overlays_and_thin_slab(tmp_path):
     ]
 
 
+def test_debug_mode_uses_manifest_vessel_defaults_when_cli_override_is_absent(tmp_path):
+    output_path = tmp_path / "station_4r_node_b_debug_defaults.png"
+    rendered = render_preset(
+        MANIFEST_PATH,
+        "station_4r_node_b",
+        output_path=output_path,
+        width=96,
+        height=96,
+        mode="debug",
+    )
+
+    assert rendered.metadata.vessel_overlay_names == ["superior_vena_cava", "azygous", "pulmonary_artery"]
+    assert rendered.metadata.preset_override_applied is True
+    assert rendered.metadata.preset_override_vessel_overlays == ["superior_vena_cava", "azygous", "pulmonary_artery"]
+
+
 def test_diagnostic_panel_writes_panel_image_and_metadata(tmp_path):
     output_path = tmp_path / "station_11rs_node_b_panel.png"
     rendered = render_preset(

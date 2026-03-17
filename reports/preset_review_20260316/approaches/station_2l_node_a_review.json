@@ -1,0 +1,61 @@
+{
+  "preset_id": "station_2l_node_a",
+  "approach": "default",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2l_node_a_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2l_node_a_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2l_node_a_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_2l_node_a_clean.json",
+  "flagged": false,
+  "flag_reasons": [],
+  "metrics": {
+    "preset_id": "station_2l_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.19617090505236165,
+    "contact_to_centerline_mm": 5.896050982456939,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 4.202841193642756,
+    "target_lateral_offset_mm": -0.748817590678073,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.03127670251868329,
+    "nUS_delta_deg_from_voxel_baseline": 7.008063063063497,
+    "contact_delta_mm_from_voxel_baseline": 0.30676205382940097,
+    "contact_refinement_ambiguity": false,
+    "warnings": []
+  },
+  "cutaway_side": "auto",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "aorta",
+    "left_common_carotid_artery",
+    "left_subclavian_artery"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "aorta",
+      "left_common_carotid_artery",
+      "left_subclavian_artery"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": null,
+    "raw_override_block": {
+      "vessel_overlays": [
+        "aorta",
+        "left_common_carotid_artery",
+        "left_subclavian_artery"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": null
+    }
+  },
+  "warnings": []
+}

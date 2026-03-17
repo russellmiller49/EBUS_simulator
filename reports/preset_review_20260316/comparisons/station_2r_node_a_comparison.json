@@ -1,0 +1,60 @@
+{
+  "preset_id": "station_2r_node_a",
+  "approach": "default",
+  "required_comparison_case": false,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "nUS delta 20.23 deg > 10.0 deg"
+  ],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_2r_node_a_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_2r_node_a_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_2r_node_a_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/comparisons/station_2r_node_a_voxel_panel.json",
+  "mesh_contact_world": [
+    -8.704237119496913,
+    -174.97179153001105,
+    1281.1523296655648
+  ],
+  "voxel_contact_world": [
+    -8.8409613099457,
+    -174.78838295495828,
+    1281.199518822075
+  ],
+  "mesh_nUS_world": [
+    -0.5816346346263007,
+    0.7725158605137121,
+    0.25479481364009043
+  ],
+  "voxel_nUS_world": [
+    -0.26519468275838004,
+    0.9230191986281996,
+    0.27876036160192935
+  ],
+  "contact_delta_mm": 0.23357873650851538,
+  "nUS_delta_deg": 20.228677561253093,
+  "review_metrics": {
+    "preset_id": "station_2r_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.23357873650851538,
+    "contact_to_centerline_mm": 6.576146791751888,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 5.945695085773425,
+    "target_lateral_offset_mm": -0.45829297034695005,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.0694706289248464,
+    "nUS_delta_deg_from_voxel_baseline": 20.228677561253093,
+    "contact_delta_mm_from_voxel_baseline": 0.23357873650851538,
+    "contact_refinement_ambiguity": false,
+    "warnings": [
+      "Contact projects 6.35 mm away from the main centerline."
+    ]
+  },
+  "mesh_warnings": [
+    "Contact projects 6.35 mm away from the main centerline."
+  ],
+  "voxel_warnings": [
+    "Contact projects 6.35 mm away from the main centerline.",
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

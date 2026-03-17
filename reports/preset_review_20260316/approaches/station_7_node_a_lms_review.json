@@ -1,0 +1,64 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_7_node_a_lms_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_7_node_a_lms_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_7_node_a_lms_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_7_node_a_lms_clean.json",
+  "flagged": true,
+  "flag_reasons": [
+    "nUS delta 15.00 deg > 10.0 deg",
+    "target not in displayed fan sector"
+  ],
+  "metrics": {
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "contact_to_mesh_mm": 0.09703513957860861,
+    "contact_to_centerline_mm": 4.157763768659648,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 7.079993186837319,
+    "target_lateral_offset_mm": -15.94672303529539,
+    "target_in_sector": false,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.30353049681943334,
+    "nUS_delta_deg_from_voxel_baseline": 15.00484803427674,
+    "contact_delta_mm_from_voxel_baseline": 0.4076628088302039,
+    "contact_refinement_ambiguity": false,
+    "warnings": []
+  },
+  "cutaway_side": "left",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "left_atrium",
+    "pulmonary_artery",
+    "aorta"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "left_atrium",
+      "pulmonary_artery",
+      "aorta"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": "Review LMS and RMS approaches separately because the same target is sampled from both mainstem contacts.",
+    "raw_override_block": {
+      "vessel_overlays": [
+        "left_atrium",
+        "pulmonary_artery",
+        "aorta"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": "Review LMS and RMS approaches separately because the same target is sampled from both mainstem contacts."
+    }
+  },
+  "warnings": []
+}

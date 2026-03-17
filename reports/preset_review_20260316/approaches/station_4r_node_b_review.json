@@ -1,0 +1,67 @@
+{
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4r_node_b_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4r_node_b_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4r_node_b_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4r_node_b_clean.json",
+  "flagged": true,
+  "flag_reasons": [
+    "contact refinement remained ambiguous"
+  ],
+  "metrics": {
+    "preset_id": "station_4r_node_b",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.23040319619918848,
+    "contact_to_centerline_mm": 6.318684999261135,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 10.098832538613479,
+    "target_lateral_offset_mm": -5.148093615090742,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.19780547681373678,
+    "nUS_delta_deg_from_voxel_baseline": 6.7884652113566935,
+    "contact_delta_mm_from_voxel_baseline": 0.23040319619918848,
+    "contact_refinement_ambiguity": true,
+    "warnings": [
+      "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+    ]
+  },
+  "cutaway_side": "right",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "superior_vena_cava",
+    "azygous",
+    "pulmonary_artery"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "superior_vena_cava",
+      "azygous",
+      "pulmonary_artery"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": "Review SVC/azygous relationship if mesh contact remains ambiguous.",
+    "raw_override_block": {
+      "vessel_overlays": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": "Review SVC/azygous relationship if mesh contact remains ambiguous."
+    }
+  },
+  "warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ]
+}

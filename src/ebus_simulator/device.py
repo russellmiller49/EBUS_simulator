@@ -118,6 +118,20 @@ def _rotation_toward(base_axis: np.ndarray, toward_axis: np.ndarray, offset_deg:
     return normalized
 
 
+def _rotate_around_axis(vector: np.ndarray, axis: np.ndarray, angle_deg: float) -> np.ndarray:
+    if abs(angle_deg) <= EPSILON:
+        return np.asarray(vector, dtype=np.float64)
+    axis_unit = _normalize(axis)
+    if axis_unit is None:
+        return np.asarray(vector, dtype=np.float64)
+    angle = math.radians(angle_deg)
+    return (
+        vector * math.cos(angle)
+        + np.cross(axis_unit, vector) * math.sin(angle)
+        + axis_unit * np.dot(axis_unit, vector) * (1.0 - math.cos(angle))
+    )
+
+
 def _fallback_wall_normal(
     contact_world: np.ndarray,
     shaft_axis: np.ndarray,
@@ -203,6 +217,37 @@ def _estimate_voxel_wall_normal(point_lps: np.ndarray, airway_solid: VolumeData)
         backward = sample_signed_distance_mm(point_lps - (axis * NORMAL_ORIENTATION_DELTA_MM), airway_solid)
         gradient[axis_index] = (forward - backward) / (2.0 * NORMAL_ORIENTATION_DELTA_MM)
     return _normalize(gradient)
+
+
+def _apply_axis_sign_override(
+    probe_axis: np.ndarray,
+    lateral_axis: np.ndarray,
+    *,
+    shaft_axis: np.ndarray,
+    axis_sign_override: str | None,
+) -> tuple[np.ndarray, np.ndarray, str | None]:
+    if axis_sign_override is None:
+        return probe_axis, lateral_axis, None
+
+    normalized_override = axis_sign_override.strip().lower()
+    if normalized_override in {"flip_probe_axis", "flip_nus", "probe_axis", "nus"}:
+        adjusted_probe = -probe_axis
+        adjusted_lateral = _normalize(np.cross(shaft_axis, adjusted_probe))
+        if adjusted_lateral is None:
+            return probe_axis, lateral_axis, f"Axis-sign override {axis_sign_override!r} produced an invalid lateral axis and was ignored."
+        return adjusted_probe, adjusted_lateral, None
+
+    if normalized_override in {"flip_lateral_axis", "flip_lateral", "lateral_axis", "lateral"}:
+        return probe_axis, -lateral_axis, None
+
+    if normalized_override in {"flip_both", "both"}:
+        adjusted_probe = -probe_axis
+        adjusted_lateral = _normalize(np.cross(shaft_axis, adjusted_probe))
+        if adjusted_lateral is None:
+            return probe_axis, lateral_axis, f"Axis-sign override {axis_sign_override!r} produced an invalid orthonormal frame and was ignored."
+        return adjusted_probe, adjusted_lateral, None
+
+    return probe_axis, lateral_axis, f"Axis-sign override {axis_sign_override!r} is unsupported and was ignored."
 
 
 def _refine_airway_contact_voxel(
@@ -425,6 +470,8 @@ def build_device_pose(
     main_graph: CenterlineGraph,
     network_graph: CenterlineGraph | None = None,
     refine_contact: bool = True,
+    roll_offset_deg: float = 0.0,
+    axis_sign_override: str | None = None,
 ) -> DevicePose:
     model = get_cp_ebus_device_model(device_name)
 
@@ -505,9 +552,25 @@ def build_device_pose(
     if _normalize(mesh_projected_wall_normal) is None:
         refinement_warnings.append("Mesh wall-normal projection was degenerate; the voxel probe axis was used.")
 
+    if abs(float(roll_offset_deg)) > EPSILON:
+        rotated_probe_axis = _normalize(_rotate_around_axis(probe_axis, shaft_axis, float(roll_offset_deg)))
+        if rotated_probe_axis is None:
+            refinement_warnings.append("Final probe-axis roll override was invalid and was ignored.")
+        else:
+            probe_axis = rotated_probe_axis
+
     lateral_axis = _normalize(np.cross(shaft_axis, probe_axis))
     if lateral_axis is None:
         raise ValueError("Failed to construct the lateral axis for the CP-EBUS device pose.")
+
+    probe_axis, lateral_axis, axis_override_warning = _apply_axis_sign_override(
+        probe_axis,
+        lateral_axis,
+        shaft_axis=shaft_axis,
+        axis_sign_override=axis_sign_override,
+    )
+    if axis_override_warning is not None:
+        refinement_warnings.append(axis_override_warning)
 
     video_axis = _rotation_toward(shaft_axis, probe_axis, model.video_axis_offset_deg)
     tip_start_world = mesh_contact - (shaft_axis * model.probe_origin_offset_mm)

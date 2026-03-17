@@ -1,0 +1,63 @@
+{
+  "preset_id": "station_4l_node_a",
+  "approach": "default",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4l_node_a_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4l_node_a_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4l_node_a_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_4l_node_a_clean.json",
+  "flagged": true,
+  "flag_reasons": [
+    "nUS delta 16.38 deg > 10.0 deg"
+  ],
+  "metrics": {
+    "preset_id": "station_4l_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.0558241666091229,
+    "contact_to_centerline_mm": 4.636310269657739,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 11.702691266469403,
+    "target_lateral_offset_mm": -2.3164095325255003,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.34164304412103785,
+    "nUS_delta_deg_from_voxel_baseline": 16.37899416247417,
+    "contact_delta_mm_from_voxel_baseline": 0.5538156905560541,
+    "contact_refinement_ambiguity": false,
+    "warnings": []
+  },
+  "cutaway_side": "left",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "aorta",
+    "pulmonary_artery",
+    "left_atrium"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "aorta",
+      "pulmonary_artery",
+      "left_atrium"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": null,
+    "raw_override_block": {
+      "vessel_overlays": [
+        "aorta",
+        "pulmonary_artery",
+        "left_atrium"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": null
+    }
+  },
+  "warnings": []
+}

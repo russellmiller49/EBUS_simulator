@@ -26,6 +26,7 @@ validate-case = "ebus_simulator.cli:main"
 generate-poses = "ebus_simulator.pose_cli:main"
 render-preset = "ebus_simulator.render_cli:main"
 render-all-presets = "ebus_simulator.render_all_cli:main"
+review-presets = "ebus_simulator.review_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

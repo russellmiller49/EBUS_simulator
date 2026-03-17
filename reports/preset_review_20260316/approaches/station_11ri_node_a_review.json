@@ -1,0 +1,66 @@
+{
+  "preset_id": "station_11ri_node_a",
+  "approach": "default",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_11ri_node_a_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_11ri_node_a_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_11ri_node_a_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_20260316/approaches/station_11ri_node_a_clean.json",
+  "flagged": true,
+  "flag_reasons": [
+    "nUS delta 13.10 deg > 10.0 deg",
+    "contact delta 2.11 mm > 1.5 mm",
+    "contact refinement remained ambiguous"
+  ],
+  "metrics": {
+    "preset_id": "station_11ri_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.020584245976568157,
+    "contact_to_centerline_mm": 2.4251532629560484,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 18.039485087091535,
+    "target_lateral_offset_mm": 3.9659718921449585,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.049885391094413326,
+    "nUS_delta_deg_from_voxel_baseline": 13.10019224074777,
+    "contact_delta_mm_from_voxel_baseline": 2.108564655030162,
+    "contact_refinement_ambiguity": true,
+    "warnings": [
+      "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+    ]
+  },
+  "cutaway_side": "right",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "pulmonary_artery",
+    "right_atrium"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "pulmonary_artery",
+      "right_atrium"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": null,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": null,
+    "raw_override_block": {
+      "vessel_overlays": [
+        "pulmonary_artery",
+        "right_atrium"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": null,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": null
+    }
+  },
+  "warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ]
+}

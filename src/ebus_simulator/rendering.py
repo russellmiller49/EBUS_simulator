@@ -14,7 +14,7 @@ from ebus_simulator.cutaway import CutawayDisplay, build_display_cutaway
 from ebus_simulator.device import DevicePose, build_device_pose
 from ebus_simulator.io.nifti import load_nifti
 from ebus_simulator.io.vtp import load_vtp_polydata
-from ebus_simulator.manifest import load_case_manifest
+from ebus_simulator.manifest import load_case_manifest, resolve_preset_overrides
 from ebus_simulator.models import CaseManifest, PolyData, VolumeData
 from ebus_simulator.poses import generate_pose_report
 
@@ -167,6 +167,14 @@ class RenderMetadata:
     cutaway_mesh_source: str
     show_full_airway: bool
     overlays_enabled: list[str]
+    preset_override_applied: bool
+    preset_override_vessel_overlays: list[str]
+    preset_override_cutaway_side: str | None
+    preset_override_roll_offset_deg: float
+    preset_override_branch_hint: str | None
+    preset_override_axis_sign_override: str | None
+    preset_override_reference_fov_mm: float | None
+    preset_override_notes: str | None
     warnings: list[str]
 
 
@@ -366,6 +374,7 @@ def _resolve_overlay_config(
     min_contour_area_px: float,
     min_contour_length_px: float,
     single_vessel_name: str | None,
+    preset_default_vessel_names: list[str] | None = None,
 ) -> OverlayConfig:
     resolved_mode = DEFAULT_RENDER_MODE if mode is None else mode
     if resolved_mode not in {"clean", "debug"}:
@@ -387,7 +396,7 @@ def _resolve_overlay_config(
         default_station = True
         default_target = True
         default_contact = True
-        default_vessels = []
+        default_vessels = list(preset_default_vessel_names or [])
         default_legend = True
         default_labels = True
         default_frustum = True
@@ -445,14 +454,23 @@ def _resolve_cutaway_config(
     cutaway_depth_mm: float | None,
     cutaway_origin: str | None,
     show_full_airway: bool | None,
+    default_side: str | None = None,
 ) -> CutawayConfig:
+    resolved_side = cutaway_side if cutaway_side is not None else default_side
     return CutawayConfig(
         mode=("lateral" if cutaway_mode is None else cutaway_mode),
-        side=("auto" if cutaway_side is None else cutaway_side),
+        side=("auto" if resolved_side is None else resolved_side),
         depth_mm=(0.0 if cutaway_depth_mm is None else float(cutaway_depth_mm)),
         origin_mode=("contact" if cutaway_origin is None else cutaway_origin),
         show_full_airway=(False if show_full_airway is None else bool(show_full_airway)),
     )
+
+
+def _resolve_preset_manifest(manifest: CaseManifest, preset_id: str):
+    for preset in manifest.presets:
+        if preset.id == preset_id:
+            return preset
+    raise ValueError(f"Preset {preset_id!r} is not defined in the manifest.")
 
 
 def build_render_context(manifest_path: str | Path, *, roll_deg: float | None = None) -> RenderContext:
@@ -1504,6 +1522,10 @@ def render_preset(
     render_context = build_render_context(manifest_path, roll_deg=roll_deg) if context is None else context
     manifest = render_context.manifest
     defaults = manifest.render_defaults
+    pose = _resolve_pose(render_context.pose_report, preset_id=preset_id, approach=approach)
+    preset_manifest = _resolve_preset_manifest(manifest, pose.preset_id)
+    preset_overrides = resolve_preset_overrides(preset_manifest, approach=pose.contact_approach)
+
     overlay_config = _resolve_overlay_config(
         manifest,
         mode=mode,
@@ -1523,6 +1545,7 @@ def render_preset(
         min_contour_area_px=min_contour_area_px,
         min_contour_length_px=min_contour_length_px,
         single_vessel_name=single_vessel,
+        preset_default_vessel_names=(None if preset_overrides is None else preset_overrides.vessel_overlays),
     )
     cutaway_config = _resolve_cutaway_config(
         cutaway_mode=cutaway_mode,
@@ -1530,19 +1553,18 @@ def render_preset(
         cutaway_depth_mm=cutaway_depth_mm,
         cutaway_origin=cutaway_origin,
         show_full_airway=show_full_airway,
+        default_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
     )
     if not overlay_config.virtual_ebus_enabled and not overlay_config.simulated_ebus_enabled:
         raise ValueError("At least one of virtual_ebus or simulated_ebus must be enabled.")
 
     resolved_width = int(defaults.get("image_size", [512, 512])[0] if width is None else width)
     resolved_height = int(defaults.get("image_size", [512, 512])[1] if height is None else height)
-    resolved_roll_deg = float(defaults.get("roll_deg", 0.0) if roll_deg is None else roll_deg)
+    preset_roll_offset_deg = 0.0 if preset_overrides is None or preset_overrides.roll_offset_deg is None else float(preset_overrides.roll_offset_deg)
+    resolved_roll_deg = float(pose.roll_deg + preset_roll_offset_deg)
     resolved_gain = float(defaults.get("gain", 1.0))
     resolved_attenuation = float(defaults.get("attenuation", 0.15))
     resolved_slice_thickness_mm = _resolve_slice_thickness_mm(overlay_config.mode, slice_thickness_mm)
-
-    pose = _resolve_pose(render_context.pose_report, preset_id=preset_id, approach=approach)
-    preset_manifest = next(preset for preset in manifest.presets if preset.id == pose.preset_id)
     device_pose = build_device_pose(
         pose,
         device_name=device,
@@ -1553,12 +1575,22 @@ def render_preset(
         main_graph=render_context.main_graph,
         network_graph=render_context.network_graph,
         refine_contact=refine_contact,
+        roll_offset_deg=preset_roll_offset_deg,
+        axis_sign_override=(None if preset_overrides is None else preset_overrides.axis_sign_override),
     )
 
     resolved_sector_angle_deg = float(device_pose.device_model.sector_angle_deg if sector_angle_deg is None else sector_angle_deg)
     resolved_max_depth_mm = float(device_pose.device_model.displayed_range_mm if max_depth_mm is None else max_depth_mm)
     resolved_source_oblique_size_mm = float(device_pose.device_model.source_oblique_size_mm if source_oblique_size_mm is None else source_oblique_size_mm)
-    resolved_reference_fov_mm = float(device_pose.device_model.reference_fov_mm if reference_fov_mm is None else reference_fov_mm)
+    resolved_reference_fov_mm = float(
+        (
+            device_pose.device_model.reference_fov_mm
+            if preset_overrides is None or preset_overrides.reference_fov_mm is None
+            else preset_overrides.reference_fov_mm
+        )
+        if reference_fov_mm is None
+        else reference_fov_mm
+    )
 
     contact_world = np.asarray(device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
     original_contact_world = np.asarray(device_pose.contact_refinement.original_contact_world, dtype=np.float64)
@@ -1945,6 +1977,8 @@ def render_preset(
     Image.fromarray(output_image_uint8, mode="RGB").save(output_path)
 
     warnings = list(pose.warnings) + list(device_pose.contact_refinement.warnings) + list(cutaway_display.warnings)
+    if preset_overrides is not None and preset_overrides.branch_hint is not None:
+        warnings.append(f"Manifest branch_hint '{preset_overrides.branch_hint}' is recorded for review but is not yet consumed by mesh contact refinement.")
     if overlay_config.single_vessel_name is not None and not any(layer.label == overlay_config.single_vessel_name.replace("_", " ").title() for layer in visible_layers):
         warnings.append(f"Single-vessel mode requested '{overlay_config.single_vessel_name}' but no contour intersected the displayed fan.")
 
@@ -2052,6 +2086,14 @@ def render_preset(
         cutaway_mesh_source=cutaway_display.mesh_source,
         show_full_airway=cutaway_display.show_full_airway,
         overlays_enabled=_overlay_summary(overlay_config),
+        preset_override_applied=(preset_overrides is not None),
+        preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
+        preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
+        preset_override_roll_offset_deg=preset_roll_offset_deg,
+        preset_override_branch_hint=(None if preset_overrides is None else preset_overrides.branch_hint),
+        preset_override_axis_sign_override=(None if preset_overrides is None else preset_overrides.axis_sign_override),
+        preset_override_reference_fov_mm=(None if preset_overrides is None else preset_overrides.reference_fov_mm),
+        preset_override_notes=(None if preset_overrides is None else preset_overrides.notes),
         warnings=warnings,
     )
     metadata_path.write_text(json.dumps(asdict(metadata), indent=2))

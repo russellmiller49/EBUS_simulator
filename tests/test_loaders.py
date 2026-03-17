@@ -17,6 +17,12 @@ def test_manifest_loads_presets():
     assert manifest.root.name == "3D_slicer_files"
     assert manifest.airway_raw_mesh is not None
     assert manifest.airway_display_mesh is not None
+    station_4r_node_b = next(preset for preset in manifest.presets if preset.id == "station_4r_node_b")
+    assert station_4r_node_b.overrides is not None
+    assert station_4r_node_b.overrides.vessel_overlays == ["superior_vena_cava", "azygous", "pulmonary_artery"]
+    station_7_node_a = next(preset for preset in manifest.presets if preset.id == "station_7_node_a")
+    assert station_7_node_a.approach_overrides["lms"].vessel_overlays == ["left_atrium", "pulmonary_artery", "aorta"]
+    assert station_7_node_a.approach_overrides["rms"].vessel_overlays == ["left_atrium", "pulmonary_artery", "azygous"]
 
 
 def test_mrk_loader_normalizes_to_lps():
