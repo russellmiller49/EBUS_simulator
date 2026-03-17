@@ -34,11 +34,21 @@ In practical terms, the repo is already useful for:
 - generating reproducible preset poses
 - exporting localizer review renders
 - exporting early physics-style CP-EBUS renders for inspection
+- generating structured review bundles with localizer, physics, eval-summary, and rubric outputs
 
 It is not yet at the intended end state for:
 - desktop review workflow
-- polished review bundles for real-vs-synthetic comparison
+- calibration against real CP-EBUS reference material
 - a mature physics image model
+
+---
+
+## Current Focus
+
+The active development focus is:
+- using the existing physics-aware review bundles to tune image appearance and reviewer thresholds
+- refining the review/calibration loop before starting desktop UI work
+- keeping the renderer split intact rather than reopening scaffold or geometry phases
 
 ---
 
@@ -79,7 +89,9 @@ It is not yet at the intended end state for:
 - basic region-level evaluation summaries in metadata
 
 ### Review and automation
-- `review-presets` batch review exports
+- `review-presets` physics-aware batch review exports with deterministic preset/approach folders
+- JSON, CSV, and Markdown review indexes
+- per-entry review sheets and a shared rubric template
 - CI smoke workflow for validation, pose generation, and localizer rendering
 - repo-root smoke targets such as `make render-smoke`, `make physics-smoke`, and `make ci-smoke`
 
@@ -103,16 +115,18 @@ What is still missing:
 - more formal physics-oriented review metrics
 
 ### Review workflow
-The repo can already generate review renders, but the newer physics diagnostics are not fully integrated into the review layer yet.
+The repo can already generate structured physics-aware review bundles, but calibration use of those bundles is still early.
 
 Current state:
-- debug maps can be exported per physics render
-- evaluation summaries are written into physics metadata
+- localizer and physics renders are bundled per preset/approach
+- evaluation summaries are extracted into reviewer-facing JSON artifacts
+- physics debug maps can be bundled on request
+- deterministic JSON, CSV, and Markdown indexes are generated for batch review
 
 Still missing:
-- structured review folders that automatically bundle debug maps
-- direct review consumption of the new physics `eval_summary`
-- a lightweight written rubric for human comparison
+- direct incorporation of real CP-EBUS reference imagery into the review loop
+- more mature reviewer thresholds and scoring conventions
+- calibration iteration informed by expert feedback rather than synthetic-only inspection
 
 ### Renderer code structure
 The engine split is in place, but the shared rendering layer is still heavier than ideal.
@@ -130,9 +144,8 @@ Still missing:
 ## Remaining Work
 
 ### Near-term remaining work
-- integrate physics debug maps and evaluation summaries into `review-presets`
-- add a simple human review rubric document or report output
 - continue tuning the physics renderer for better vessel, airway-wall, and node appearance
+- use the bundled review outputs to refine thresholds and reviewer ergonomics
 - decide whether more render-state preparation should move out of `rendering.py`
 
 ### Major remaining milestone: desktop app
@@ -159,7 +172,7 @@ This is the largest remaining v1 deliverable.
 - There is no desktop UI yet.
 - The physics renderer is still an inspectable first-pass model, not a mature ultrasound simulation.
 - The physics path currently renders only the 2D sector view; it does not have a dedicated physics-specific 3D context panel.
-- `review-presets` remains more localizer-centric than physics-centric.
+- The review bundle is implemented, but its rubric and eval summaries are still lightweight rather than expert-calibrated.
 - Some dataset validations still emit warnings rather than a fully clean result, including raw airway mesh metadata issues and a small number of borderline presets.
 
 ---
@@ -176,6 +189,24 @@ These commands are part of the current usable surface area:
 - `render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --debug-map-dir reports/renders/station_4r_node_b_debug_maps --output reports/renders/station_4r_node_b_physics.png`
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug --mode debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
+
+Note:
+- `make test` re-enters `bootstrap.sh`; if the environment is already provisioned, `.venv/bin/python -m pytest -q` is the most direct rerun path.
+
+---
+
+## Latest Validation Snapshot
+
+Latest verified run snapshot from `2026-03-17`:
+- `.venv/bin/python -m pytest tests/test_review.py -q` -> `2 passed in 191.84s`
+- `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_smoke_next_steps --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --width 64 --height 64` -> succeeded with `review_count: 3` and `flagged_count: 1`
+- `.venv/bin/python -m pytest -q` -> `35 passed in 538.15s (0:08:58)`
+
+The review smoke bundle produced:
+- deterministic review indexes under `reports/_review_smoke_next_steps/`
+- per-entry localizer, physics, `eval_summary.json`, `review_sheet.md`, and `debug_maps/`
+- distinct station 7 `lms` and `rms` review folders
 
 ---
 
@@ -183,8 +214,8 @@ These commands are part of the current usable surface area:
 
 If development continues along the current roadmap, the next sensible order is:
 
-1. extend `review-presets` so it can collect physics debug maps and evaluation summaries
-2. add a simple review rubric / comparison output for human inspection
+1. use the current review bundles to tune physics appearance and reviewer thresholds
+2. tighten the rubric and summary surfaces if real reviewer feedback shows gaps
 3. start the PySide6 desktop preset browser
 
 That keeps the work aligned with the current plan without jumping into unrelated scope such as scoring, free navigation, or radial EBUS support.

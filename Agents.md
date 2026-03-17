@@ -31,10 +31,10 @@ What is already implemented and should be preserved unless there is a hard block
 - airway-wall contact refinement against voxel data and airway meshes
 - direct probe-centered CT/localizer rendering
 - clean/debug render modes, overlay controls, metadata sidecars, and diagnostic panels
-- batch rendering, cutaway/context views, and preset review workflows
+- batch rendering, cutaway/context views, and physics-aware preset review workflows with eval summaries and rubric sheets
 
 What is **not** implemented yet:
-- physics-aware review / calibration bundling
+- polished calibration/tuning workflow on top of the existing review bundle
 - PySide6 desktop UI
 - a polished review-first desktop workflow
 
@@ -213,20 +213,17 @@ The current renderer should become the explicit **localizer** engine.
 Any future ultrasound-like renderer should be a separate **physics** engine.
 
 The next active milestone is:
-- physics-aware review bundle generation
-- reviewer-facing calibration support
-- doc synchronization around the current repo state
+- review / calibration refinement and parameter tuning
+- reviewer-facing bundle iteration rather than first-pass bundling
+- desktop UI only after the review loop is stable
 
 ---
 
 ## Next-pass priorities
 Preferred order for remaining work:
-1. manifest portability and environment-variable support
-2. render-engine abstraction and localizer extraction
-3. CI smoke tests
-4. physics CP-EBUS renderer
-5. evaluation / calibration hooks and review-pack support
-6. PySide6 preset browser
+1. review / calibration tuning using the current physics-aware bundles
+2. small review/render coupling cleanup where it has clear value
+3. PySide6 preset browser
 
 Trainer/quiz layers are deferred until the above are stable.
 
@@ -271,12 +268,12 @@ The app should expose:
 
 ## Commands
 These commands should already work from repo root or remain working as the repo evolves:
-- `validate-case configs/3D_slicer_files.yaml`
-- `generate-poses configs/3D_slicer_files.yaml`
-- `render-preset configs/3D_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
-- `render-all-presets configs/3D_slicer_files.yaml --output-dir reports/renders/all_debug`
-- `review-presets configs/3D_slicer_files.yaml --output-dir reports/preset_review`
-- later: `launch-app configs/3D_slicer_files.yaml`
+- `validate-case configs/3d_slicer_files.yaml`
+- `generate-poses configs/3d_slicer_files.yaml`
+- `render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
+- `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
+- later: `launch-app configs/3d_slicer_files.yaml`
 - `pytest -q`
 
 ---
@@ -302,4 +299,5 @@ The project is successful when:
 - the localizer renderer stays reliable for geometry review
 - the near field remains anchored to the airway contact point
 - a physics renderer can produce believable CP-EBUS-like sector images
+- reviewer bundles expose localizer, physics, eval summaries, and review sheets in a deterministic layout
 - the desktop app can browse presets and export screenshots consistently

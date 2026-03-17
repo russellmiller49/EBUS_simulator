@@ -27,7 +27,7 @@ These earlier milestones are already in the repo and should not be reopened unle
 - overlay controls for airway, target, station, and vessels
 - cutaway/context rendering support
 - `render-all-presets` batch exports
-- `review-presets` review summaries and comparison bundles
+- `review-presets` physics-aware review bundles with localizer and physics outputs, eval summaries, debug maps, and rubric sheets
 
 Important interpretation:
 - the current renderer is useful and should be preserved
@@ -37,9 +37,8 @@ Important interpretation:
 
 ## Current gaps
 The main remaining gaps are:
-- `review-presets` is still more localizer-centric than physics-centric
-- physics debug maps and eval summaries are not yet bundled into review exports
-- the repo guidance is stale in places
+- the review workflow is now physics-aware, but calibration/tuning is still early and the reviewer loop is intentionally lightweight
+- the repo guidance still needs periodic synchronization as features land
 - rendering responsibilities are still somewhat concentrated in `rendering.py`
 - there is no desktop preset browser yet
 
@@ -55,7 +54,8 @@ Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a porta
 - calibration/review hooks
 - a local desktop UI for preset browsing and screenshot export
 
-The next active milestone is the **physics-aware review / calibration layer**.
+The next active milestone is the **review / calibration refinement layer**.
+The bundling layer now exists; the next pass is to tune and use it before moving into the desktop app.
 
 ---
 
@@ -82,7 +82,7 @@ Make the repo portable and explicit about the fact that the current renderer is 
 ### Files expected to change
 - `README.md`
 - `pyproject.toml`
-- `configs/3D_slicer_files.yaml`
+- `configs/3d_slicer_files.yaml`
 - `src/ebus_simulator/models.py`
 - `src/ebus_simulator/manifest.py`
 - `src/ebus_simulator/rendering.py`
@@ -157,7 +157,7 @@ Generate the first believable CP-EBUS-like B-mode images from the existing pose/
 
 ## Phase C — artifacts, debug maps, and evaluation hooks
 ### Status
-Partially complete.
+Complete as a first bounded slice; refinement remains.
 
 ### Goal
 Improve realism while keeping the renderer inspectable and tunable.
@@ -183,10 +183,9 @@ Improve realism while keeping the renderer inspectable and tunable.
 - the review workflow stays repeatable instead of ad hoc
 
 ### Remaining work in Phase C
-- integrate physics debug maps into `review-presets`
-- expose `eval_summary` in reviewer-friendly bundles
-- add a lightweight human review rubric / sheet
-- tighten docs so they match the current repo state
+- use the current bundle outputs to tune physics appearance and reviewer thresholds
+- iterate on reviewer-facing summaries and rubric ergonomics as real feedback arrives
+- keep docs and smoke examples synchronized with the review workflow
 
 ### Explicitly out of scope
 - changing geometry logic to chase cosmetics
@@ -280,17 +279,18 @@ Other station masks and anatomy masks without complete curated presets may be sh
 
 ## Command baseline
 Current commands expected to work from repo root:
-- `validate-case configs/3D_slicer_files.yaml`
-- `generate-poses configs/3D_slicer_files.yaml`
-- `render-preset configs/3D_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
-- `render-preset configs/3D_slicer_files.yaml station_7_node_a --approach lms --output reports/renders/station_7_node_a_lms.png`
-- `render-preset configs/3D_slicer_files.yaml station_7_node_a --approach rms --output reports/renders/station_7_node_a_rms.png`
-- `render-all-presets configs/3D_slicer_files.yaml --output-dir reports/renders/all_debug`
-- `review-presets configs/3D_slicer_files.yaml --output-dir reports/preset_review`
+- `validate-case configs/3d_slicer_files.yaml`
+- `generate-poses configs/3d_slicer_files.yaml`
+- `render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
+- `render-preset configs/3d_slicer_files.yaml station_7_node_a --approach lms --output reports/renders/station_7_node_a_lms.png`
+- `render-preset configs/3d_slicer_files.yaml station_7_node_a --approach rms --output reports/renders/station_7_node_a_rms.png`
+- `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `pytest -q`
 
 Future command to add:
-- `launch-app configs/3D_slicer_files.yaml`
+- `launch-app configs/3d_slicer_files.yaml`
 
 ---
 

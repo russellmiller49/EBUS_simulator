@@ -17,19 +17,19 @@ Current implemented capabilities:
 - `render-preset` CLI
 - clean/debug render modes, station/vessel overlays, metadata sidecars, and batch render indexes
 - `render-all-presets` CLI
-- `review-presets` CLI for batch review exports
+- `review-presets` CLI for deterministic physics-aware review bundles with JSON/CSV/Markdown indexes and review sheets
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
 - CI smoke workflow
 
 Not implemented yet:
 
-- review / calibration workflow still needs more tuning and iteration
+- review / calibration workflow still needs tuning against real CP-EBUS reference material
 - desktop UI
 
 Next active milestone:
 
-- review / calibration refinement
-- desktop preset browser after the review layer is in place
+- review / calibration refinement on top of the current bundle workflow
+- desktop preset browser after review tuning is stable
 
 ## Dataset
 
