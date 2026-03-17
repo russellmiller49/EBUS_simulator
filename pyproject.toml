@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ebus-simulator"
 version = "0.1.0"
-description = "Standalone linear EBUS simulator scaffold and case validator"
+description = "Standalone linear EBUS simulator with localizer, physics, and review workflows"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

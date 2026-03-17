@@ -1,0 +1,125 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "localizer_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_panel.png",
+  "localizer_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_panel.json",
+  "localizer_clean_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_clean.png",
+  "localizer_clean_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_clean.json",
+  "physics_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/physics.png",
+  "physics_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/physics.json",
+  "eval_summary_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/eval_summary.json",
+  "review_sheet_md": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/review_sheet.md",
+  "physics_debug_maps": {
+    "boundary_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_boundary_map.png",
+    "transmission_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_transmission_map.png",
+    "shadow_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_shadow_map.png",
+    "reverberation_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_reverberation_map.png",
+    "speckle_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_speckle_map.png",
+    "precompression_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_precompression_map.png",
+    "target_focus_map": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/debug_maps/physics_target_focus_map.png"
+  },
+  "physics_debug_map_count": 7,
+  "physics_artifact_settings": {
+    "speckle_strength": 0.22,
+    "reverberation_strength": 0.28,
+    "shadow_strength": 0.47
+  },
+  "physics_eval_summary": {
+    "sector": {
+      "pixel_count": 2049,
+      "mean": 0.012263915501534939,
+      "std": 0.042987655848264694,
+      "p05": 1.8804844614805916e-07,
+      "p50": 0.004900351632386446,
+      "p95": 0.05245845019817352
+    },
+    "target": {
+      "pixel_count": 80,
+      "mean": 0.007859669625759125,
+      "std": 0.001397437765263021,
+      "p05": 0.006327617913484573,
+      "p50": 0.0073685715906322,
+      "p95": 0.01054073590785265
+    },
+    "wall": {
+      "pixel_count": 0,
+      "mean": null,
+      "std": null,
+      "p05": null,
+      "p50": null,
+      "p95": null
+    },
+    "vessel": {
+      "pixel_count": 0,
+      "mean": null,
+      "std": null,
+      "p05": null,
+      "p50": null,
+      "p95": null
+    },
+    "target_contrast_vs_sector": -0.004404245875775814,
+    "wall_contrast_vs_sector": null,
+    "vessel_contrast_vs_sector": null
+  },
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/localizer_clean.json",
+  "flagged": false,
+  "flag_reasons": [],
+  "metrics": {
+    "contact_to_centerline_mm": 4.628096082081661,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 20.35744414729004,
+    "target_lateral_offset_mm": -8.064392405751857,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.7276720351390923,
+    "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+    "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "contact_to_mesh_mm": 0.010870763241346887
+  },
+  "cutaway_side": "left",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "left_atrium",
+    "pulmonary_artery",
+    "aorta"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "left_atrium",
+      "pulmonary_artery",
+      "aorta"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": "network:1",
+    "branch_shift_mm": 8.0,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization.",
+    "raw_override_block": {
+      "vessel_overlays": [
+        "left_atrium",
+        "pulmonary_artery",
+        "aorta"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": "network:1",
+      "branch_shift_mm": 8.0,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization."
+    }
+  },
+  "warnings": [],
+  "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/review_entry.json",
+  "review_entry_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_smoke_next_steps/presets/station_7_node_a/lms/review_entry.json"
+}

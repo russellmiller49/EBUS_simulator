@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from ebus_simulator.manifest import resolve_preset_overrides
+from ebus_simulator.review_rubric import render_review_rubric_template, render_review_sheet
 from ebus_simulator.rendering import (
     _default_output_stem,
     _angle_deg,
@@ -29,6 +30,26 @@ REQUIRED_COMPARISON_CASES = {
     ("station_7_node_a", "rms"),
     ("station_4r_node_b", "default"),
 }
+
+
+def _relative_to_output(path: str | Path, output_dir: Path) -> str:
+    return str(Path(path).resolve().relative_to(output_dir))
+
+
+def _iter_selected_presets(context, preset_ids: list[str] | None) -> list[tuple[str, str]]:
+    selected = None if preset_ids is None else set(preset_ids)
+    if selected is not None:
+        available = {preset.id for preset in context.manifest.presets}
+        unknown = sorted(selected - available)
+        if unknown:
+            raise ValueError(f"Unknown preset_id filter(s): {', '.join(unknown)}")
+    pairs: list[tuple[str, str]] = []
+    for preset in context.manifest.presets:
+        if selected is not None and preset.id not in selected:
+            continue
+        for approach in preset.contacts:
+            pairs.append((preset.id, approach))
+    return sorted(pairs, key=lambda value: (value[0], value[1]))
 
 
 def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict[str, object]:
@@ -108,12 +129,21 @@ def _render_review_entry(
     cutaway_origin: str | None,
     show_full_airway: bool | None,
     vessel_overlay_names: list[str] | None,
+    include_physics_debug_maps: bool,
+    physics_speckle_strength: float | None,
+    physics_reverberation_strength: float | None,
+    physics_shadow_strength: float | None,
 ) -> dict[str, object]:
-    stem = _default_output_stem(preset_id, approach)
-    review_dir = output_dir / "approaches"
-    diagnostic_path = review_dir / f"{stem}_panel.png"
-    clean_path = review_dir / f"{stem}_clean.png"
-    review_json_path = review_dir / f"{stem}_review.json"
+    entry_dir = output_dir / "presets" / preset_id / approach
+    entry_dir.mkdir(parents=True, exist_ok=True)
+
+    diagnostic_path = entry_dir / "localizer_panel.png"
+    clean_path = entry_dir / "localizer_clean.png"
+    physics_path = entry_dir / "physics.png"
+    eval_summary_path = entry_dir / "eval_summary.json"
+    review_json_path = entry_dir / "review_entry.json"
+    review_sheet_path = entry_dir / "review_sheet.md"
+    debug_map_dir = entry_dir / "debug_maps" if include_physics_debug_maps else None
 
     diagnostic = render_preset(
         context.manifest.manifest_path,
@@ -187,15 +217,82 @@ def _render_review_entry(
         show_full_airway=show_full_airway,
         context=context,
     )
+    physics = render_preset(
+        context.manifest.manifest_path,
+        preset_id,
+        approach=approach,
+        output_path=physics_path,
+        engine="physics",
+        width=width,
+        height=height,
+        sector_angle_deg=sector_angle_deg,
+        max_depth_mm=max_depth_mm,
+        roll_deg=roll_deg,
+        mode="clean",
+        diagnostic_panel=False,
+        device=device,
+        refine_contact=True,
+        virtual_ebus=False,
+        simulated_ebus=True,
+        reference_fov_mm=reference_fov_mm,
+        airway_overlay=None,
+        airway_lumen_overlay=None,
+        airway_wall_overlay=None,
+        target_overlay=None,
+        contact_overlay=False,
+        station_overlay=None,
+        vessel_overlay_names=vessel_overlay_names,
+        show_legend=False,
+        label_overlays=False,
+        show_contact=False,
+        show_frustum=False,
+        slice_thickness_mm=slice_thickness_mm,
+        cutaway_mode=cutaway_mode,
+        cutaway_side=cutaway_side,
+        cutaway_depth_mm=cutaway_depth_mm,
+        cutaway_origin=cutaway_origin,
+        show_full_airway=show_full_airway,
+        debug_map_dir=debug_map_dir,
+        speckle_strength=physics_speckle_strength,
+        reverberation_strength=physics_reverberation_strength,
+        shadow_strength=physics_shadow_strength,
+        context=context,
+    )
 
     preset_manifest = _resolve_preset_manifest(context.manifest, preset_id)
     metrics = _compute_review_metrics(context, preset_manifest=preset_manifest, clean_rendered=clean)
     flag_reasons = _flag_review_metrics(metrics)
     preset_overrides = resolve_preset_overrides(preset_manifest, approach=approach)
+    physics_diagnostics = dict(physics.metadata.engine_diagnostics)
+    physics_eval_summary = dict(physics_diagnostics.get("eval_summary", {}))
+    physics_artifact_settings = dict(physics_diagnostics.get("artifact_settings", {}))
+    physics_debug_maps = dict(physics_diagnostics.get("debug_map_paths", {}))
+
+    eval_summary_payload = {
+        "preset_id": preset_id,
+        "approach": approach,
+        "engine": physics.metadata.engine,
+        "engine_version": physics.metadata.engine_version,
+        "artifact_settings": physics_artifact_settings,
+        "eval_summary": physics_eval_summary,
+    }
+    eval_summary_path.write_text(json.dumps(eval_summary_payload, indent=2))
 
     entry = {
         "preset_id": preset_id,
         "approach": approach,
+        "localizer_panel_png": str(diagnostic_path),
+        "localizer_panel_json": diagnostic.metadata.metadata_path,
+        "localizer_clean_png": str(clean_path),
+        "localizer_clean_json": clean.metadata.metadata_path,
+        "physics_png": str(physics_path),
+        "physics_json": physics.metadata.metadata_path,
+        "eval_summary_json": str(eval_summary_path),
+        "review_sheet_md": str(review_sheet_path),
+        "physics_debug_maps": physics_debug_maps,
+        "physics_debug_map_count": len(physics_debug_maps),
+        "physics_artifact_settings": physics_artifact_settings,
+        "physics_eval_summary": physics_eval_summary,
         "diagnostic_panel_png": str(diagnostic_path),
         "diagnostic_panel_json": diagnostic.metadata.metadata_path,
         "clean_simulated_png": str(clean_path),
@@ -229,10 +326,24 @@ def _render_review_entry(
                 "notes": preset_overrides.notes,
             },
         },
-        "warnings": list(dict.fromkeys(clean.metadata.warnings + diagnostic.metadata.warnings)),
+        "warnings": list(dict.fromkeys(clean.metadata.warnings + diagnostic.metadata.warnings + physics.metadata.warnings)),
     }
-    review_json_path.write_text(json.dumps(entry, indent=2))
     entry["review_json"] = str(review_json_path)
+    entry["review_entry_json"] = str(review_json_path)
+    review_json_path.write_text(json.dumps(entry, indent=2))
+    review_sheet_path.write_text(
+        render_review_sheet(
+            preset_id=preset_id,
+            approach=approach,
+            localizer_panel_path=diagnostic_path,
+            localizer_clean_path=clean_path,
+            physics_path=physics_path,
+            eval_summary_path=eval_summary_path,
+            review_entry_path=review_json_path,
+            warnings=entry["warnings"],
+            flag_reasons=flag_reasons,
+        )
+    )
     return entry
 
 
@@ -255,11 +366,16 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "nUS_delta_deg_from_voxel_baseline",
                 "contact_delta_mm_from_voxel_baseline",
                 "contact_refinement_ambiguity",
+                "localizer_panel_png",
+                "localizer_clean_png",
+                "physics_png",
+                "physics_json",
+                "eval_summary_json",
+                "review_sheet_md",
+                "physics_debug_map_count",
                 "cutaway_side",
                 "cutaway_mode",
                 "vessel_overlay_names",
-                "diagnostic_panel_png",
-                "clean_simulated_png",
                 "review_json",
                 "warnings",
             ],
@@ -283,15 +399,56 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "nUS_delta_deg_from_voxel_baseline": metrics["nUS_delta_deg_from_voxel_baseline"],
                     "contact_delta_mm_from_voxel_baseline": metrics["contact_delta_mm_from_voxel_baseline"],
                     "contact_refinement_ambiguity": metrics["contact_refinement_ambiguity"],
+                    "localizer_panel_png": entry["localizer_panel_png"],
+                    "localizer_clean_png": entry["localizer_clean_png"],
+                    "physics_png": entry["physics_png"],
+                    "physics_json": entry["physics_json"],
+                    "eval_summary_json": entry["eval_summary_json"],
+                    "review_sheet_md": entry["review_sheet_md"],
+                    "physics_debug_map_count": entry["physics_debug_map_count"],
                     "cutaway_side": entry["cutaway_side"],
                     "cutaway_mode": entry["cutaway_mode"],
                     "vessel_overlay_names": ",".join(entry["vessel_overlay_names"]),
-                    "diagnostic_panel_png": entry["diagnostic_panel_png"],
-                    "clean_simulated_png": entry["clean_simulated_png"],
                     "review_json": entry["review_json"],
                     "warnings": " | ".join(entry["warnings"]),
                 }
             )
+
+
+def _write_summary_markdown(summary_path: Path, output_dir: Path, entries: list[dict[str, object]]) -> None:
+    lines = [
+        "# Review Index",
+        "",
+        "| Preset | Approach | Flagged | Localizer | Physics | Eval Summary | Review Sheet |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for entry in entries:
+        lines.append(
+            "| {preset} | {approach} | {flagged} | [panel]({localizer}) | [physics]({physics}) | [eval]({eval}) | [sheet]({sheet}) |".format(
+                preset=entry["preset_id"],
+                approach=entry["approach"],
+                flagged=("yes" if entry["flagged"] else "no"),
+                localizer=_relative_to_output(entry["localizer_panel_png"], output_dir),
+                physics=_relative_to_output(entry["physics_png"], output_dir),
+                eval=_relative_to_output(entry["eval_summary_json"], output_dir),
+                sheet=_relative_to_output(entry["review_sheet_md"], output_dir),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## Auto-Flagged Entries",
+            "",
+        ]
+    )
+    flagged_entries = [entry for entry in entries if entry["flagged"]]
+    if not flagged_entries:
+        lines.append("- none")
+    else:
+        for entry in flagged_entries:
+            reasons = "; ".join(entry["flag_reasons"])
+            lines.append(f"- `{entry['preset_id']}` / `{entry['approach']}`: {reasons}")
+    summary_path.write_text("\n".join(lines) + "\n")
 
 
 def _render_comparison_bundle(
@@ -425,45 +582,58 @@ def review_presets(
     cutaway_origin: str | None = None,
     show_full_airway: bool | None = None,
     vessel_overlay_names: list[str] | None = None,
+    preset_ids: list[str] | None = None,
+    include_physics_debug_maps: bool = False,
+    physics_speckle_strength: float | None = None,
+    physics_reverberation_strength: float | None = None,
+    physics_shadow_strength: float | None = None,
 ) -> dict[str, object]:
     context = build_render_context(manifest_path, roll_deg=roll_deg)
     voxel_context = replace(context, airway_geometry_mesh=None)
     output_dir = Path(output_dir).expanduser().resolve()
-    (output_dir / "approaches").mkdir(parents=True, exist_ok=True)
+    (output_dir / "presets").mkdir(parents=True, exist_ok=True)
     (output_dir / "comparisons").mkdir(parents=True, exist_ok=True)
 
     entries: list[dict[str, object]] = []
-    for preset in context.manifest.presets:
-        for approach in preset.contacts:
-            entries.append(
-                _render_review_entry(
-                    context,
-                    preset_id=preset.id,
-                    approach=approach,
-                    output_dir=output_dir,
-                    width=width,
-                    height=height,
-                    device=device,
-                    roll_deg=roll_deg,
-                    sector_angle_deg=sector_angle_deg,
-                    max_depth_mm=max_depth_mm,
-                    reference_fov_mm=reference_fov_mm,
-                    slice_thickness_mm=slice_thickness_mm,
-                    cutaway_mode=cutaway_mode,
-                    cutaway_side=cutaway_side,
-                    cutaway_depth_mm=cutaway_depth_mm,
-                    cutaway_origin=cutaway_origin,
-                    show_full_airway=show_full_airway,
-                    vessel_overlay_names=vessel_overlay_names,
-                )
+    for preset_id, approach in _iter_selected_presets(context, preset_ids):
+        entries.append(
+            _render_review_entry(
+                context,
+                preset_id=preset_id,
+                approach=approach,
+                output_dir=output_dir,
+                width=width,
+                height=height,
+                device=device,
+                roll_deg=roll_deg,
+                sector_angle_deg=sector_angle_deg,
+                max_depth_mm=max_depth_mm,
+                reference_fov_mm=reference_fov_mm,
+                slice_thickness_mm=slice_thickness_mm,
+                cutaway_mode=cutaway_mode,
+                cutaway_side=cutaway_side,
+                cutaway_depth_mm=cutaway_depth_mm,
+                cutaway_origin=cutaway_origin,
+                show_full_airway=show_full_airway,
+                vessel_overlay_names=vessel_overlay_names,
+                include_physics_debug_maps=include_physics_debug_maps,
+                physics_speckle_strength=physics_speckle_strength,
+                physics_reverberation_strength=physics_reverberation_strength,
+                physics_shadow_strength=physics_shadow_strength,
             )
+        )
 
     summary_json_path = output_dir / "review_summary.json"
     summary_csv_path = output_dir / "review_summary.csv"
+    index_json_path = output_dir / "review_index.json"
+    index_csv_path = output_dir / "review_index.csv"
+    index_md_path = output_dir / "review_index.md"
+    rubric_path = output_dir / "review_rubric_template.md"
 
     comparison_payloads: list[dict[str, object]] = []
     flagged_keys = {(entry["preset_id"], entry["approach"]) for entry in entries if entry["flagged"]}
-    for preset_id, approach in sorted(flagged_keys | REQUIRED_COMPARISON_CASES):
+    selected_keys = {(entry["preset_id"], entry["approach"]) for entry in entries}
+    for preset_id, approach in sorted((flagged_keys | REQUIRED_COMPARISON_CASES) & selected_keys):
         matching_entry = next(entry for entry in entries if entry["preset_id"] == preset_id and entry["approach"] == approach)
         comparison_payloads.append(
             _render_comparison_bundle(
@@ -498,6 +668,14 @@ def review_presets(
         "output_dir": str(output_dir),
         "review_count": len(entries),
         "flagged_count": sum(1 for entry in entries if entry["flagged"]),
+        "preset_filter": ([] if preset_ids is None else list(preset_ids)),
+        "include_physics_debug_maps": bool(include_physics_debug_maps),
+        "physics_settings": {
+            "speckle_strength": physics_speckle_strength,
+            "reverberation_strength": physics_reverberation_strength,
+            "shadow_strength": physics_shadow_strength,
+        },
+        "rubric_template": str(rubric_path),
         "thresholds": {
             "nUS_delta_deg_from_voxel_baseline": NUS_DELTA_WARN_DEG,
             "contact_delta_mm_from_voxel_baseline": CONTACT_DELTA_WARN_MM,
@@ -506,6 +684,10 @@ def review_presets(
         "entries": entries,
         "comparison_bundles": comparison_payloads,
     }
+    rubric_path.write_text(render_review_rubric_template())
     summary_json_path.write_text(json.dumps(summary, indent=2))
+    index_json_path.write_text(json.dumps(summary, indent=2))
     _write_summary_csv(summary_csv_path, entries)
+    _write_summary_csv(index_csv_path, entries)
+    _write_summary_markdown(index_md_path, output_dir, entries)
     return summary

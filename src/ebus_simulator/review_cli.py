@@ -24,6 +24,11 @@ def main() -> int:
     parser.add_argument("--cutaway-origin", choices=["contact", "probe_origin", "custom"], default=None, help="Reference origin used to derive the cutaway plane.")
     parser.add_argument("--show-full-airway", type=_parse_bool, default=None, help="Show the full smoothed airway mesh instead of clipping it in the context panel.")
     parser.add_argument("--overlay-vessels", type=_parse_vessel_overlays, help="Optional comma-separated vessel overlay override for all review renders.")
+    parser.add_argument("--preset-id", action="append", dest="preset_ids", help="Optional preset identifier filter. Repeat to review multiple presets.")
+    parser.add_argument("--physics-debug-maps", action="store_true", help="Bundle physics debug maps into each review entry.")
+    parser.add_argument("--physics-speckle-strength", type=float, help="Optional physics speckle strength override for review renders.")
+    parser.add_argument("--physics-reverberation-strength", type=float, help="Optional physics reverberation strength override for review renders.")
+    parser.add_argument("--physics-shadow-strength", type=float, help="Optional physics distal shadow strength override for review renders.")
     args = parser.parse_args()
 
     summary = review_presets(
@@ -43,14 +48,24 @@ def main() -> int:
         cutaway_origin=args.cutaway_origin,
         show_full_airway=args.show_full_airway,
         vessel_overlay_names=args.overlay_vessels,
+        preset_ids=args.preset_ids,
+        include_physics_debug_maps=args.physics_debug_maps,
+        physics_speckle_strength=args.physics_speckle_strength,
+        physics_reverberation_strength=args.physics_reverberation_strength,
+        physics_shadow_strength=args.physics_shadow_strength,
     )
 
     print(f"case_id: {summary['case_id']}")
     print(f"output_dir: {summary['output_dir']}")
     print(f"review_count: {summary['review_count']}")
     print(f"flagged_count: {summary['flagged_count']}")
+    print(f"physics_debug_maps: {summary['include_physics_debug_maps']}")
     print(f"summary_json: {summary['output_dir']}/review_summary.json")
     print(f"summary_csv: {summary['output_dir']}/review_summary.csv")
+    print(f"index_json: {summary['output_dir']}/review_index.json")
+    print(f"index_csv: {summary['output_dir']}/review_index.csv")
+    print(f"index_md: {summary['output_dir']}/review_index.md")
+    print(f"rubric_template: {summary['rubric_template']}")
 
     return 0
 

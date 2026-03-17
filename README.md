@@ -1,28 +1,35 @@
 # EBUS Simulator
 
-Geometry-first scaffold for a standalone local linear EBUS simulator.
+Geometry-first standalone local linear EBUS simulator with localizer, physics, and review workflows.
 
 Current implemented capabilities:
 
 - Python project scaffold
 - Manifest-driven case loading
+- portable manifest roots
 - NIfTI, VTP, and Slicer MRK JSON loaders
 - `validate-case` CLI
 - Preset-by-preset geometry QA for the configured dataset
 - Centerline graph abstraction and preset pose generation
 - `generate-poses` CLI
+- explicit render-engine split between `localizer` and `physics`
 - direct probe-centered preset rendering
 - `render-preset` CLI
-- clean/debug render modes, station/vessel overlays, and batch render indexes
+- clean/debug render modes, station/vessel overlays, metadata sidecars, and batch render indexes
 - `render-all-presets` CLI
 - `review-presets` CLI for batch review exports
+- first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
+- CI smoke workflow
 
 Not implemented yet:
 
-- portable manifest roots
-- render-engine split between localizer and physics modes
+- review / calibration workflow still needs more tuning and iteration
 - desktop UI
-- physics-based CP-EBUS renderer
+
+Next active milestone:
+
+- review / calibration refinement
+- desktop preset browser after the review layer is in place
 
 ## Dataset
 
@@ -112,6 +119,12 @@ Generate a batch review bundle:
 
 ```bash
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review
+```
+
+Generate a filtered physics-aware review bundle with debug maps:
+
+```bash
+review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47
 ```
 
 Convenience targets:

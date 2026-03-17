@@ -34,12 +34,9 @@ What is already implemented and should be preserved unless there is a hard block
 - batch rendering, cutaway/context views, and preset review workflows
 
 What is **not** implemented yet:
-- portable manifest roots
-- explicit render-engine abstraction
-- a separated `localizer` renderer module
-- CI automation
+- physics-aware review / calibration bundling
 - PySide6 desktop UI
-- a physics-based CP-EBUS image engine
+- a polished review-first desktop workflow
 
 Do **not** reopen the scaffold / loader / validation / pose-generation phases from scratch. Reuse them.
 
@@ -61,15 +58,11 @@ Current repo reality:
 ## Data location
 The working case currently used by the repo is the checked-in dataset copy referenced by:
 
-`configs/3D_slicer_files.yaml`
-
-and currently rooted at:
-
-`/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files`
+`configs/3d_slicer_files.yaml`
 
 Use the files there directly.
 Do **not** rename source assets unless explicitly asked.
-The manifest should be made more portable over time, but the filenames should remain valid.
+The manifest root is already portable and should remain so. The filenames should remain valid.
 
 ---
 
@@ -181,7 +174,7 @@ Every significant change must preserve geometry QA:
   - displayed range `40 mm`
   - probe origin offset `6 mm`
   - video axis offset `20°`
-- The checked-in manifest still uses an **absolute local dataset root**.
+- The checked-in manifest uses a **portable repo-relative dataset root**.
 - Current render defaults still keep `use_speckle: false` and `use_edge_enhancement: false`.
 - Existing airway assets already include:
   - raw endoluminal mesh
@@ -218,6 +211,11 @@ Preferred additions for the next major passes:
 
 The current renderer should become the explicit **localizer** engine.
 Any future ultrasound-like renderer should be a separate **physics** engine.
+
+The next active milestone is:
+- physics-aware review bundle generation
+- reviewer-facing calibration support
+- doc synchronization around the current repo state
 
 ---
 

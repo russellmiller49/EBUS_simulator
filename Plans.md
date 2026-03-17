@@ -37,11 +37,10 @@ Important interpretation:
 
 ## Current gaps
 The main remaining gaps are:
-- the manifest root is still machine-specific and non-portable
-- rendering responsibilities are still concentrated in `rendering.py`
-- there is no explicit `localizer` vs `physics` engine split
-- there is no CI workflow
-- there is no physics-based CP-EBUS image engine
+- `review-presets` is still more localizer-centric than physics-centric
+- physics debug maps and eval summaries are not yet bundled into review exports
+- the repo guidance is stale in places
+- rendering responsibilities are still somewhat concentrated in `rendering.py`
 - there is no desktop preset browser yet
 
 These gaps define the active roadmap.
@@ -52,13 +51,18 @@ These gaps define the active roadmap.
 Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a portable, inspectable simulator with:
 - reliable preset-driven geometry
 - an explicit localizer renderer
-- a future physics-based CP-EBUS renderer
+- a working first-pass physics-based CP-EBUS renderer
 - calibration/review hooks
 - a local desktop UI for preset browsing and screenshot export
+
+The next active milestone is the **physics-aware review / calibration layer**.
 
 ---
 
 ## Phase A — repo hardening and renderer split
+### Status
+Complete.
+
 ### Goal
 Make the repo portable and explicit about the fact that the current renderer is the **localizer** engine.
 
@@ -107,6 +111,9 @@ Make the repo portable and explicit about the fact that the current renderer is 
 ---
 
 ## Phase B — physics renderer core
+### Status
+Complete as a first bounded slice.
+
 ### Goal
 Generate the first believable CP-EBUS-like B-mode images from the existing pose/device logic.
 
@@ -149,6 +156,9 @@ Generate the first believable CP-EBUS-like B-mode images from the existing pose/
 ---
 
 ## Phase C — artifacts, debug maps, and evaluation hooks
+### Status
+Partially complete.
+
 ### Goal
 Improve realism while keeping the renderer inspectable and tunable.
 
@@ -171,6 +181,12 @@ Improve realism while keeping the renderer inspectable and tunable.
 - seeded outputs remain reproducible
 - debug maps can be exported per render
 - the review workflow stays repeatable instead of ad hoc
+
+### Remaining work in Phase C
+- integrate physics debug maps into `review-presets`
+- expose `eval_summary` in reviewer-friendly bundles
+- add a lightweight human review rubric / sheet
+- tighten docs so they match the current repo state
 
 ### Explicitly out of scope
 - changing geometry logic to chase cosmetics
