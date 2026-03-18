@@ -1,0 +1,91 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "required_comparison_case": true,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "vessel contrast -0.010 > -0.010"
+  ],
+  "mesh_panel_png": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_7_node_a_lms_mesh_panel.png",
+  "mesh_panel_json": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_7_node_a_lms_mesh_panel.json",
+  "voxel_panel_png": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_7_node_a_lms_voxel_panel.png",
+  "voxel_panel_json": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_7_node_a_lms_voxel_panel.json",
+  "mesh_contact_world": [
+    -31.724918025766197,
+    -156.27486896900623,
+    1210.728067582357
+  ],
+  "voxel_contact_world": [
+    -32.159987641970176,
+    -156.16674784705285,
+    1210.51473317694
+  ],
+  "mesh_nUS_world": [
+    0.4986583767984052,
+    0.34120764078109644,
+    -0.7968168981148542
+  ],
+  "voxel_nUS_world": [
+    0.4971256158305955,
+    0.3004664679807346,
+    -0.813993872031131
+  ],
+  "contact_delta_mm": 0.496474890091123,
+  "nUS_delta_deg": 2.535013071491338,
+  "review_metrics": {
+    "contact_to_centerline_mm": 4.628096082081661,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 20.35744414729004,
+    "target_lateral_offset_mm": -8.064392405751857,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.7267996530789246,
+    "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+    "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "contact_to_mesh_mm": 0.010870763241346887,
+    "normalization_method": "ct_window_interface_blend",
+    "normalization_reference_percentile": null,
+    "normalization_reference_value": null,
+    "normalization_aux_percentile": null,
+    "normalization_aux_value": null,
+    "normalization_lower_bound": 0.0,
+    "normalization_upper_bound": 1.0,
+    "compression_gain_factor": 1.0,
+    "signal_threshold": 0.05,
+    "near_field_fraction": 0.2,
+    "target_distance_from_sector_centerline_mm": 8.064392405751857,
+    "target_centerline_offset_fraction": 0.6861341373639098,
+    "target_sector_margin_mm": 3.6889834526988174,
+    "target_sector_margin_fraction": 0.3138658626360902,
+    "target_sector_coverage_fraction": 0.049436253252385085,
+    "airway_wall_occupancy_fraction": 0.16652211621856028,
+    "vessel_occupancy_fraction": 0.08412836079791847,
+    "anatomy_occupancy_fraction": 0.30008673026886384,
+    "non_background_occupancy_fraction": 0.9965307892454467,
+    "empty_sector_fraction": 0.003469210754553309,
+    "near_field_wall_occupancy_fraction": 1.0,
+    "near_field_brightness_mean": 0.3349459171295166,
+    "near_field_brightness_p90": 0.4805833101272583,
+    "sector_brightness_mean": 0.35097792744636536,
+    "sector_brightness_std": 0.08179908990859985,
+    "sector_brightness_p05": 0.23489542305469513,
+    "sector_brightness_p50": 0.35349416732788086,
+    "sector_brightness_p95": 0.500787615776062,
+    "sector_brightness_p99": 0.6224225759506226,
+    "target_region_mean_intensity": 0.37517085671424866,
+    "target_region_contrast_vs_sector": 0.0241929292678833,
+    "wall_region_mean_intensity": 0.3652905523777008,
+    "wall_region_contrast_vs_sector": 0.01431262493133545,
+    "vessel_region_mean_intensity": 0.2918424606323242,
+    "vessel_region_contrast_vs_sector": -0.05913546681404114,
+    "consistency_bucket": "mixed_occupancy"
+  },
+  "mesh_warnings": [],
+  "voxel_warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

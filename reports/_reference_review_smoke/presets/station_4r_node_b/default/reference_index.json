@@ -1,0 +1,32 @@
+[
+  {
+    "reference_id": "example_station_4r_node_b_placeholder",
+    "preset_id": "station_4r_node_b",
+    "approach": "default",
+    "station": "4R",
+    "image_path": "/home/rjm/projects/EBUS_simulator/reference/images/example_station_4r_node_b.png",
+    "modality": "still_image",
+    "correlation_confidence": "low",
+    "notes": "Repository placeholder image for testing the reference-bank plumbing. Replace with a de-identified clinical screenshot before calibration work.\n",
+    "tags": [
+      "example",
+      "placeholder",
+      "teaching"
+    ],
+    "vessel_visible": true,
+    "airway_wall_visible": true,
+    "node_prominent": true,
+    "source_image_path": "/home/rjm/projects/EBUS_simulator/reference/images/example_station_4r_node_b.png",
+    "bundle_image_path": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/presets/station_4r_node_b/default/references/example_station_4r_node_b_placeholder_example_station_4r_node_b.png",
+    "bundle_image_name": "example_station_4r_node_b_placeholder_example_station_4r_node_b.png",
+    "bundle_image_relative_path": "references/example_station_4r_node_b_placeholder_example_station_4r_node_b.png",
+    "tag_summary": [
+      "example",
+      "placeholder",
+      "teaching",
+      "vessel_visible",
+      "airway_wall_visible",
+      "node_prominent"
+    ]
+  }
+]

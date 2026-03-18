@@ -71,6 +71,10 @@ def main() -> int:
     parser.add_argument("--preset-id", action="append", dest="preset_ids", help="Optional preset identifier filter. Repeat to review multiple presets.")
     parser.add_argument("--physics-debug-maps", action="store_true", help="Bundle physics debug maps into each review entry.")
     parser.add_argument(
+        "--reference-manifest",
+        help="Optional reference image manifest YAML. When provided, matching reference images are copied into each review entry.",
+    )
+    parser.add_argument(
         "--physics-profile",
         help=(
             "Optional physics tuning profile name. "
@@ -117,6 +121,7 @@ def main() -> int:
         vessel_overlay_names=args.overlay_vessels,
         preset_ids=args.preset_ids,
         include_physics_debug_maps=args.physics_debug_maps,
+        reference_manifest_path=args.reference_manifest,
         physics_profile=args.physics_profile,
         physics_speckle_strength=args.physics_speckle_strength,
         physics_reverberation_strength=args.physics_reverberation_strength,
@@ -129,6 +134,7 @@ def main() -> int:
     print(f"review_count: {summary['review_count']}")
     print(f"flagged_count: {summary['flagged_count']}")
     print(f"physics_debug_maps: {summary['include_physics_debug_maps']}")
+    print(f"reference_manifest: {None if summary['reference_manifest'] is None else summary['reference_manifest']['manifest_path']}")
     print(f"summary_json: {summary['output_dir']}/review_summary.json")
     print(f"summary_csv: {summary['output_dir']}/review_summary.csv")
     print(f"index_json: {summary['output_dir']}/review_index.json")

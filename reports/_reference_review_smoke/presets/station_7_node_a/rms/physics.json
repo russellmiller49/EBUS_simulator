@@ -1,0 +1,380 @@
+{
+  "manifest_path": "/home/rjm/projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_7_node_a",
+  "approach": "rms",
+  "mode": "clean",
+  "output_path": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/presets/station_7_node_a/rms/physics.png",
+  "metadata_path": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/presets/station_7_node_a/rms/physics.json",
+  "engine": "physics",
+  "engine_version": "physics-v1",
+  "seed": null,
+  "view_kind": "physics_bmode",
+  "image_size": [
+    48,
+    48
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 4.0,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "probe_ray_domain_nUS_nB",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "probe_ray_domain_nUS_nB",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": false,
+  "diagnostic_panel_layout": [],
+  "virtual_ebus_enabled": false,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -28.07447116393732,
+    -154.12867303329799,
+    1197.4698879708417
+  ],
+  "original_contact_world": [
+    -28.27045743032407,
+    -154.335907119764,
+    1197.5311017646502
+  ],
+  "voxel_refined_contact_world": [
+    -26.960457709165812,
+    -154.30208149808783,
+    1196.8012000192875
+  ],
+  "refined_contact_world": [
+    -28.07447116393732,
+    -154.12867303329799,
+    1197.4698879708417
+  ],
+  "tip_start_world": [
+    -25.26137379739092,
+    -155.98838677764536,
+    1202.432543307999
+  ],
+  "target_world": [
+    -14.706595759411217,
+    -155.7811967400809,
+    1196.0412926391382
+  ],
+  "nearest_centerline_point": [
+    -31.80726861598288,
+    -153.94593851695646,
+    1199.6390511514112
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.468849561091067,
+      0.30995229072456415,
+      -0.8271092228595381
+    ],
+    "depth_axis": [
+      0.8733331474388368,
+      0.02255041445076658,
+      -0.4866011635751331
+    ],
+    "lateral_axis": [
+      -0.1321714895478168,
+      -0.9504846428442144,
+      -0.28126436153202455
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.468849561091067,
+      0.30995229072456415,
+      -0.8271092228595381
+    ],
+    "nC": [
+      -0.1476707566806605,
+      0.26740142261939376,
+      -0.9522026185652325
+    ],
+    "nUS": [
+      0.8563931740605895,
+      -0.06975746380952165,
+      -0.5115902927785985
+    ],
+    "wall_normal": [
+      0.8002434102393696,
+      -0.035589453031434924,
+      -0.5986183051004934
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.19221097287123254,
+  "original_contact_to_airway_distance_mm": 1.609375,
+  "voxel_refined_contact_to_airway_distance_mm": 0.0,
+  "refined_contact_to_airway_distance_mm": 0.19221097287123254,
+  "centerline_projection_distance_mm": 4.1357658893272715,
+  "contact_refinement_method": "raw_mesh_projection_search",
+  "pose_comparison": {
+    "markup_contact_world": [
+      -28.27045743032407,
+      -154.335907119764,
+      1197.5311017646502
+    ],
+    "voxel_refined_contact_world": [
+      -26.960457709165812,
+      -154.30208149808783,
+      1196.8012000192875
+    ],
+    "mesh_refined_contact_world": [
+      -28.07447116393732,
+      -154.12867303329799,
+      1197.4698879708417
+    ],
+    "voxel_to_mesh_contact_distance_mm": 1.3108165583430835,
+    "voxel_contact_to_airway_distance_mm": 0.0,
+    "mesh_contact_to_airway_distance_mm": 0.19221097287123254,
+    "voxel_refinement_method": "ct_threshold_wall_search",
+    "mesh_refinement_method": "raw_mesh_projection_search",
+    "candidate_branch_graph_name": "main",
+    "candidate_branch_line_index": 8,
+    "branch_hint": null,
+    "branch_hint_applied": false,
+    "branch_hint_match": null,
+    "voxel_wall_normal_world": [
+      0.7814368892348387,
+      -0.07178325090659783,
+      -0.619841554780138
+    ],
+    "mesh_wall_normal_world": [
+      0.8002434102393696,
+      -0.035589453031434924,
+      -0.5986183051004934
+    ],
+    "voxel_nUS_world": [
+      0.8461337821153405,
+      -0.11109120933953666,
+      -0.5212641997784507
+    ],
+    "mesh_nUS_world": [
+      0.8563931740605895,
+      -0.06975746380952165,
+      -0.5115902927785985
+    ],
+    "nUS_angular_difference_deg": 2.5024690780128362,
+    "final_nB_world": [
+      -0.468849561091067,
+      0.30995229072456415,
+      -0.8271092228595381
+    ],
+    "final_nUS_world": [
+      0.8563931740605895,
+      -0.06975746380952165,
+      -0.5115902927785985
+    ],
+    "final_nC_world": [
+      -0.1476707566806605,
+      0.26740142261939376,
+      -0.9522026185652325
+    ],
+    "optimized_branch_shift_mm": null,
+    "optimized_roll_offset_deg": null,
+    "optimized_axis_sign_override": null,
+    "optimized_objective": null,
+    "warnings": []
+  },
+  "airway_overlay_enabled": false,
+  "airway_lumen_overlay_enabled": false,
+  "airway_wall_overlay_enabled": false,
+  "target_overlay_enabled": false,
+  "contact_overlay_enabled": false,
+  "station_overlay_enabled": false,
+  "vessel_overlay_names": [],
+  "single_vessel_name": null,
+  "show_legend": false,
+  "label_overlays": false,
+  "show_frustum": false,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "auto",
+  "cutaway_side_source": "physics_placeholder",
+  "cutaway_open_side": "left",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -28.07447116393732,
+    -154.12867303329799,
+    1197.4698879708417
+  ],
+  "cutaway_normal": [
+    -0.21626562483932285,
+    -0.9481895768871638,
+    -0.23273526977103987
+  ],
+  "cutaway_mesh_source": "none",
+  "show_full_airway": false,
+  "overlays_enabled": [],
+  "visible_overlay_names": [],
+  "consistency_metrics": {
+    "normalization_method": "log_percentile_99.5",
+    "normalization_reference_percentile": 99.5,
+    "normalization_reference_value": 1.8183974027633667,
+    "normalization_aux_percentile": 98.5,
+    "normalization_aux_value": 1.5771887302398682,
+    "normalization_lower_bound": 0.0,
+    "normalization_upper_bound": 1.8183974027633667,
+    "compression_gain_factor": 6.0,
+    "signal_threshold": 0.05,
+    "near_field_fraction": 0.2,
+    "target_depth_mm": 12.294288614807211,
+    "target_lateral_offset_mm": -5.598121649940108,
+    "target_distance_from_sector_centerline_mm": 5.598121649940108,
+    "target_centerline_offset_fraction": 0.7886776883511147,
+    "target_sector_margin_mm": 1.4999891913137864,
+    "target_sector_margin_fraction": 0.21132231164888524,
+    "target_in_sector": true,
+    "target_sector_coverage_fraction": 0.09540329575021683,
+    "airway_wall_occupancy_fraction": 0.015611448395490026,
+    "vessel_occupancy_fraction": 0.2142237640936687,
+    "anatomy_occupancy_fraction": 0.32523850823937556,
+    "non_background_occupancy_fraction": 0.3538594969644406,
+    "empty_sector_fraction": 0.6461405030355594,
+    "near_field_wall_occupancy_fraction": 0.06,
+    "near_field_brightness_mean": 0.2601090967655182,
+    "near_field_brightness_p90": 0.7206846475601196,
+    "sector_brightness_mean": 0.048521652817726135,
+    "sector_brightness_std": 0.07327118515968323,
+    "sector_brightness_p05": 0.002315426943823695,
+    "sector_brightness_p50": 0.042119015008211136,
+    "sector_brightness_p95": 0.10147121548652649,
+    "sector_brightness_p99": 0.3228000998497009,
+    "target_region_mean_intensity": 0.0557703860104084,
+    "target_region_contrast_vs_sector": 0.007248733192682266,
+    "wall_region_mean_intensity": 0.23694440722465515,
+    "wall_region_contrast_vs_sector": 0.18842275440692902,
+    "vessel_region_mean_intensity": 0.005604629870504141,
+    "vessel_region_contrast_vs_sector": -0.042917022947221994,
+    "consistency_bucket": "mixed_occupancy",
+    "pre_support_consistency_bucket": "mixed_occupancy",
+    "support_logic_active": false,
+    "support_logic_mode": "none",
+    "support_floor_base": 0.0,
+    "support_floor_scale": 0.0,
+    "support_anatomy_weight": 0.0,
+    "support_target_scanline_weight": 0.0,
+    "support_wall_moderation_factor": 1.0,
+    "support_candidate_fraction": 0.0,
+    "pre_support_empty_sector_fraction": 0.6461405030355594,
+    "pre_support_non_background_occupancy_fraction": 0.3538594969644406,
+    "physics_profile_name": "baseline"
+  },
+  "preset_override_applied": true,
+  "preset_override_vessel_overlays": [
+    "left_atrium",
+    "pulmonary_artery",
+    "azygous"
+  ],
+  "preset_override_cutaway_side": null,
+  "preset_override_roll_offset_deg": 0.0,
+  "preset_override_branch_hint": null,
+  "preset_override_branch_shift_mm": null,
+  "preset_override_axis_sign_override": null,
+  "preset_override_reference_fov_mm": null,
+  "preset_override_notes": "Review LMS and RMS approaches separately because the same target is sampled from both mainstem contacts.",
+  "warnings": [],
+  "engine_diagnostics": {
+    "profile": {
+      "name": "baseline",
+      "requested_name": null,
+      "source_path": "/home/rjm/projects/EBUS_simulator/configs/render_profiles.yaml",
+      "explicit_overrides": {},
+      "effective_settings": {
+        "target_focus_sigma_mm": 4.5,
+        "log_compression_gain_factor": 6.0,
+        "normalization_reference_percentile": 99.5,
+        "normalization_aux_percentile": 98.5,
+        "normalization_spike_ratio": 1.22,
+        "normalization_aux_blend_weight": 0.45,
+        "sparse_signal_threshold": 0.01,
+        "sparse_support_empty_fraction": 0.9,
+        "wall_guardrail_empty_fraction": 0.86,
+        "sparse_support_floor_base": 0.034,
+        "sparse_support_floor_scale": 0.028,
+        "sparse_support_anatomy_weight": 0.014,
+        "sparse_support_target_weight": 0.018,
+        "wall_guardrail_floor_base": 0.032,
+        "wall_guardrail_floor_scale": 0.02,
+        "wall_guardrail_anatomy_weight": 0.008,
+        "wall_guardrail_target_weight": 0.01,
+        "wall_guardrail_moderation": 0.94,
+        "speckle_strength_default": 0.18,
+        "reverberation_strength_default": 0.3,
+        "shadow_strength_default": 0.42
+      }
+    },
+    "artifact_settings": {
+      "speckle_strength": 0.18,
+      "reverberation_strength": 0.3,
+      "shadow_strength": 0.42
+    },
+    "normalization": {
+      "method": "log_percentile_99.5",
+      "reference_percentile": 99.5,
+      "reference_value": 1.8183974027633667,
+      "aux_percentile": 98.5,
+      "aux_value": 1.5771887302398682,
+      "lower_bound": 0.0,
+      "upper_bound": 1.8183974027633667,
+      "compression_gain_factor": 6.0
+    },
+    "support_logic": {
+      "pre_support_consistency_bucket": "mixed_occupancy",
+      "support_logic_active": false,
+      "support_logic_mode": "none",
+      "support_floor_base": 0.0,
+      "support_floor_scale": 0.0,
+      "support_anatomy_weight": 0.0,
+      "support_target_scanline_weight": 0.0,
+      "support_wall_moderation_factor": 1.0,
+      "support_candidate_fraction": 0.0,
+      "pre_support_empty_sector_fraction": 0.6461405030355594,
+      "pre_support_non_background_occupancy_fraction": 0.3538594969644406
+    },
+    "eval_summary": {
+      "sector": {
+        "pixel_count": 1153,
+        "mean": 0.048521652817726135,
+        "std": 0.07327118515968323,
+        "p05": 0.002315426943823695,
+        "p50": 0.042119015008211136,
+        "p95": 0.10147121548652649
+      },
+      "target": {
+        "pixel_count": 110,
+        "mean": 0.0557703860104084,
+        "std": 0.01637977361679077,
+        "p05": 0.03596658259630203,
+        "p50": 0.0539344921708107,
+        "p95": 0.08885248750448227
+      },
+      "wall": {
+        "pixel_count": 18,
+        "mean": 0.23694440722465515,
+        "std": 0.28389421105384827,
+        "p05": 0.08412578701972961,
+        "p50": 0.12027674913406372,
+        "p95": 0.8995504379272461
+      },
+      "vessel": {
+        "pixel_count": 247,
+        "mean": 0.005604629870504141,
+        "std": 0.006438065320253372,
+        "p05": 0.0020015956833958626,
+        "p50": 0.002695661736652255,
+        "p95": 0.021924803033471107
+      },
+      "target_contrast_vs_sector": 0.007248733192682266,
+      "wall_contrast_vs_sector": 0.18842275440692902,
+      "vessel_contrast_vs_sector": -0.042917022947221994
+    },
+    "debug_map_paths": {}
+  }
+}

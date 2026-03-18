@@ -46,6 +46,7 @@ def render_review_sheet(
     physics_path: Path,
     eval_summary_path: Path,
     review_entry_path: Path,
+    reference_entries: list[dict[str, object]],
     warnings: list[str],
     geometry_flag_reasons: list[str],
     consistency_flag_reasons: list[str],
@@ -62,9 +63,44 @@ def render_review_sheet(
         f"- eval summary: [{eval_summary_path.name}]({eval_summary_path.name})",
         f"- review entry: [{review_entry_path.name}]({review_entry_path.name})",
         "",
-        "## Warnings",
+        "## Reference Images",
         "",
     ]
+    if reference_entries:
+        for reference in reference_entries:
+            tag_tokens = list(reference.get("tags", []))
+            if reference.get("vessel_visible") is True:
+                tag_tokens.append("vessel_visible")
+            if reference.get("airway_wall_visible") is True:
+                tag_tokens.append("airway_wall_visible")
+            if reference.get("node_prominent") is True:
+                tag_tokens.append("node_prominent")
+
+            relative_path = str(reference["bundle_image_relative_path"])
+            lines.append(
+                "- `{reference_id}` [{image_name}]({relative_path}) "
+                "({confidence}, {modality})".format(
+                    reference_id=reference["reference_id"],
+                    image_name=reference["bundle_image_name"],
+                    relative_path=relative_path,
+                    confidence=reference["correlation_confidence"],
+                    modality=reference["modality"],
+                )
+            )
+            if reference.get("notes"):
+                lines.append(f"  notes: {reference['notes']}")
+            if tag_tokens:
+                lines.append(f"  tags: {', '.join(tag_tokens)}")
+    else:
+        lines.append("- none")
+
+    lines.extend(
+        [
+            "",
+            "## Warnings",
+            "",
+        ]
+    )
     if warnings:
         lines.extend(f"- {warning}" for warning in warnings)
     else:

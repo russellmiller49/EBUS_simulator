@@ -1,0 +1,29 @@
+root: ${REPO_ROOT}/reference
+
+notes:
+  summary: >
+    Repository example reference-bank entry for wiring and documentation only.
+    Replace with de-identified clinical CP-EBUS screenshots before using this
+    as a real calibration set.
+  interpretation: >
+    Reference linkage is approximate educational context, not exact pixel-level
+    or pose-level ground truth.
+
+entries:
+  - reference_id: example_station_4r_node_b_placeholder
+    preset_id: station_4r_node_b
+    approach: default
+    station: 4R
+    image_path: images/example_station_4r_node_b.png
+    modality: still_image
+    correlation_confidence: low
+    notes: >
+      Repository placeholder image for testing the reference-bank plumbing.
+      Replace with a de-identified clinical screenshot before calibration work.
+    tags:
+      - example
+      - placeholder
+      - teaching
+    vessel_visible: true
+    airway_wall_visible: true
+    node_prominent: true

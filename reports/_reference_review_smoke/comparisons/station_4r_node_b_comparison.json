@@ -1,0 +1,96 @@
+{
+  "preset_id": "station_4r_node_b",
+  "approach": "default",
+  "required_comparison_case": true,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "contact refinement remained ambiguous"
+  ],
+  "mesh_panel_png": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_4r_node_b_mesh_panel.png",
+  "mesh_panel_json": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_4r_node_b_mesh_panel.json",
+  "voxel_panel_png": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_4r_node_b_voxel_panel.png",
+  "voxel_panel_json": "/home/rjm/projects/EBUS_simulator/reports/_reference_review_smoke/comparisons/station_4r_node_b_voxel_panel.json",
+  "mesh_contact_world": [
+    -9.636363156573237,
+    -176.90970309686261,
+    1246.8590180116103
+  ],
+  "voxel_contact_world": [
+    -9.629247513122516,
+    -176.8703926906566,
+    1246.8670467322104
+  ],
+  "mesh_nUS_world": [
+    -0.1626692921437076,
+    -0.9453390033753615,
+    -0.28261788706793384
+  ],
+  "voxel_nUS_world": [
+    -0.22478226186348166,
+    -0.9387759720723368,
+    -0.26109884911882747
+  ],
+  "contact_delta_mm": 0.0407480155624235,
+  "nUS_delta_deg": 3.785751792561363,
+  "review_metrics": {
+    "contact_to_centerline_mm": 6.153406233839823,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 10.553114624171032,
+    "target_lateral_offset_mm": -0.28636387182133527,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.209887250650477,
+    "nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+    "contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+    "contact_refinement_ambiguity": true,
+    "warnings": [
+      "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+    ],
+    "preset_id": "station_4r_node_b",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.0407480155624235,
+    "normalization_method": "ct_window_interface_blend",
+    "normalization_reference_percentile": null,
+    "normalization_reference_value": null,
+    "normalization_aux_percentile": null,
+    "normalization_aux_value": null,
+    "normalization_lower_bound": 0.0,
+    "normalization_upper_bound": 1.0,
+    "compression_gain_factor": 1.0,
+    "signal_threshold": 0.05,
+    "near_field_fraction": 0.2,
+    "target_distance_from_sector_centerline_mm": 0.28636387182133527,
+    "target_centerline_offset_fraction": 0.04700003677688242,
+    "target_sector_margin_mm": 5.806479697232787,
+    "target_sector_margin_fraction": 0.9529999632231176,
+    "target_sector_coverage_fraction": 0.053772766695576756,
+    "airway_wall_occupancy_fraction": 0.0008673026886383347,
+    "vessel_occupancy_fraction": 0.47094535993061576,
+    "anatomy_occupancy_fraction": 0.5255854293148309,
+    "non_background_occupancy_fraction": 1.0,
+    "empty_sector_fraction": 0.0,
+    "near_field_wall_occupancy_fraction": 0.02,
+    "near_field_brightness_mean": 0.5220367908477783,
+    "near_field_brightness_p90": 0.778182864189148,
+    "sector_brightness_mean": 0.39372360706329346,
+    "sector_brightness_std": 0.13372544944286346,
+    "sector_brightness_p05": 0.17943155765533447,
+    "sector_brightness_p50": 0.39247602224349976,
+    "sector_brightness_p95": 0.7175436019897461,
+    "sector_brightness_p99": 0.8263207077980042,
+    "target_region_mean_intensity": 0.4133880138397217,
+    "target_region_contrast_vs_sector": 0.019664406776428223,
+    "wall_region_mean_intensity": 0.4206817150115967,
+    "wall_region_contrast_vs_sector": 0.026958107948303223,
+    "vessel_region_mean_intensity": 0.4250313639640808,
+    "vessel_region_contrast_vs_sector": 0.031307756900787354,
+    "consistency_bucket": "mixed_occupancy"
+  },
+  "mesh_warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+  ],
+  "voxel_warnings": [
+    "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

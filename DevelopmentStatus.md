@@ -30,6 +30,7 @@ The current state is:
 - renderer tuning profiles are now externalized in `configs/render_profiles.yaml` and validated through `render_profiles.py`
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
 - the test suite is now split into fast `tests/unit` coverage and slower dataset-backed `tests/integration` coverage
+- the review workflow now supports a small optional reference-image manifest for copied/indexed side-by-side bundle context
 - the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and a structured reviewer/teaching inspector
 - a cross-preset `analyze-render-consistency` workflow now exists for localizer/physics divergence summaries
 
@@ -158,11 +159,13 @@ Current state:
 - airway-wall eval stats now fall back to a lumen-adjacent shell when direct wall samples are too sparse
 - physics debug maps can be bundled on request
 - deterministic JSON, CSV, and Markdown indexes are generated for batch review
+- a lightweight `reference/manifest.yaml` schema can now link de-identified reference screenshots to a subset of presets without blocking bundles for unlinked presets
+- review bundles can now copy/index linked reference images and notes per entry when a reference manifest is supplied
 - before/after JSON, CSV, and Markdown comparison artifacts can now be generated from two review bundle summaries
 - geometry and physics auto-flag thresholds can now be tuned from the review CLI for calibration passes, including opting out of the default wall threshold
 
 Still missing:
-- direct incorporation of real CP-EBUS reference imagery into the review loop
+- broader population of the reference bank with real de-identified CP-EBUS imagery
 - more mature reviewer thresholds and scoring conventions
 - calibration iteration informed by expert feedback rather than synthetic-only inspection
 
@@ -242,6 +245,7 @@ These commands are part of the current usable surface area:
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --reference-manifest reference/manifest.yaml --width 48 --height 48`
 - `analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --physics-profile sparse_support_boost --width 64 --height 64`
 - `analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --width 64 --height 64`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
@@ -258,6 +262,9 @@ Latest verified run snapshot from `2026-03-18`:
 - `make test-fast` -> `47 passed in 0.94s`
 - `make test-integration` -> `26 passed in 1025.94s (0:17:05)`
 - `.venv/bin/python -m pytest -q` -> `73 passed in 1034.21s (0:17:14)`
+- `.venv/bin/python -m pytest tests/unit/test_reference_manifest.py tests/unit/test_review_helpers.py -q` -> `9 passed in 1.05s`
+- `.venv/bin/python -m pytest tests/integration/test_review.py -q` -> `2 passed in 484.92s (0:08:04)`
+- `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_reference_review_smoke --preset-id station_4r_node_b --preset-id station_7_node_a --reference-manifest reference/manifest.yaml --width 48 --height 48` -> succeeded with `review_count: 3`, `flagged_count: 2`, `reference_manifest: /home/rjm/projects/EBUS_simulator/reference/manifest.yaml`, and one linked reference copied into the `station_4r_node_b/default` entry
 - `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/_render_profiles/localizer_baseline.png --width 64 --height 64` -> succeeded with `engine: localizer`
 - `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --simulated-ebus true --output reports/_render_profiles/physics_baseline.png --width 64 --height 64` -> succeeded with `physics_profile: baseline` and no explicit profile overrides
 - `.venv/bin/render-preset configs/3d_slicer_files.yaml station_7_node_a --approach lms --engine physics --mode clean --virtual-ebus false --simulated-ebus true --physics-profile sparse_support_boost --speckle-strength 0.22 --output reports/_render_profiles/physics_sparse_support_boost.png --width 64 --height 64` -> succeeded with `physics_profile: sparse_support_boost` and `physics_profile_overrides: {'speckle_strength': 0.22}`

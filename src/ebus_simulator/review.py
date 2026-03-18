@@ -4,10 +4,17 @@ from csv import DictWriter
 from dataclasses import asdict, dataclass, replace
 import json
 from pathlib import Path
+from shutil import copy2
 
 import numpy as np
 
 from ebus_simulator.manifest import resolve_preset_overrides
+from ebus_simulator.reference_manifest import (
+    ReferenceEntry,
+    find_reference_entries,
+    load_reference_manifest,
+    reference_entry_to_dict,
+)
 from ebus_simulator.review_rubric import render_review_rubric_template, render_review_sheet
 from ebus_simulator.rendering import (
     _default_output_stem,
@@ -63,6 +70,45 @@ def _iter_selected_presets(context, preset_ids: list[str] | None) -> list[tuple[
         for approach in preset.contacts:
             pairs.append((preset.id, approach))
     return sorted(pairs, key=lambda value: (value[0], value[1]))
+
+
+def _reference_tags(reference: ReferenceEntry) -> list[str]:
+    tags = list(reference.tags)
+    if reference.vessel_visible is True:
+        tags.append("vessel_visible")
+    if reference.airway_wall_visible is True:
+        tags.append("airway_wall_visible")
+    if reference.node_prominent is True:
+        tags.append("node_prominent")
+    return tags
+
+
+def _copy_linked_references(linked_references: list[ReferenceEntry], *, entry_dir: Path) -> tuple[list[dict[str, object]], str | None]:
+    if not linked_references:
+        return [], None
+
+    reference_dir = entry_dir / "references"
+    reference_dir.mkdir(parents=True, exist_ok=True)
+    payloads: list[dict[str, object]] = []
+    for reference in linked_references:
+        destination_name = f"{reference.reference_id}_{reference.image_path.name}"
+        destination_path = reference_dir / destination_name
+        copy2(reference.image_path, destination_path)
+        payload = reference_entry_to_dict(reference)
+        payload.update(
+            {
+                "source_image_path": str(reference.image_path),
+                "bundle_image_path": str(destination_path),
+                "bundle_image_name": destination_path.name,
+                "bundle_image_relative_path": str(destination_path.relative_to(entry_dir)),
+                "tag_summary": _reference_tags(reference),
+            }
+        )
+        payloads.append(payload)
+
+    reference_index_path = entry_dir / "reference_index.json"
+    reference_index_path.write_text(json.dumps(payloads, indent=2))
+    return payloads, str(reference_index_path)
 
 
 def compute_render_review_metrics(context, *, preset_manifest, metadata, sector_mask: np.ndarray) -> dict[str, object]:
@@ -294,6 +340,7 @@ def _render_review_entry(
     physics_reverberation_strength: float | None,
     physics_shadow_strength: float | None,
     review_thresholds: ReviewThresholds,
+    linked_references: list[ReferenceEntry],
 ) -> dict[str, object]:
     entry_dir = output_dir / "presets" / preset_id / approach
     entry_dir.mkdir(parents=True, exist_ok=True)
@@ -305,6 +352,7 @@ def _render_review_entry(
     review_json_path = entry_dir / "review_entry.json"
     review_sheet_path = entry_dir / "review_sheet.md"
     debug_map_dir = entry_dir / "debug_maps" if include_physics_debug_maps else None
+    reference_payloads, reference_index_path = _copy_linked_references(linked_references, entry_dir=entry_dir)
 
     diagnostic = render_preset(
         context.manifest.manifest_path,
@@ -460,6 +508,10 @@ def _render_review_entry(
         "physics_json": physics.metadata.metadata_path,
         "eval_summary_json": str(eval_summary_path),
         "review_sheet_md": str(review_sheet_path),
+        "reference_index_json": reference_index_path,
+        "reference_count": len(reference_payloads),
+        "reference_ids": [reference["reference_id"] for reference in reference_payloads],
+        "references": reference_payloads,
         "physics_debug_maps": physics_debug_maps,
         "physics_debug_map_count": len(physics_debug_maps),
         "physics_profile": physics_profile_settings,
@@ -517,6 +569,7 @@ def _render_review_entry(
             physics_path=physics_path,
             eval_summary_path=eval_summary_path,
             review_entry_path=review_json_path,
+            reference_entries=reference_payloads,
             warnings=entry["warnings"],
             geometry_flag_reasons=geometry_flag_reasons,
             consistency_flag_reasons=consistency_flag_reasons,
@@ -566,6 +619,9 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "physics_json",
                 "eval_summary_json",
                 "review_sheet_md",
+                "reference_count",
+                "reference_ids",
+                "reference_index_json",
                 "physics_debug_map_count",
                 "cutaway_side",
                 "cutaway_mode",
@@ -614,6 +670,9 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "physics_json": entry["physics_json"],
                     "eval_summary_json": entry["eval_summary_json"],
                     "review_sheet_md": entry["review_sheet_md"],
+                    "reference_count": entry.get("reference_count", 0),
+                    "reference_ids": ",".join(entry.get("reference_ids", [])),
+                    "reference_index_json": entry.get("reference_index_json"),
                     "physics_debug_map_count": entry["physics_debug_map_count"],
                     "cutaway_side": entry["cutaway_side"],
                     "cutaway_mode": entry["cutaway_mode"],
@@ -628,15 +687,23 @@ def _write_summary_markdown(summary_path: Path, output_dir: Path, entries: list[
     lines = [
         "# Review Index",
         "",
-        "| Preset | Approach | Flagged | Localizer | Physics | Eval Summary | Review Sheet |",
-        "|---|---|---|---|---|---|---|",
+        "| Preset | Approach | Flagged | Refs | Localizer | Physics | Eval Summary | Review Sheet |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for entry in entries:
+        reference_count = int(entry.get("reference_count", 0) or 0)
+        reference_index_json = entry.get("reference_index_json")
+        if reference_count > 0 and reference_index_json:
+            reference_label = "1 ref" if reference_count == 1 else f"{reference_count} refs"
+            reference_cell = f"[{reference_label}]({_relative_to_output(reference_index_json, output_dir)})"
+        else:
+            reference_cell = "0"
         lines.append(
-            "| {preset} | {approach} | {flagged} | [panel]({localizer}) | [physics]({physics}) | [eval]({eval}) | [sheet]({sheet}) |".format(
+            "| {preset} | {approach} | {flagged} | {reference_cell} | [panel]({localizer}) | [physics]({physics}) | [eval]({eval}) | [sheet]({sheet}) |".format(
                 preset=entry["preset_id"],
                 approach=entry["approach"],
                 flagged=("yes" if entry["flagged"] else "no"),
+                reference_cell=reference_cell,
                 localizer=_relative_to_output(entry["localizer_panel_png"], output_dir),
                 physics=_relative_to_output(entry["physics_png"], output_dir),
                 eval=_relative_to_output(entry["eval_summary_json"], output_dir),
@@ -1097,6 +1164,7 @@ def review_presets(
     vessel_overlay_names: list[str] | None = None,
     preset_ids: list[str] | None = None,
     include_physics_debug_maps: bool = False,
+    reference_manifest_path: str | Path | None = None,
     physics_profile: str | None = None,
     physics_speckle_strength: float | None = None,
     physics_reverberation_strength: float | None = None,
@@ -1105,6 +1173,11 @@ def review_presets(
 ) -> dict[str, object]:
     resolved_thresholds = DEFAULT_REVIEW_THRESHOLDS if review_thresholds is None else review_thresholds
     context = build_render_context(manifest_path, roll_deg=roll_deg)
+    reference_manifest = (
+        None
+        if reference_manifest_path is None
+        else load_reference_manifest(reference_manifest_path, case_manifest=context.manifest)
+    )
     voxel_context = replace(context, airway_geometry_mesh=None)
     output_dir = Path(output_dir).expanduser().resolve()
     (output_dir / "presets").mkdir(parents=True, exist_ok=True)
@@ -1133,6 +1206,11 @@ def review_presets(
                 show_full_airway=show_full_airway,
                 vessel_overlay_names=vessel_overlay_names,
                 include_physics_debug_maps=include_physics_debug_maps,
+                linked_references=(
+                    []
+                    if reference_manifest is None
+                    else find_reference_entries(reference_manifest, preset_id=preset_id, approach=approach)
+                ),
                 physics_profile=physics_profile,
                 physics_speckle_strength=physics_speckle_strength,
                 physics_reverberation_strength=physics_reverberation_strength,
@@ -1188,6 +1266,18 @@ def review_presets(
         "flagged_count": sum(1 for entry in entries if entry["flagged"]),
         "preset_filter": ([] if preset_ids is None else list(preset_ids)),
         "include_physics_debug_maps": bool(include_physics_debug_maps),
+        "reference_manifest": (
+            None
+            if reference_manifest is None
+            else {
+                "manifest_path": str(reference_manifest.manifest_path),
+                "root": str(reference_manifest.root),
+                "entry_count": len(reference_manifest.entries),
+                "linked_review_count": sum(1 for entry in entries if int(entry.get("reference_count", 0) or 0) > 0),
+                "linked_reference_count": sum(int(entry.get("reference_count", 0) or 0) for entry in entries),
+                "notes": dict(reference_manifest.notes),
+            }
+        ),
         "physics_settings": {
             "profile_name": (
                 None

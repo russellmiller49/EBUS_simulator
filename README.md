@@ -22,6 +22,7 @@ Current implemented capabilities:
 - clean/debug render modes, station/vessel overlays, metadata sidecars, and batch render indexes
 - `render-all-presets` CLI
 - `review-presets` CLI for deterministic physics-aware review bundles with JSON/CSV/Markdown indexes and review sheets
+- optional reference-image manifest wiring for review bundles, with copied/indexed reference assets when linked
 - `compare-review-bundles` CLI for before/after calibration summaries across review bundle runs
 - `analyze-render-consistency` CLI for cross-preset localizer/physics divergence summaries
 - configurable geometry and physics auto-flag thresholds for review bundles
@@ -171,6 +172,12 @@ Generate a filtered physics-aware review bundle with debug maps and tuned auto-f
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01
 ```
 
+Generate a review bundle with a small linked reference-image manifest:
+
+```bash
+review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --reference-manifest reference/manifest.yaml --width 48 --height 48
+```
+
 Use a named physics profile during review or consistency sweeps:
 
 ```bash
@@ -219,6 +226,31 @@ The suite is split by intent:
 - files under those directories are auto-marked as `unit` or `integration` during pytest collection
 
 Use `make test-fast` during local iteration, then run `make test-integration` or `make test` before finishing a renderer or workflow change.
+
+## Reference Images
+
+Reference images live under:
+
+- `reference/manifest.yaml`
+- `reference/images/`
+
+The repository includes one small placeholder entry so the workflow and tests have a real manifest path to exercise. It is not a clinical calibration asset.
+
+When adding real references:
+
+- only add de-identified stills or clip frames that are safe to store in the repo or in your private data root
+- link each entry to the closest preset and approach you can justify, but treat that linkage as approximate educational context, not exact ground truth
+- use `correlation_confidence` to describe how strong that linkage is:
+  - `high`: close anatomic/station match and useful for direct side-by-side review
+  - `medium`: likely same teaching target, but pose/anatomy correspondence is only partial
+  - `low`: loose or illustrative linkage that should not drive tuning by itself
+- use tags and optional visibility flags to call out why the reference is useful, such as `vessel_visible`, `airway_wall_visible`, or `node_prominent`
+
+Review-bundle behavior:
+
+- if `--reference-manifest` is omitted, review generation behaves exactly as before
+- if only some presets have references, only those entries get copied reference assets and reference summary links
+- review sheets include a `Reference Images` section, and review JSON/CSV/Markdown indexes record per-entry reference counts and linked files
 
 Launch the current desktop preset browser:
 
