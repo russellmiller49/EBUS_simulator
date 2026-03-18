@@ -40,7 +40,7 @@ The main remaining gaps are:
 - the review workflow is now physics-aware, but calibration/tuning is still early and the reviewer loop is intentionally lightweight
 - the repo guidance still needs periodic synchronization as features land
 - rendering responsibilities are still somewhat concentrated in `rendering.py`
-- the desktop preset browser exists as a first slice with queued rendering and summary text, but it still needs broader manual Qt validation and packaging polish
+- the current desktop preset browser has queued rendering and summary text, but it still needs broader manual Qt validation and packaging polish
 
 These gaps define the active roadmap.
 
@@ -55,7 +55,7 @@ Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a porta
 - a local desktop UI for preset browsing and screenshot export
 
 The next active milestone is the **desktop preset browser refinement layer**.
-The review defaults are now stable enough to support the first app slice, so the next pass is UI hardening rather than more threshold churn.
+The review defaults are now stable enough to support the current app layer, so the next pass is UI hardening rather than more threshold churn.
 
 ---
 
@@ -198,6 +198,16 @@ Improve realism while keeping the renderer inspectable and tunable.
 ## Phase D — desktop preset browser
 ### Status
 In progress.
+
+Current browser baseline already implemented:
+- preset and approach selectors
+- localizer / physics engine toggle
+- depth, angle, roll, gain, and attenuation controls
+- overlay toggles
+- 2D EBUS and 3D context panes
+- queued background rendering
+- reviewer-facing metadata summary
+- screenshot export
 
 ### Goal
 Expose the simulator through a stable local desktop app for review and teaching.

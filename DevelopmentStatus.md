@@ -27,7 +27,7 @@ The current state is:
 - a first `physics` renderer exists and can render repo presets
 - the physics renderer now supports tunable artifacts, debug-map export, and basic evaluation summaries
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
-- a first desktop preset-browser slice now exists behind the optional `ui` dependency, with queued rendering and reviewer-facing summary text
+- the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and reviewer-facing summary text
 
 In practical terms, the repo is already useful for:
 - loading and validating the dataset
@@ -101,7 +101,7 @@ The active development focus is:
 - repo-root smoke targets such as `make render-smoke`, `make physics-smoke`, and `make ci-smoke`
 
 ### Desktop app
-- `launch-app` CLI wired to a first PySide6 preset-browser slice
+- `launch-app` CLI wired to the current PySide6 preset browser
 - reusable non-Qt preset-browser render session for testing and future UI expansion
 - 2D EBUS pane driven by the selected render engine
 - 3D context pane derived from the existing localizer diagnostic/context path
@@ -165,8 +165,8 @@ Still missing:
 - use the bundled review outputs to refine thresholds and reviewer ergonomics, now that wall metrics are no longer mostly null
 - decide whether more render-state preparation should move out of `rendering.py`
 
-### Major remaining milestone: desktop app
-The main remaining milestone is turning the first preset-browser slice into a polished desktop workflow.
+### Major remaining milestone: polished desktop workflow
+The main remaining milestone is turning the current preset browser into a polished desktop workflow.
 
 Planned scope:
 - `launch-app` CLI
@@ -220,7 +220,7 @@ Note:
 
 ## Latest Validation Snapshot
 
-Latest verified run snapshot from `2026-03-17`:
+Latest verified run snapshot from `2026-03-18`:
 - `.venv/bin/python -m pytest tests/test_app.py -q` -> `6 passed in 70.99s (0:01:10)`
 - `.venv/bin/python -m pytest tests/test_review.py -q` -> `6 passed in 238.11s (0:03:58)`
 - `.venv/bin/python -m pip install -e '.[ui]'` -> succeeded and installed `PySide6 6.10.2`
@@ -245,8 +245,8 @@ The review smoke bundle shape remains:
 
 If work resumes in a fresh session, the highest-value next step is:
 
-1. install the `ui` extra and run `launch-app` against the checked-in dataset for manual desktop validation
-2. do a longer manual desktop pass around preset switching, screenshot export, and summary-panel usefulness now that queued rendering is in place
+1. run `launch-app` against the checked-in dataset for a longer manual desktop validation pass
+2. exercise preset switching, screenshot export, and summary-panel usefulness now that queued rendering is in place
 3. add a few navigation/ergonomic affordances such as preset search, favorites, or recent renders if manual use shows friction
 
 ---

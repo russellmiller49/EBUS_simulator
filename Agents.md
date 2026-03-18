@@ -33,7 +33,7 @@ What is already implemented and should be preserved unless there is a hard block
 - clean/debug render modes, overlay controls, metadata sidecars, and diagnostic panels
 - batch rendering, cutaway/context views, and physics-aware preset review workflows with eval summaries and rubric sheets
 - conservative default wall-contrast review warning with an explicit CLI opt-out for calibration runs
-- first `launch-app` desktop preset-browser slice with queued rendering, reviewer summary text, 2D EBUS, 3D context, and screenshot export
+- current `launch-app` desktop preset browser with queued rendering, reviewer summary text, 2D EBUS, 3D context, and screenshot export
 
 What is **not** implemented yet:
 - polished calibration/tuning workflow on top of the existing review bundle
@@ -214,17 +214,17 @@ The current renderer should become the explicit **localizer** engine.
 Any future ultrasound-like renderer should be a separate **physics** engine.
 
 The next active milestone is:
-- review / calibration refinement and parameter tuning
-- reviewer-facing bundle iteration rather than first-pass bundling
-- desktop UI only after the review loop is stable
+- desktop preset browser refinement and manual validation
+- reviewer-facing bundle iteration informed by the existing review outputs
+- review / calibration tuning as real feedback arrives
 
 ---
 
 ## Next-pass priorities
 Preferred order for remaining work:
-1. review / calibration tuning using the current physics-aware bundles
+1. desktop preset browser refinement and manual validation
 2. small review/render coupling cleanup where it has clear value
-3. PySide6 preset browser
+3. review / calibration tuning using the current physics-aware bundles
 
 Trainer/quiz layers are deferred until the above are stable.
 

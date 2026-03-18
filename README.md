@@ -22,7 +22,7 @@ Current implemented capabilities:
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
-- desktop preset-browser slice with queued rendering, reviewer summary, 2D EBUS, and 3D context panes
+- current desktop preset browser with queued rendering, reviewer summary, 2D EBUS, and 3D context panes
 - CI smoke workflow
 
 Not implemented yet:
@@ -32,7 +32,7 @@ Not implemented yet:
 
 Next active milestone:
 
-- desktop preset browser refinement and manual Qt validation
+- desktop preset browser refinement, manual Qt validation, and workflow polish
 - review / calibration refinement on top of the current bundle workflow as reference feedback becomes available
 
 ## Dataset
@@ -161,8 +161,17 @@ make ci-smoke
 make test
 ```
 
-Launch the first desktop preset browser:
+Launch the current desktop preset browser:
 
 ```bash
 launch-app configs/3d_slicer_files.yaml
 ```
+
+Current browser surface:
+- preset and approach selectors
+- localizer / physics engine toggle
+- depth, sector angle, fine roll, gain, and attenuation controls
+- airway / target / station / vessel overlay toggles
+- queued rendering with status updates
+- reviewer-facing summary panel sourced from render metadata
+- screenshot export for the active browser state
