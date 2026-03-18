@@ -92,6 +92,7 @@ The active development focus is:
 
 ### Review and automation
 - `review-presets` physics-aware batch review exports with deterministic preset/approach folders
+- `compare-review-bundles` before/after summaries for calibration passes across review bundle runs
 - JSON, CSV, and Markdown review indexes
 - per-entry review sheets and a shared rubric template
 - configurable geometry and physics auto-flag thresholds for review bundles
@@ -126,6 +127,7 @@ Current state:
 - airway-wall eval stats now fall back to a lumen-adjacent shell when direct wall samples are too sparse
 - physics debug maps can be bundled on request
 - deterministic JSON, CSV, and Markdown indexes are generated for batch review
+- before/after JSON, CSV, and Markdown comparison artifacts can now be generated from two review bundle summaries
 - geometry and physics auto-flag thresholds can now be tuned from the review CLI for calibration passes
 
 Still missing:
@@ -197,6 +199,7 @@ These commands are part of the current usable surface area:
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
+- `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 
 Note:
 - `make test` re-enters `bootstrap.sh`; if the environment is already provisioned, `.venv/bin/python -m pytest -q` is the most direct rerun path.
@@ -206,7 +209,8 @@ Note:
 ## Latest Validation Snapshot
 
 Latest verified run snapshot from `2026-03-17`:
-- `.venv/bin/python -m pytest tests/test_physics_renderer.py tests/test_review.py -q -s` -> `5 passed in 275.11s (0:04:35)`
+- `.venv/bin/python -m pytest tests/test_review.py -q` -> `5 passed in 197.17s (0:03:17)`
+- `.venv/bin/compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/_comparison_smoke` -> succeeded with `matched_entry_count: 16`, `before_flagged_count: 8`, `after_flagged_count: 4`, `resolved_flagged_count: 4`, and emitted `before_after_summary.{json,csv,md}`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_smoke_wall_eval --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64` -> succeeded with `review_count: 3`, `flagged_count: 2`, and non-null wall eval stats in the bundle entries
 - `.venv/bin/python -m pytest -q` -> `35 passed in 538.15s (0:08:58)`
 

@@ -273,6 +273,7 @@ These commands should already work from repo root or remain working as the repo 
 - `render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
+- `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - later: `launch-app configs/3d_slicer_files.yaml`
 - `pytest -q`
 

@@ -184,6 +184,7 @@ Improve realism while keeping the renderer inspectable and tunable.
 
 ### Remaining work in Phase C
 - use the current bundle outputs to tune physics appearance and reviewer thresholds
+- make calibration passes easier to compare with deterministic before/after bundle summaries
 - iterate on reviewer-facing summaries and rubric ergonomics as real feedback arrives
 - keep docs and smoke examples synchronized with the review workflow
 
@@ -287,6 +288,7 @@ Current commands expected to work from repo root:
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
+- `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - `pytest -q`
 
 Future command to add:

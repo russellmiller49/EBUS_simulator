@@ -562,6 +562,310 @@ def _write_summary_markdown(summary_path: Path, output_dir: Path, entries: list[
     summary_path.write_text("\n".join(lines) + "\n")
 
 
+def _entry_key(entry: dict[str, object]) -> tuple[str, str]:
+    return str(entry["preset_id"]), str(entry["approach"])
+
+
+def _collect_review_entries(summary: dict[str, object]) -> dict[tuple[str, str], dict[str, object]]:
+    lookup: dict[tuple[str, str], dict[str, object]] = {}
+    raw_entries = summary.get("entries", [])
+    if not isinstance(raw_entries, list):
+        raise ValueError("Review summary 'entries' must be a list.")
+    for raw_entry in raw_entries:
+        if not isinstance(raw_entry, dict):
+            raise ValueError("Review summary entries must be objects.")
+        key = _entry_key(raw_entry)
+        if key in lookup:
+            raise ValueError(f"Duplicate review entry for preset={key[0]} approach={key[1]}.")
+        lookup[key] = raw_entry
+    return lookup
+
+
+def _get_entry_metric(entry: dict[str, object], key: str) -> object:
+    metrics = entry.get("metrics", {})
+    if not isinstance(metrics, dict):
+        return None
+    return metrics.get(key)
+
+
+def _get_entry_eval_summary(entry: dict[str, object]) -> dict[str, object]:
+    physics_eval_summary = entry.get("physics_eval_summary", {})
+    if not isinstance(physics_eval_summary, dict):
+        return {}
+    return physics_eval_summary
+
+
+def _get_entry_eval_value(entry: dict[str, object], key: str) -> object:
+    return _get_entry_eval_summary(entry).get(key)
+
+
+def _build_comparison_row(before_entry: dict[str, object], after_entry: dict[str, object]) -> dict[str, object]:
+    before_flagged = bool(before_entry.get("flagged"))
+    after_flagged = bool(after_entry.get("flagged"))
+    if before_flagged and after_flagged:
+        transition = "still_flagged"
+    elif before_flagged:
+        transition = "resolved"
+    elif after_flagged:
+        transition = "regressed"
+    else:
+        transition = "still_clear"
+
+    return {
+        "preset_id": before_entry["preset_id"],
+        "approach": before_entry["approach"],
+        "flag_transition": transition,
+        "before_flagged": before_flagged,
+        "after_flagged": after_flagged,
+        "before_reasons": list(before_entry.get("flag_reasons", [])),
+        "after_reasons": list(after_entry.get("flag_reasons", [])),
+        "before_target_in_sector": _get_entry_metric(before_entry, "target_in_sector"),
+        "after_target_in_sector": _get_entry_metric(after_entry, "target_in_sector"),
+        "before_station_overlap_fraction_in_fan": _get_entry_metric(before_entry, "station_overlap_fraction_in_fan"),
+        "after_station_overlap_fraction_in_fan": _get_entry_metric(after_entry, "station_overlap_fraction_in_fan"),
+        "before_nUS_delta_deg_from_voxel_baseline": _get_entry_metric(before_entry, "nUS_delta_deg_from_voxel_baseline"),
+        "after_nUS_delta_deg_from_voxel_baseline": _get_entry_metric(after_entry, "nUS_delta_deg_from_voxel_baseline"),
+        "before_contact_delta_mm_from_voxel_baseline": _get_entry_metric(before_entry, "contact_delta_mm_from_voxel_baseline"),
+        "after_contact_delta_mm_from_voxel_baseline": _get_entry_metric(after_entry, "contact_delta_mm_from_voxel_baseline"),
+        "before_contact_refinement_ambiguity": _get_entry_metric(before_entry, "contact_refinement_ambiguity"),
+        "after_contact_refinement_ambiguity": _get_entry_metric(after_entry, "contact_refinement_ambiguity"),
+        "before_target_lateral_offset_mm": _get_entry_metric(before_entry, "target_lateral_offset_mm"),
+        "after_target_lateral_offset_mm": _get_entry_metric(after_entry, "target_lateral_offset_mm"),
+        "before_target_contrast_vs_sector": _get_entry_eval_value(before_entry, "target_contrast_vs_sector"),
+        "after_target_contrast_vs_sector": _get_entry_eval_value(after_entry, "target_contrast_vs_sector"),
+        "before_wall_contrast_vs_sector": _get_entry_eval_value(before_entry, "wall_contrast_vs_sector"),
+        "after_wall_contrast_vs_sector": _get_entry_eval_value(after_entry, "wall_contrast_vs_sector"),
+        "before_vessel_contrast_vs_sector": _get_entry_eval_value(before_entry, "vessel_contrast_vs_sector"),
+        "after_vessel_contrast_vs_sector": _get_entry_eval_value(after_entry, "vessel_contrast_vs_sector"),
+        "before_wall_pixel_count": _region_pixel_count(_get_entry_eval_summary(before_entry), "wall"),
+        "after_wall_pixel_count": _region_pixel_count(_get_entry_eval_summary(after_entry), "wall"),
+    }
+
+
+def compare_review_summaries(
+    before_summary: dict[str, object],
+    after_summary: dict[str, object],
+    *,
+    before_summary_path: str | Path | None = None,
+    after_summary_path: str | Path | None = None,
+) -> dict[str, object]:
+    before_entries = _collect_review_entries(before_summary)
+    after_entries = _collect_review_entries(after_summary)
+    before_keys = set(before_entries)
+    after_keys = set(after_entries)
+    matched_keys = sorted(before_keys & after_keys)
+
+    rows = [_build_comparison_row(before_entries[key], after_entries[key]) for key in matched_keys]
+    resolved_count = sum(1 for row in rows if row["flag_transition"] == "resolved")
+    regressed_count = sum(1 for row in rows if row["flag_transition"] == "regressed")
+    unchanged_flagged_count = sum(1 for row in rows if row["flag_transition"] == "still_flagged")
+    unchanged_clear_count = sum(1 for row in rows if row["flag_transition"] == "still_clear")
+
+    return {
+        "before_summary_json": None if before_summary_path is None else str(Path(before_summary_path).expanduser().resolve()),
+        "after_summary_json": None if after_summary_path is None else str(Path(after_summary_path).expanduser().resolve()),
+        "before_case_id": before_summary.get("case_id"),
+        "after_case_id": after_summary.get("case_id"),
+        "case_id_match": before_summary.get("case_id") == after_summary.get("case_id"),
+        "before_output_dir": before_summary.get("output_dir"),
+        "after_output_dir": after_summary.get("output_dir"),
+        "before_review_count": int(before_summary.get("review_count", len(before_entries))),
+        "after_review_count": int(after_summary.get("review_count", len(after_entries))),
+        "matched_entry_count": len(matched_keys),
+        "before_only_entries": [
+            {"preset_id": preset_id, "approach": approach}
+            for preset_id, approach in sorted(before_keys - after_keys)
+        ],
+        "after_only_entries": [
+            {"preset_id": preset_id, "approach": approach}
+            for preset_id, approach in sorted(after_keys - before_keys)
+        ],
+        "before_flagged_count": int(before_summary.get("flagged_count", sum(1 for entry in before_entries.values() if entry.get("flagged")))),
+        "after_flagged_count": int(after_summary.get("flagged_count", sum(1 for entry in after_entries.values() if entry.get("flagged")))),
+        "resolved_flagged_count": resolved_count,
+        "regressed_flagged_count": regressed_count,
+        "unchanged_flagged_count": unchanged_flagged_count,
+        "unchanged_clear_count": unchanged_clear_count,
+        "before_thresholds": before_summary.get("thresholds"),
+        "after_thresholds": after_summary.get("thresholds"),
+        "before_physics_settings": before_summary.get("physics_settings"),
+        "after_physics_settings": after_summary.get("physics_settings"),
+        "rows": rows,
+    }
+
+
+def _write_comparison_csv(summary_path: Path, rows: list[dict[str, object]]) -> None:
+    with summary_path.open("w", newline="") as handle:
+        writer = DictWriter(
+            handle,
+            fieldnames=[
+                "preset_id",
+                "approach",
+                "flag_transition",
+                "before_flagged",
+                "after_flagged",
+                "before_reasons",
+                "after_reasons",
+                "before_target_in_sector",
+                "after_target_in_sector",
+                "before_station_overlap_fraction_in_fan",
+                "after_station_overlap_fraction_in_fan",
+                "before_nUS_delta_deg_from_voxel_baseline",
+                "after_nUS_delta_deg_from_voxel_baseline",
+                "before_contact_delta_mm_from_voxel_baseline",
+                "after_contact_delta_mm_from_voxel_baseline",
+                "before_contact_refinement_ambiguity",
+                "after_contact_refinement_ambiguity",
+                "before_target_lateral_offset_mm",
+                "after_target_lateral_offset_mm",
+                "before_target_contrast_vs_sector",
+                "after_target_contrast_vs_sector",
+                "before_wall_contrast_vs_sector",
+                "after_wall_contrast_vs_sector",
+                "before_vessel_contrast_vs_sector",
+                "after_vessel_contrast_vs_sector",
+                "before_wall_pixel_count",
+                "after_wall_pixel_count",
+            ],
+        )
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {
+                    **row,
+                    "before_reasons": " | ".join(row["before_reasons"]),
+                    "after_reasons": " | ".join(row["after_reasons"]),
+                }
+            )
+
+
+def _format_optional_number(value: object, precision: int = 3) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    return f"{float(value):.{precision}f}"
+
+
+def _write_comparison_markdown(summary_path: Path, comparison: dict[str, object]) -> None:
+    rows = comparison["rows"]
+    lines = [
+        "# Review Bundle Comparison",
+        "",
+        f"- before_summary_json: {comparison['before_summary_json']}",
+        f"- after_summary_json: {comparison['after_summary_json']}",
+        f"- case_id_match: {'yes' if comparison['case_id_match'] else 'no'}",
+        f"- matched_entry_count: {comparison['matched_entry_count']}",
+        f"- before_flagged_count: {comparison['before_flagged_count']}",
+        f"- after_flagged_count: {comparison['after_flagged_count']}",
+        f"- resolved_flagged_count: {comparison['resolved_flagged_count']}",
+        f"- regressed_flagged_count: {comparison['regressed_flagged_count']}",
+        f"- unchanged_flagged_count: {comparison['unchanged_flagged_count']}",
+        f"- unchanged_clear_count: {comparison['unchanged_clear_count']}",
+        "",
+        "## Flag Transitions",
+        "",
+    ]
+
+    transition_sections = [
+        ("resolved", "Resolved Flags"),
+        ("regressed", "New Flags"),
+        ("still_flagged", "Still Flagged"),
+    ]
+    for transition_key, title in transition_sections:
+        lines.extend([f"### {title}", ""])
+        matching_rows = [row for row in rows if row["flag_transition"] == transition_key]
+        if not matching_rows:
+            lines.append("- none")
+        else:
+            for row in matching_rows:
+                before_reasons = "; ".join(row["before_reasons"]) or "none"
+                after_reasons = "; ".join(row["after_reasons"]) or "none"
+                lines.append(
+                    f"- `{row['preset_id']}` / `{row['approach']}`: before={before_reasons}; after={after_reasons}"
+                )
+        lines.append("")
+
+    if comparison["before_only_entries"] or comparison["after_only_entries"]:
+        lines.extend(["## Unmatched Entries", ""])
+        if comparison["before_only_entries"]:
+            lines.append("### Before Only")
+            lines.append("")
+            for entry in comparison["before_only_entries"]:
+                lines.append(f"- `{entry['preset_id']}` / `{entry['approach']}`")
+            lines.append("")
+        if comparison["after_only_entries"]:
+            lines.append("### After Only")
+            lines.append("")
+            for entry in comparison["after_only_entries"]:
+                lines.append(f"- `{entry['preset_id']}` / `{entry['approach']}`")
+            lines.append("")
+
+    lines.extend(
+        [
+            "## Contrast Table",
+            "",
+            "| Preset | Approach | Transition | Before Target | After Target | Before Wall | After Wall | Before Vessel | After Vessel |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+    )
+    for row in rows:
+        lines.append(
+            "| {preset} | {approach} | {transition} | {before_target} | {after_target} | {before_wall} | {after_wall} | {before_vessel} | {after_vessel} |".format(
+                preset=row["preset_id"],
+                approach=row["approach"],
+                transition=row["flag_transition"],
+                before_target=_format_optional_number(row["before_target_contrast_vs_sector"]),
+                after_target=_format_optional_number(row["after_target_contrast_vs_sector"]),
+                before_wall=_format_optional_number(row["before_wall_contrast_vs_sector"]),
+                after_wall=_format_optional_number(row["after_wall_contrast_vs_sector"]),
+                before_vessel=_format_optional_number(row["before_vessel_contrast_vs_sector"]),
+                after_vessel=_format_optional_number(row["after_vessel_contrast_vs_sector"]),
+            )
+        )
+    summary_path.write_text("\n".join(lines) + "\n")
+
+
+def compare_review_bundle_files(
+    before_summary_path: str | Path,
+    after_summary_path: str | Path,
+    *,
+    output_dir: str | Path | None = None,
+) -> dict[str, object]:
+    before_summary_path = Path(before_summary_path).expanduser().resolve()
+    after_summary_path = Path(after_summary_path).expanduser().resolve()
+    resolved_output_dir = (
+        after_summary_path.parent
+        if output_dir is None
+        else Path(output_dir).expanduser().resolve()
+    )
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+
+    before_summary = json.loads(before_summary_path.read_text())
+    after_summary = json.loads(after_summary_path.read_text())
+    comparison = compare_review_summaries(
+        before_summary,
+        after_summary,
+        before_summary_path=before_summary_path,
+        after_summary_path=after_summary_path,
+    )
+
+    summary_json_path = resolved_output_dir / "before_after_summary.json"
+    summary_csv_path = resolved_output_dir / "before_after_summary.csv"
+    summary_md_path = resolved_output_dir / "before_after_summary.md"
+
+    summary_json_path.write_text(json.dumps(comparison, indent=2))
+    _write_comparison_csv(summary_csv_path, comparison["rows"])
+    _write_comparison_markdown(summary_md_path, comparison)
+
+    return {
+        **comparison,
+        "comparison_json": str(summary_json_path),
+        "comparison_csv": str(summary_csv_path),
+        "comparison_md": str(summary_md_path),
+    }
+
+
 def _render_comparison_bundle(
     context,
     voxel_context,

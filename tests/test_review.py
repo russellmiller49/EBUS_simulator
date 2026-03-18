@@ -1,7 +1,13 @@
 from pathlib import Path
 import json
 
-from ebus_simulator.review import ReviewThresholds, _flag_review_metrics, review_presets
+from ebus_simulator.review import (
+    ReviewThresholds,
+    _flag_review_metrics,
+    compare_review_bundle_files,
+    compare_review_summaries,
+    review_presets,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -108,3 +114,205 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
     assert index_payload["review_count"] == 3
     assert "| station_7_node_a | lms |" in index_markdown
     assert "| station_7_node_a | rms |" in index_markdown
+
+
+def test_compare_review_summaries_tracks_flag_transitions_and_contrasts():
+    before_summary = {
+        "case_id": "demo_case",
+        "review_count": 2,
+        "flagged_count": 1,
+        "thresholds": {"wall_contrast_vs_sector_min": None},
+        "physics_settings": {"speckle_strength": 0.2},
+        "entries": [
+            {
+                "preset_id": "station_4r_node_b",
+                "approach": "default",
+                "flagged": True,
+                "flag_reasons": ["contact refinement remained ambiguous"],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.20,
+                    "nUS_delta_deg_from_voxel_baseline": 6.7,
+                    "contact_delta_mm_from_voxel_baseline": 0.23,
+                    "contact_refinement_ambiguity": True,
+                    "target_lateral_offset_mm": -5.1,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": -0.02,
+                    "wall_contrast_vs_sector": 0.01,
+                    "vessel_contrast_vs_sector": 0.03,
+                    "wall": {"pixel_count": 4},
+                },
+            },
+            {
+                "preset_id": "station_7_node_a",
+                "approach": "lms",
+                "flagged": False,
+                "flag_reasons": [],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.70,
+                    "nUS_delta_deg_from_voxel_baseline": 2.5,
+                    "contact_delta_mm_from_voxel_baseline": 0.50,
+                    "contact_refinement_ambiguity": False,
+                    "target_lateral_offset_mm": -8.0,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": 0.05,
+                    "wall_contrast_vs_sector": 0.04,
+                    "vessel_contrast_vs_sector": -0.03,
+                    "wall": {"pixel_count": 7},
+                },
+            },
+        ],
+    }
+    after_summary = {
+        "case_id": "demo_case",
+        "review_count": 2,
+        "flagged_count": 1,
+        "thresholds": {"wall_contrast_vs_sector_min": 0.02},
+        "physics_settings": {"speckle_strength": 0.22},
+        "entries": [
+            {
+                "preset_id": "station_4r_node_b",
+                "approach": "default",
+                "flagged": False,
+                "flag_reasons": [],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.22,
+                    "nUS_delta_deg_from_voxel_baseline": 3.8,
+                    "contact_delta_mm_from_voxel_baseline": 0.04,
+                    "contact_refinement_ambiguity": False,
+                    "target_lateral_offset_mm": -0.3,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": 0.01,
+                    "wall_contrast_vs_sector": 0.03,
+                    "vessel_contrast_vs_sector": -0.02,
+                    "wall": {"pixel_count": 9},
+                },
+            },
+            {
+                "preset_id": "station_7_node_a",
+                "approach": "lms",
+                "flagged": True,
+                "flag_reasons": ["wall contrast 0.010 < 0.020"],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.72,
+                    "nUS_delta_deg_from_voxel_baseline": 2.4,
+                    "contact_delta_mm_from_voxel_baseline": 0.49,
+                    "contact_refinement_ambiguity": False,
+                    "target_lateral_offset_mm": -7.7,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": 0.04,
+                    "wall_contrast_vs_sector": 0.01,
+                    "vessel_contrast_vs_sector": -0.04,
+                    "wall": {"pixel_count": 8},
+                },
+            },
+        ],
+    }
+
+    comparison = compare_review_summaries(before_summary, after_summary)
+
+    assert comparison["case_id_match"] is True
+    assert comparison["matched_entry_count"] == 2
+    assert comparison["resolved_flagged_count"] == 1
+    assert comparison["regressed_flagged_count"] == 1
+    assert comparison["unchanged_flagged_count"] == 0
+    assert comparison["unchanged_clear_count"] == 0
+    assert comparison["before_thresholds"]["wall_contrast_vs_sector_min"] is None
+    assert comparison["after_thresholds"]["wall_contrast_vs_sector_min"] == 0.02
+
+    station_4r = next(row for row in comparison["rows"] if row["preset_id"] == "station_4r_node_b")
+    assert station_4r["flag_transition"] == "resolved"
+    assert station_4r["before_wall_pixel_count"] == 4
+    assert station_4r["after_wall_pixel_count"] == 9
+    assert station_4r["before_wall_contrast_vs_sector"] == 0.01
+    assert station_4r["after_wall_contrast_vs_sector"] == 0.03
+
+    station_7 = next(row for row in comparison["rows"] if row["preset_id"] == "station_7_node_a")
+    assert station_7["flag_transition"] == "regressed"
+    assert station_7["before_reasons"] == []
+    assert station_7["after_reasons"] == ["wall contrast 0.010 < 0.020"]
+
+
+def test_compare_review_bundle_files_writes_artifacts(tmp_path):
+    before_summary = {
+        "case_id": "demo_case",
+        "review_count": 1,
+        "flagged_count": 1,
+        "entries": [
+            {
+                "preset_id": "station_4r_node_b",
+                "approach": "default",
+                "flagged": True,
+                "flag_reasons": ["contact refinement remained ambiguous"],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.20,
+                    "nUS_delta_deg_from_voxel_baseline": 6.7,
+                    "contact_delta_mm_from_voxel_baseline": 0.23,
+                    "contact_refinement_ambiguity": True,
+                    "target_lateral_offset_mm": -5.1,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": -0.02,
+                    "wall_contrast_vs_sector": 0.01,
+                    "vessel_contrast_vs_sector": 0.03,
+                    "wall": {"pixel_count": 4},
+                },
+            }
+        ],
+    }
+    after_summary = {
+        "case_id": "demo_case",
+        "review_count": 1,
+        "flagged_count": 0,
+        "entries": [
+            {
+                "preset_id": "station_4r_node_b",
+                "approach": "default",
+                "flagged": False,
+                "flag_reasons": [],
+                "metrics": {
+                    "target_in_sector": True,
+                    "station_overlap_fraction_in_fan": 0.22,
+                    "nUS_delta_deg_from_voxel_baseline": 3.8,
+                    "contact_delta_mm_from_voxel_baseline": 0.04,
+                    "contact_refinement_ambiguity": False,
+                    "target_lateral_offset_mm": -0.3,
+                },
+                "physics_eval_summary": {
+                    "target_contrast_vs_sector": 0.01,
+                    "wall_contrast_vs_sector": 0.03,
+                    "vessel_contrast_vs_sector": -0.02,
+                    "wall": {"pixel_count": 9},
+                },
+            }
+        ],
+    }
+
+    before_path = tmp_path / "before_review_summary.json"
+    after_path = tmp_path / "after_review_summary.json"
+    output_dir = tmp_path / "comparison"
+    before_path.write_text(json.dumps(before_summary, indent=2))
+    after_path.write_text(json.dumps(after_summary, indent=2))
+
+    comparison = compare_review_bundle_files(before_path, after_path, output_dir=output_dir)
+
+    assert comparison["resolved_flagged_count"] == 1
+    assert Path(comparison["comparison_json"]).exists()
+    assert Path(comparison["comparison_csv"]).exists()
+    assert Path(comparison["comparison_md"]).exists()
+
+    markdown = Path(comparison["comparison_md"]).read_text()
+    assert "Resolved Flags" in markdown
+    assert "`station_4r_node_b` / `default`" in markdown
+
+    csv_text = Path(comparison["comparison_csv"]).read_text()
+    assert "flag_transition" in csv_text
+    assert "resolved" in csv_text

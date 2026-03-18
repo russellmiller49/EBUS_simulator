@@ -18,6 +18,7 @@ Current implemented capabilities:
 - clean/debug render modes, station/vessel overlays, metadata sidecars, and batch render indexes
 - `render-all-presets` CLI
 - `review-presets` CLI for deterministic physics-aware review bundles with JSON/CSV/Markdown indexes and review sheets
+- `compare-review-bundles` CLI for before/after calibration summaries across review bundle runs
 - configurable geometry and physics auto-flag thresholds for review bundles
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
 - CI smoke workflow
@@ -126,6 +127,12 @@ Generate a filtered physics-aware review bundle with debug maps and tuned auto-f
 
 ```bash
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01
+```
+
+Compare a baseline and tuned review bundle to generate before/after calibration summaries:
+
+```bash
+compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized
 ```
 
 Convenience targets:
