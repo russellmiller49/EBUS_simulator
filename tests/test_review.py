@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from ebus_simulator.review import _flag_review_metrics, review_presets
+from ebus_simulator.review import ReviewThresholds, _flag_review_metrics, review_presets
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +24,35 @@ def test_flag_review_metrics_catches_requested_thresholds():
     assert any("target not in displayed fan sector" == reason for reason in flags)
     assert any("station overlap" in reason for reason in flags)
     assert any("contact refinement remained ambiguous" == reason for reason in flags)
+
+
+def test_flag_review_metrics_can_include_physics_eval_thresholds():
+    flags = _flag_review_metrics(
+        {
+            "nUS_delta_deg_from_voxel_baseline": 0.5,
+            "contact_delta_mm_from_voxel_baseline": 0.2,
+            "target_in_sector": True,
+            "station_overlap_fraction_in_fan": 0.02,
+            "contact_refinement_ambiguity": False,
+        },
+        physics_eval_summary={
+            "target": {"pixel_count": 12},
+            "wall": {"pixel_count": 0},
+            "vessel": {"pixel_count": 8},
+            "target_contrast_vs_sector": -0.015,
+            "wall_contrast_vs_sector": None,
+            "vessel_contrast_vs_sector": 0.004,
+        },
+        thresholds=ReviewThresholds(
+            target_contrast_vs_sector_min=0.0,
+            vessel_contrast_vs_sector_max=-0.01,
+            wall_contrast_vs_sector_min=0.02,
+        ),
+    )
+
+    assert any("target contrast" in reason for reason in flags)
+    assert any("vessel contrast" in reason for reason in flags)
+    assert any("wall region missing from physics eval summary" == reason for reason in flags)
 
 
 def test_review_presets_generates_physics_aware_bundle(tmp_path):
@@ -70,7 +99,12 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
         set(entry["physics_artifact_settings"]) == {"speckle_strength", "reverberation_strength", "shadow_strength"}
         for entry in summary["entries"]
     )
+    assert summary["thresholds"]["target_contrast_vs_sector_min"] == 0.0
+    assert summary["thresholds"]["vessel_contrast_vs_sector_max"] == -0.01
+    assert all("geometry_flag_reasons" in entry for entry in summary["entries"])
+    assert all("physics_flag_reasons" in entry for entry in summary["entries"])
     assert all("target_contrast_vs_sector" in entry["physics_eval_summary"] for entry in summary["entries"])
+    assert any(entry["physics_eval_summary"]["wall"]["pixel_count"] > 0 for entry in summary["entries"])
     assert index_payload["review_count"] == 3
     assert "| station_7_node_a | lms |" in index_markdown
     assert "| station_7_node_a | rms |" in index_markdown

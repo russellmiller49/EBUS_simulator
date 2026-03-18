@@ -47,7 +47,8 @@ def render_review_sheet(
     eval_summary_path: Path,
     review_entry_path: Path,
     warnings: list[str],
-    flag_reasons: list[str],
+    geometry_flag_reasons: list[str],
+    physics_flag_reasons: list[str],
 ) -> str:
     lines = [
         f"# Review Sheet: {preset_id} / {approach}",
@@ -73,10 +74,24 @@ def render_review_sheet(
             "",
             "## Auto Flags",
             "",
+            "### Geometry / Pose",
+            "",
         ]
     )
-    if flag_reasons:
-        lines.extend(f"- {reason}" for reason in flag_reasons)
+    if geometry_flag_reasons:
+        lines.extend(f"- {reason}" for reason in geometry_flag_reasons)
+    else:
+        lines.append("- none")
+
+    lines.extend(
+        [
+            "",
+            "### Physics / Appearance",
+            "",
+        ]
+    )
+    if physics_flag_reasons:
+        lines.extend(f"- {reason}" for reason in physics_flag_reasons)
     else:
         lines.append("- none")
 

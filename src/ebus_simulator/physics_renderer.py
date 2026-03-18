@@ -37,6 +37,7 @@ from ebus_simulator.rendering import (
     _get_mask_volume,
     _optimize_flagged_pose_locally,
     _overlay_summary,
+    _points_to_voxel,
     _resolve_branch_shift_seed,
     _resolve_cutaway_config,
     _resolve_overlay_config,
@@ -212,19 +213,41 @@ def _sample_mask_ray_domain(
     ray_points_world: np.ndarray,
     thickness_axis: np.ndarray,
     slice_thickness_mm: float,
+    slab_reduce: str = "mean",
 ) -> np.ndarray:
     mask_volume = _get_mask_volume(context, mask_path)
-    samples = _sample_slab(
+    if slab_reduce == "mean":
+        samples = _sample_slab(
+            np.asarray(mask_volume.data, dtype=np.float32),
+            base_points_lps=ray_points_world.reshape((-1, 3)),
+            thickness_axis=thickness_axis,
+            inverse_affine_lps=mask_volume.inverse_affine_lps,
+            sample_count=DEFAULT_SLAB_SAMPLES,
+            slab_thickness_mm=slice_thickness_mm,
+            order=0,
+            cval=0.0,
+        )
+        return samples.reshape(ray_points_world.shape[:2]) > 0.5
+    if slab_reduce != "max":
+        raise ValueError(f"Unsupported slab_reduce {slab_reduce!r}.")
+
+    if DEFAULT_SLAB_SAMPLES <= 1 or slice_thickness_mm <= 0.0:
+        offsets = np.asarray([0.0], dtype=np.float64)
+    else:
+        offsets = np.linspace(-slice_thickness_mm / 2.0, slice_thickness_mm / 2.0, DEFAULT_SLAB_SAMPLES, dtype=np.float64)
+
+    base_points = ray_points_world.reshape((-1, 3))
+    stacked_points = base_points[None, :, :] + offsets[:, None, None] * thickness_axis[None, None, :]
+    voxel_points = _points_to_voxel(stacked_points.reshape((-1, 3)), mask_volume.inverse_affine_lps)
+    sampled = ndimage.map_coordinates(
         np.asarray(mask_volume.data, dtype=np.float32),
-        base_points_lps=ray_points_world.reshape((-1, 3)),
-        thickness_axis=thickness_axis,
-        inverse_affine_lps=mask_volume.inverse_affine_lps,
-        sample_count=DEFAULT_SLAB_SAMPLES,
-        slab_thickness_mm=slice_thickness_mm,
+        [voxel_points[:, 0], voxel_points[:, 1], voxel_points[:, 2]],
         order=0,
+        mode="constant",
         cval=0.0,
     )
-    return samples.reshape(ray_points_world.shape[:2]) > 0.5
+    occupancy = sampled.reshape((offsets.shape[0], base_points.shape[0])).max(axis=0)
+    return occupancy.reshape(ray_points_world.shape[:2]) > 0.0
 
 
 def _combine_vessel_masks(
@@ -257,6 +280,30 @@ def _scan_convert_display_mask(
     min_area_px: float,
     min_length_px: float,
 ) -> np.ndarray:
+    display_mask = _scan_convert_binary_mask(
+        mask,
+        depth_grid_mm=depth_grid_mm,
+        lateral_grid_mm=lateral_grid_mm,
+        sector_mask=sector_mask,
+        max_depth_mm=max_depth_mm,
+        sector_angle_deg=sector_angle_deg,
+    )
+    return _filter_mask_components(
+        display_mask,
+        min_area_px=min_area_px,
+        min_length_px=min_length_px,
+    )
+
+
+def _scan_convert_binary_mask(
+    mask: np.ndarray,
+    *,
+    depth_grid_mm: np.ndarray,
+    lateral_grid_mm: np.ndarray,
+    sector_mask: np.ndarray,
+    max_depth_mm: float,
+    sector_angle_deg: float,
+) -> np.ndarray:
     display_mask = _scan_convert_polar_to_sector(
         mask.astype(np.float32),
         depth_grid_mm=depth_grid_mm,
@@ -268,11 +315,22 @@ def _scan_convert_display_mask(
         cval=0.0,
     ) > 0.5
     display_mask &= sector_mask
-    return _filter_mask_components(
-        display_mask,
-        min_area_px=min_area_px,
-        min_length_px=min_length_px,
-    )
+    return display_mask
+
+
+def _resolve_eval_wall_mask(
+    *,
+    lumen_mask: np.ndarray,
+    wall_mask: np.ndarray,
+    sector_mask: np.ndarray,
+) -> np.ndarray:
+    if np.any(wall_mask):
+        return wall_mask
+    if not np.any(lumen_mask):
+        return wall_mask
+
+    shell = ndimage.binary_dilation(lumen_mask, structure=np.ones((3, 3), dtype=bool), iterations=1)
+    return shell & ~lumen_mask & sector_mask
 
 
 def _write_debug_map_png(values: np.ndarray, path: Path) -> None:
@@ -476,6 +534,7 @@ def render_physics_preset(
         ray_points_world=ray_points_world,
         thickness_axis=lateral_axis,
         slice_thickness_mm=resolved_slice_thickness_mm,
+        slab_reduce="max",
     )
     wall_ray &= ~lumen_ray
     station_ray = _sample_mask_ray_domain(
@@ -546,23 +605,34 @@ def render_physics_preset(
         )
         for name, values in polar_diagnostics.items()
     }
-    display_lumen_mask = _scan_convert_display_mask(
+    eval_lumen_mask = _scan_convert_binary_mask(
         lumen_ray,
         depth_grid_mm=display_depth_grid_mm,
         lateral_grid_mm=display_lateral_grid_mm,
         sector_mask=sector_mask,
         max_depth_mm=resolved_max_depth_mm,
         sector_angle_deg=resolved_sector_angle_deg,
+    )
+    display_lumen_mask = _filter_mask_components(
+        eval_lumen_mask,
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
-    display_wall_mask = _scan_convert_display_mask(
+    eval_wall_mask = _scan_convert_binary_mask(
         wall_ray,
         depth_grid_mm=display_depth_grid_mm,
         lateral_grid_mm=display_lateral_grid_mm,
         sector_mask=sector_mask,
         max_depth_mm=resolved_max_depth_mm,
         sector_angle_deg=resolved_sector_angle_deg,
+    )
+    eval_wall_mask = _resolve_eval_wall_mask(
+        lumen_mask=eval_lumen_mask,
+        wall_mask=eval_wall_mask,
+        sector_mask=sector_mask,
+    )
+    display_wall_mask = _filter_mask_components(
+        eval_wall_mask,
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
@@ -576,23 +646,29 @@ def render_physics_preset(
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
-    display_vessel_mask = _scan_convert_display_mask(
+    eval_vessel_mask = _scan_convert_binary_mask(
         all_vessels_ray,
         depth_grid_mm=display_depth_grid_mm,
         lateral_grid_mm=display_lateral_grid_mm,
         sector_mask=sector_mask,
         max_depth_mm=resolved_max_depth_mm,
         sector_angle_deg=resolved_sector_angle_deg,
+    )
+    display_vessel_mask = _filter_mask_components(
+        eval_vessel_mask,
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
-    display_target_region_mask = _scan_convert_display_mask(
+    eval_target_region_mask = _scan_convert_binary_mask(
         target_focus > 0.35,
         depth_grid_mm=display_depth_grid_mm,
         lateral_grid_mm=display_lateral_grid_mm,
         sector_mask=sector_mask,
         max_depth_mm=resolved_max_depth_mm,
         sector_angle_deg=resolved_sector_angle_deg,
+    )
+    display_target_region_mask = _filter_mask_components(
+        eval_target_region_mask,
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
@@ -711,9 +787,9 @@ def render_physics_preset(
     eval_summary = summarize_bmode_regions(
         display_bmode,
         sector_mask=sector_mask,
-        target_mask=display_target_region_mask,
-        wall_mask=display_wall_mask,
-        vessel_mask=display_vessel_mask,
+        target_mask=eval_target_region_mask,
+        wall_mask=eval_wall_mask,
+        vessel_mask=eval_vessel_mask,
     )
     engine_diagnostics = {
         "artifact_settings": {

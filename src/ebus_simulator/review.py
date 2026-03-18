@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from csv import DictWriter
-from dataclasses import replace
+from dataclasses import asdict, dataclass, replace
 import json
 from pathlib import Path
 
@@ -19,9 +19,6 @@ from ebus_simulator.rendering import (
 )
 
 
-NUS_DELTA_WARN_DEG = 10.0
-CONTACT_DELTA_WARN_MM = 1.5
-STATION_OVERLAP_WARN_FRACTION = 0.003
 REQUIRED_COMPARISON_CASES = {
     ("station_11l_node_a", "default"),
     ("station_11ri_node_a", "default"),
@@ -30,6 +27,19 @@ REQUIRED_COMPARISON_CASES = {
     ("station_7_node_a", "rms"),
     ("station_4r_node_b", "default"),
 }
+
+
+@dataclass(frozen=True)
+class ReviewThresholds:
+    nUS_delta_deg_from_voxel_baseline: float = 10.0
+    contact_delta_mm_from_voxel_baseline: float = 1.5
+    station_overlap_fraction_in_fan: float = 0.003
+    target_contrast_vs_sector_min: float = 0.0
+    vessel_contrast_vs_sector_max: float = -0.01
+    wall_contrast_vs_sector_min: float | None = None
+
+
+DEFAULT_REVIEW_THRESHOLDS = ReviewThresholds()
 
 
 def _relative_to_output(path: str | Path, output_dir: Path) -> str:
@@ -92,21 +102,106 @@ def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict
     return metrics
 
 
-def _flag_review_metrics(metrics: dict[str, object]) -> list[str]:
+def _flag_geometry_metrics(
+    metrics: dict[str, object],
+    *,
+    thresholds: ReviewThresholds = DEFAULT_REVIEW_THRESHOLDS,
+) -> list[str]:
     reasons: list[str] = []
-    if float(metrics["nUS_delta_deg_from_voxel_baseline"]) > NUS_DELTA_WARN_DEG:
-        reasons.append(f"nUS delta {float(metrics['nUS_delta_deg_from_voxel_baseline']):.2f} deg > {NUS_DELTA_WARN_DEG:.1f} deg")
-    if float(metrics["contact_delta_mm_from_voxel_baseline"]) > CONTACT_DELTA_WARN_MM:
-        reasons.append(f"contact delta {float(metrics['contact_delta_mm_from_voxel_baseline']):.2f} mm > {CONTACT_DELTA_WARN_MM:.1f} mm")
+    if float(metrics["nUS_delta_deg_from_voxel_baseline"]) > thresholds.nUS_delta_deg_from_voxel_baseline:
+        reasons.append(
+            "nUS delta "
+            f"{float(metrics['nUS_delta_deg_from_voxel_baseline']):.2f} deg"
+            f" > {thresholds.nUS_delta_deg_from_voxel_baseline:.1f} deg"
+        )
+    if float(metrics["contact_delta_mm_from_voxel_baseline"]) > thresholds.contact_delta_mm_from_voxel_baseline:
+        reasons.append(
+            "contact delta "
+            f"{float(metrics['contact_delta_mm_from_voxel_baseline']):.2f} mm"
+            f" > {thresholds.contact_delta_mm_from_voxel_baseline:.1f} mm"
+        )
     if not bool(metrics["target_in_sector"]):
         reasons.append("target not in displayed fan sector")
-    if float(metrics["station_overlap_fraction_in_fan"]) < STATION_OVERLAP_WARN_FRACTION:
+    if float(metrics["station_overlap_fraction_in_fan"]) < thresholds.station_overlap_fraction_in_fan:
         reasons.append(
-            f"station overlap {float(metrics['station_overlap_fraction_in_fan']):.4f} < {STATION_OVERLAP_WARN_FRACTION:.4f}"
+            "station overlap "
+            f"{float(metrics['station_overlap_fraction_in_fan']):.4f}"
+            f" < {thresholds.station_overlap_fraction_in_fan:.4f}"
         )
     if bool(metrics["contact_refinement_ambiguity"]):
         reasons.append("contact refinement remained ambiguous")
     return reasons
+
+
+def _region_pixel_count(summary: dict[str, object], key: str) -> int:
+    region = summary.get(key)
+    if not isinstance(region, dict):
+        return 0
+    return int(region.get("pixel_count", 0) or 0)
+
+
+def _optional_float(summary: dict[str, object], key: str) -> float | None:
+    value = summary.get(key)
+    if value is None:
+        return None
+    return float(value)
+
+
+def _flag_physics_eval_summary(
+    physics_eval_summary: dict[str, object] | None,
+    *,
+    thresholds: ReviewThresholds = DEFAULT_REVIEW_THRESHOLDS,
+) -> list[str]:
+    if not physics_eval_summary:
+        return []
+
+    reasons: list[str] = []
+
+    target_pixels = _region_pixel_count(physics_eval_summary, "target")
+    target_contrast = _optional_float(physics_eval_summary, "target_contrast_vs_sector")
+    if target_pixels == 0:
+        reasons.append("target region missing from physics eval summary")
+    elif target_contrast is not None and target_contrast < thresholds.target_contrast_vs_sector_min:
+        reasons.append(
+            "target contrast "
+            f"{target_contrast:.3f}"
+            f" < {thresholds.target_contrast_vs_sector_min:.3f}"
+        )
+
+    vessel_pixels = _region_pixel_count(physics_eval_summary, "vessel")
+    vessel_contrast = _optional_float(physics_eval_summary, "vessel_contrast_vs_sector")
+    if vessel_pixels > 0 and vessel_contrast is not None and vessel_contrast > thresholds.vessel_contrast_vs_sector_max:
+        reasons.append(
+            "vessel contrast "
+            f"{vessel_contrast:.3f}"
+            f" > {thresholds.vessel_contrast_vs_sector_max:.3f}"
+        )
+
+    if thresholds.wall_contrast_vs_sector_min is not None:
+        wall_pixels = _region_pixel_count(physics_eval_summary, "wall")
+        wall_contrast = _optional_float(physics_eval_summary, "wall_contrast_vs_sector")
+        if wall_pixels == 0:
+            reasons.append("wall region missing from physics eval summary")
+        elif wall_contrast is not None and wall_contrast < thresholds.wall_contrast_vs_sector_min:
+            reasons.append(
+                "wall contrast "
+                f"{wall_contrast:.3f}"
+                f" < {thresholds.wall_contrast_vs_sector_min:.3f}"
+            )
+
+    return reasons
+
+
+def _flag_review_metrics(
+    metrics: dict[str, object],
+    *,
+    physics_eval_summary: dict[str, object] | None = None,
+    thresholds: ReviewThresholds = DEFAULT_REVIEW_THRESHOLDS,
+) -> list[str]:
+    return _flag_geometry_metrics(metrics, thresholds=thresholds) + _flag_physics_eval_summary(
+        physics_eval_summary,
+        thresholds=thresholds,
+    )
 
 
 def _render_review_entry(
@@ -133,6 +228,7 @@ def _render_review_entry(
     physics_speckle_strength: float | None,
     physics_reverberation_strength: float | None,
     physics_shadow_strength: float | None,
+    review_thresholds: ReviewThresholds,
 ) -> dict[str, object]:
     entry_dir = output_dir / "presets" / preset_id / approach
     entry_dir.mkdir(parents=True, exist_ok=True)
@@ -261,12 +357,14 @@ def _render_review_entry(
 
     preset_manifest = _resolve_preset_manifest(context.manifest, preset_id)
     metrics = _compute_review_metrics(context, preset_manifest=preset_manifest, clean_rendered=clean)
-    flag_reasons = _flag_review_metrics(metrics)
     preset_overrides = resolve_preset_overrides(preset_manifest, approach=approach)
     physics_diagnostics = dict(physics.metadata.engine_diagnostics)
     physics_eval_summary = dict(physics_diagnostics.get("eval_summary", {}))
     physics_artifact_settings = dict(physics_diagnostics.get("artifact_settings", {}))
     physics_debug_maps = dict(physics_diagnostics.get("debug_map_paths", {}))
+    geometry_flag_reasons = _flag_geometry_metrics(metrics, thresholds=review_thresholds)
+    physics_flag_reasons = _flag_physics_eval_summary(physics_eval_summary, thresholds=review_thresholds)
+    flag_reasons = geometry_flag_reasons + physics_flag_reasons
 
     eval_summary_payload = {
         "preset_id": preset_id,
@@ -299,6 +397,8 @@ def _render_review_entry(
         "clean_simulated_json": clean.metadata.metadata_path,
         "flagged": bool(flag_reasons),
         "flag_reasons": flag_reasons,
+        "geometry_flag_reasons": geometry_flag_reasons,
+        "physics_flag_reasons": physics_flag_reasons,
         "metrics": metrics,
         "cutaway_side": clean.metadata.cutaway_side,
         "cutaway_mode": clean.metadata.cutaway_mode,
@@ -341,7 +441,8 @@ def _render_review_entry(
             eval_summary_path=eval_summary_path,
             review_entry_path=review_json_path,
             warnings=entry["warnings"],
-            flag_reasons=flag_reasons,
+            geometry_flag_reasons=geometry_flag_reasons,
+            physics_flag_reasons=physics_flag_reasons,
         )
     )
     return entry
@@ -356,6 +457,8 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "approach",
                 "flagged",
                 "flag_reasons",
+                "geometry_flag_reasons",
+                "physics_flag_reasons",
                 "contact_to_mesh_mm",
                 "contact_to_centerline_mm",
                 "target_depth_mm",
@@ -366,6 +469,9 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "nUS_delta_deg_from_voxel_baseline",
                 "contact_delta_mm_from_voxel_baseline",
                 "contact_refinement_ambiguity",
+                "target_contrast_vs_sector",
+                "wall_contrast_vs_sector",
+                "vessel_contrast_vs_sector",
                 "localizer_panel_png",
                 "localizer_clean_png",
                 "physics_png",
@@ -389,6 +495,8 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "approach": entry["approach"],
                     "flagged": entry["flagged"],
                     "flag_reasons": " | ".join(entry["flag_reasons"]),
+                    "geometry_flag_reasons": " | ".join(entry["geometry_flag_reasons"]),
+                    "physics_flag_reasons": " | ".join(entry["physics_flag_reasons"]),
                     "contact_to_mesh_mm": metrics["contact_to_mesh_mm"],
                     "contact_to_centerline_mm": metrics["contact_to_centerline_mm"],
                     "target_depth_mm": metrics["target_depth_mm"],
@@ -399,6 +507,9 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "nUS_delta_deg_from_voxel_baseline": metrics["nUS_delta_deg_from_voxel_baseline"],
                     "contact_delta_mm_from_voxel_baseline": metrics["contact_delta_mm_from_voxel_baseline"],
                     "contact_refinement_ambiguity": metrics["contact_refinement_ambiguity"],
+                    "target_contrast_vs_sector": entry["physics_eval_summary"].get("target_contrast_vs_sector"),
+                    "wall_contrast_vs_sector": entry["physics_eval_summary"].get("wall_contrast_vs_sector"),
+                    "vessel_contrast_vs_sector": entry["physics_eval_summary"].get("vessel_contrast_vs_sector"),
                     "localizer_panel_png": entry["localizer_panel_png"],
                     "localizer_clean_png": entry["localizer_clean_png"],
                     "physics_png": entry["physics_png"],
@@ -587,7 +698,9 @@ def review_presets(
     physics_speckle_strength: float | None = None,
     physics_reverberation_strength: float | None = None,
     physics_shadow_strength: float | None = None,
+    review_thresholds: ReviewThresholds | None = None,
 ) -> dict[str, object]:
+    resolved_thresholds = DEFAULT_REVIEW_THRESHOLDS if review_thresholds is None else review_thresholds
     context = build_render_context(manifest_path, roll_deg=roll_deg)
     voxel_context = replace(context, airway_geometry_mesh=None)
     output_dir = Path(output_dir).expanduser().resolve()
@@ -620,6 +733,7 @@ def review_presets(
                 physics_speckle_strength=physics_speckle_strength,
                 physics_reverberation_strength=physics_reverberation_strength,
                 physics_shadow_strength=physics_shadow_strength,
+                review_thresholds=resolved_thresholds,
             )
         )
 
@@ -677,9 +791,7 @@ def review_presets(
         },
         "rubric_template": str(rubric_path),
         "thresholds": {
-            "nUS_delta_deg_from_voxel_baseline": NUS_DELTA_WARN_DEG,
-            "contact_delta_mm_from_voxel_baseline": CONTACT_DELTA_WARN_MM,
-            "station_overlap_fraction_in_fan": STATION_OVERLAP_WARN_FRACTION,
+            **asdict(resolved_thresholds),
         },
         "entries": entries,
         "comparison_bundles": comparison_payloads,

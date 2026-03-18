@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from ebus_simulator.render_cli import _parse_bool, _parse_vessel_overlays
-from ebus_simulator.review import review_presets
+from ebus_simulator.review import DEFAULT_REVIEW_THRESHOLDS, ReviewThresholds, review_presets
 
 
 def main() -> int:
@@ -29,7 +29,46 @@ def main() -> int:
     parser.add_argument("--physics-speckle-strength", type=float, help="Optional physics speckle strength override for review renders.")
     parser.add_argument("--physics-reverberation-strength", type=float, help="Optional physics reverberation strength override for review renders.")
     parser.add_argument("--physics-shadow-strength", type=float, help="Optional physics distal shadow strength override for review renders.")
+    parser.add_argument("--warn-nus-delta-deg", type=float, help="Override the nUS delta auto-flag threshold in degrees.")
+    parser.add_argument("--warn-contact-delta-mm", type=float, help="Override the contact delta auto-flag threshold in millimeters.")
+    parser.add_argument("--warn-station-overlap-fraction", type=float, help="Override the minimum station overlap auto-flag threshold.")
+    parser.add_argument("--warn-min-target-contrast", type=float, help="Override the minimum target-vs-sector contrast auto-flag threshold.")
+    parser.add_argument("--warn-max-vessel-contrast", type=float, help="Override the maximum vessel-vs-sector contrast auto-flag threshold.")
+    parser.add_argument("--warn-min-wall-contrast", type=float, help="Optional minimum wall-vs-sector contrast threshold. Unset disables wall auto-flagging.")
     args = parser.parse_args()
+
+    review_thresholds = ReviewThresholds(
+        nUS_delta_deg_from_voxel_baseline=(
+            DEFAULT_REVIEW_THRESHOLDS.nUS_delta_deg_from_voxel_baseline
+            if args.warn_nus_delta_deg is None
+            else args.warn_nus_delta_deg
+        ),
+        contact_delta_mm_from_voxel_baseline=(
+            DEFAULT_REVIEW_THRESHOLDS.contact_delta_mm_from_voxel_baseline
+            if args.warn_contact_delta_mm is None
+            else args.warn_contact_delta_mm
+        ),
+        station_overlap_fraction_in_fan=(
+            DEFAULT_REVIEW_THRESHOLDS.station_overlap_fraction_in_fan
+            if args.warn_station_overlap_fraction is None
+            else args.warn_station_overlap_fraction
+        ),
+        target_contrast_vs_sector_min=(
+            DEFAULT_REVIEW_THRESHOLDS.target_contrast_vs_sector_min
+            if args.warn_min_target_contrast is None
+            else args.warn_min_target_contrast
+        ),
+        vessel_contrast_vs_sector_max=(
+            DEFAULT_REVIEW_THRESHOLDS.vessel_contrast_vs_sector_max
+            if args.warn_max_vessel_contrast is None
+            else args.warn_max_vessel_contrast
+        ),
+        wall_contrast_vs_sector_min=(
+            DEFAULT_REVIEW_THRESHOLDS.wall_contrast_vs_sector_min
+            if args.warn_min_wall_contrast is None
+            else args.warn_min_wall_contrast
+        ),
+    )
 
     summary = review_presets(
         args.manifest,
@@ -53,6 +92,7 @@ def main() -> int:
         physics_speckle_strength=args.physics_speckle_strength,
         physics_reverberation_strength=args.physics_reverberation_strength,
         physics_shadow_strength=args.physics_shadow_strength,
+        review_thresholds=review_thresholds,
     )
 
     print(f"case_id: {summary['case_id']}")
@@ -66,6 +106,7 @@ def main() -> int:
     print(f"index_csv: {summary['output_dir']}/review_index.csv")
     print(f"index_md: {summary['output_dir']}/review_index.md")
     print(f"rubric_template: {summary['rubric_template']}")
+    print(f"thresholds: {summary['thresholds']}")
 
     return 0
 

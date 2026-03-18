@@ -94,6 +94,8 @@ def test_render_preset_supports_physics_engine(tmp_path):
         "shadow_strength": 0.47,
     }
     assert "eval_summary" in rendered.metadata.engine_diagnostics
+    assert rendered.metadata.engine_diagnostics["eval_summary"]["wall"]["pixel_count"] > 0
+    assert rendered.metadata.engine_diagnostics["eval_summary"]["wall_contrast_vs_sector"] is not None
     assert "boundary_map" in debug_map_paths
     assert all(Path(path).exists() for path in debug_map_paths.values())
     assert np.any(image > 0)
