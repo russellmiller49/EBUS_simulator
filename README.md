@@ -22,7 +22,7 @@ Current implemented capabilities:
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
-- current desktop preset browser with queued rendering, reviewer summary, 2D EBUS, and 3D context panes
+- current desktop preset browser with queued rendering, a structured teaching-console inspector, 2D EBUS, and 3D context panes
 - CI smoke workflow
 
 Not implemented yet:
@@ -173,5 +173,6 @@ Current browser surface:
 - depth, sector angle, fine roll, gain, and attenuation controls
 - airway / target / station / vessel overlay toggles
 - queued rendering with status updates
-- reviewer-facing summary panel sourced from render metadata
+- structured in-window inspector with Preset, Pose, Anatomy in Fan, Review / Eval, and Render Settings sections
+- live auto-flags and warnings sourced from current render metadata and review metrics
 - screenshot export for the active browser state

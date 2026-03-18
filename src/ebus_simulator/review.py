@@ -62,8 +62,7 @@ def _iter_selected_presets(context, preset_ids: list[str] | None) -> list[tuple[
     return sorted(pairs, key=lambda value: (value[0], value[1]))
 
 
-def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict[str, object]:
-    metadata = clean_rendered.metadata
+def compute_render_review_metrics(context, *, preset_manifest, metadata, sector_mask: np.ndarray) -> dict[str, object]:
     thickness_axis = np.cross(
         np.asarray(metadata.device_axes["nB"], dtype=np.float64),
         np.asarray(metadata.device_axes["nUS"], dtype=np.float64),
@@ -83,8 +82,8 @@ def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict
         shaft_axis=np.asarray(metadata.device_axes["nB"], dtype=np.float64),
         thickness_axis=thickness_axis,
         warnings=list(metadata.warnings),
-        width=clean_rendered.sector_mask.shape[1],
-        height=clean_rendered.sector_mask.shape[0],
+        width=sector_mask.shape[1],
+        height=sector_mask.shape[0],
         source_oblique_size_mm=metadata.source_oblique_size_mm,
         max_depth_mm=metadata.max_depth_mm,
         sector_angle_deg=metadata.sector_angle_deg,
@@ -100,6 +99,15 @@ def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict
         }
     )
     return metrics
+
+
+def _compute_review_metrics(context, *, preset_manifest, clean_rendered) -> dict[str, object]:
+    return compute_render_review_metrics(
+        context,
+        preset_manifest=preset_manifest,
+        metadata=clean_rendered.metadata,
+        sector_mask=clean_rendered.sector_mask,
+    )
 
 
 def _flag_geometry_metrics(
@@ -200,6 +208,19 @@ def _flag_review_metrics(
 ) -> list[str]:
     return _flag_geometry_metrics(metrics, thresholds=thresholds) + _flag_physics_eval_summary(
         physics_eval_summary,
+        thresholds=thresholds,
+    )
+
+
+def compute_review_flag_reasons(
+    metrics: dict[str, object],
+    *,
+    physics_eval_summary: dict[str, object] | None = None,
+    thresholds: ReviewThresholds = DEFAULT_REVIEW_THRESHOLDS,
+) -> list[str]:
+    return _flag_review_metrics(
+        metrics,
+        physics_eval_summary=physics_eval_summary,
         thresholds=thresholds,
     )
 

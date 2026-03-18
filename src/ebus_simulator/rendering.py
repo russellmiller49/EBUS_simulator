@@ -178,6 +178,7 @@ class RenderMetadata:
     cutaway_mesh_source: str
     show_full_airway: bool
     overlays_enabled: list[str]
+    visible_overlay_names: list[str]
     preset_override_applied: bool
     preset_override_vessel_overlays: list[str]
     preset_override_cutaway_side: str | None

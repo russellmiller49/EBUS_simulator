@@ -1,21 +1,21 @@
 # AGENTS.md
 
 ## Project
-Build and refine a standalone local **linear / convex-probe EBUS simulator** from exported imaging assets.
+Build and refine a standalone local linear / convex-probe CP-EBUS simulator from exported imaging assets.
 
-Treat the current repo as a **working geometry-first scaffold**, not a throwaway prototype. It already supports case loading, validation, preset pose generation, localizer-style rendering, cutaway/context views, and review exports. The next work should extend and reorganize that base rather than rebuilding it.
+Treat the current repo as a working geometry-first simulator, not a throwaway prototype. It already supports case loading, validation, preset pose generation, localizer rendering, first-pass physics rendering, review exports, and a desktop preset browser. Extend and reorganize that base rather than rebuilding it.
 
-This project is for **linear / convex EBUS only**.
-It is **not** for:
+This project is for linear / convex CP-EBUS only.
+It is not for:
 - radial EBUS
 - 360-degree EBUS
-- full bronchoscopy navigation
-- Slicer module/runtime development
+- unrestricted full bronchoscopy navigation in v1
+- Slicer runtime/module development
 - web deployment
-- procedural scoring in v1
+- scoring/quiz logic in v1
 
-The simulator should run **outside 3D Slicer**.
-3D Slicer may still be used later for optional QA or cross-checking, not as the runtime application.
+The simulator should run outside 3D Slicer.
+3D Slicer may be used later for QA or cross-checking, not as the runtime application.
 
 ---
 
@@ -29,30 +29,40 @@ What is already implemented and should be preserved unless there is a hard block
 - station 7 with distinct `lms` and `rms` approaches
 - CP-EBUS device pose generation
 - airway-wall contact refinement against voxel data and airway meshes
-- direct probe-centered CT/localizer rendering
+- direct probe-centered localizer rendering
+- first-pass physics renderer with deterministic artifact controls
 - clean/debug render modes, overlay controls, metadata sidecars, and diagnostic panels
-- batch rendering, cutaway/context views, and physics-aware preset review workflows with eval summaries and rubric sheets
-- conservative default wall-contrast review warning with an explicit CLI opt-out for calibration runs
-- current `launch-app` desktop preset browser with queued rendering, reviewer summary text, 2D EBUS, 3D context, and screenshot export
+- batch rendering, review bundles, eval summaries, and comparison workflow
+- current `launch-app` desktop browser with queued rendering, reviewer-facing summary, 2D EBUS, 3D context, and screenshot export
 
-What is **not** implemented yet:
-- polished calibration/tuning workflow on top of the existing review bundle
-- a polished review-first desktop workflow
+What is not fully implemented yet:
+- polished linked multi-view teaching workflow
+- robust in-window reviewer ergonomics
+- mature calibration against real CP-EBUS reference material
+- unrestricted navigation
+- a fully mature ultrasound image model
 
-Do **not** reopen the scaffold / loader / validation / pose-generation phases from scratch. Reuse them.
+Do not reopen scaffold, loader, validation, pose-generation, or engine-split phases from scratch.
 
 ---
 
 ## Core intent
-The educational goal remains the same:
-- correct geometry first
-- correct airway-wall / node / vessel relationships
-- stable preset-driven outputs
-- a usable local desktop workflow
+The product should be treated as a linked multi-view CP-EBUS teaching simulator.
 
-Current repo reality:
-- the existing renderer is best treated as a **CT localizer / QA renderer**
-- future ultrasound realism work should arrive as a **separate physics renderer**, not by overloading the current renderer indefinitely
+The educational objective is to teach:
+- station-level spatial understanding
+- airway-wall / node / vessel relationships
+- how a given contact and probe orientation produces a given EBUS view
+- how external anatomy and fan geometry map to the ultrasound image
+
+The simulator should not be treated as just a static preset screenshot generator.
+
+Even in preset-driven v1, the app should conceptually revolve around one shared probe pose/state that drives:
+- external 3D anatomy/context
+- fan/localizer bridge visualization
+- simulated CP-EBUS image
+
+Version 1 may remain preset-driven, but architecture should avoid locking the project into “one preset = one disconnected render artifact.”
 
 ---
 
@@ -62,14 +72,13 @@ The working case currently used by the repo is the checked-in dataset copy refer
 `configs/3d_slicer_files.yaml`
 
 Use the files there directly.
-Do **not** rename source assets unless explicitly asked.
-The manifest root is already portable and should remain so. The filenames should remain valid.
+Do not rename source assets unless explicitly asked.
+Keep the manifest root portable.
 
 ---
 
 ## Authoritative inputs
 Treat these as authoritative unless the user says otherwise:
-
 - `ct.nii.gz` -> source CT
 - `centerlines/airway_centerline.vtp` -> primary centerline geometry / tangent source
 - `centerlines/airway_network.vtp` -> airway branch graph
@@ -84,9 +93,9 @@ The many `Network curve_1 (...).mrk.json` files remain secondary / fallback / de
 ---
 
 ## Clinical / geometry model
-The simulator must remain **contact-anchored** and **target-directed**.
+The simulator must remain contact-anchored and target-directed.
 
-Do **not** make the final render path:
+Do not make the final render path:
 - a rectangular oblique CT reslice first
 - then a pasted 2D fan mask
 
@@ -94,7 +103,7 @@ Instead:
 - contact markup = simulated probe contact on the airway wall
 - target markup = intended lymph-node focus
 - centerline tangent = shaft direction reference
-- rendered sector = sampled in **probe coordinates**
+- rendered sector = sampled in probe coordinates
 
 Required pose logic for each preset:
 - `contact_world` comes from the selected contact markup
@@ -103,14 +112,14 @@ Required pose logic for each preset:
 - `depth_axis` is the target direction projected perpendicular to `shaft_axis`
 - optional fine roll rotates around `shaft_axis`
 
-The image apex / near field must originate at the **contact point**.
+The image apex / near field must originate at the contact point.
 The airway wall should remain visible in the near field.
 The node should appear in a believable direction relative to airway and vessels.
 
 ---
 
 ## Preset-driven workflow
-Version 1 remains **preset-driven**, not free-navigation-first.
+Version 1 remains preset-driven, not free-navigation-first.
 
 Each active preset corresponds to:
 - one station
@@ -122,6 +131,8 @@ Examples:
 - `station_7_node_a` with approaches `lms` and `rms`
 
 The curated contacts and targets are a feature, not a limitation.
+
+Presets should be treated as initializing a shared pose/state that may later support small motion changes without redesigning the architecture.
 
 ---
 
@@ -152,7 +163,7 @@ Other masks without matching curated preset pairs remain context overlays for no
 Be careful with coordinate systems.
 
 All imported data must normalize into one internal world coordinate system before geometry computations.
-Do **not** hard-code blind RAS/LPS assumptions.
+Do not hard-code blind RAS/LPS assumptions.
 Instead:
 - inspect metadata where available
 - read markup coordinate-system metadata from `.mrk.json`
@@ -168,19 +179,19 @@ Every significant change must preserve geometry QA:
 ---
 
 ## Current repo truths
-- The project is already **CP-EBUS / convex-probe only**.
-- The current device model is effectively **`bf_uc180f` only**.
+- The project is already CP-EBUS / convex-probe only.
+- The current device model is effectively `bf_uc180f` only.
 - Current device defaults are approximately:
   - sector angle `60°`
   - displayed range `40 mm`
   - probe origin offset `6 mm`
   - video axis offset `20°`
-- The checked-in manifest uses a **portable repo-relative dataset root**.
-- Current render defaults still keep `use_speckle: false` and `use_edge_enhancement: false`.
+- The checked-in manifest uses a portable repo-relative dataset root.
 - Existing airway assets already include:
   - raw endoluminal mesh
   - smoothed display mesh
-- The data model supports cutaway display meshes, but the current config does not explicitly provide one.
+- The data model supports cutaway display meshes.
+- The current app already includes 2D EBUS, 3D context, queued rendering, metadata summary, and screenshot export.
 
 ---
 
@@ -194,65 +205,41 @@ Preserve and reuse:
 - `src/ebus_simulator/validation.py`
 - `src/ebus_simulator/cutaway.py`
 - `src/ebus_simulator/review.py`
+- existing localizer/physics engine split
+- existing app launch and queued-rendering model
 
-Refactor / split before adding major renderer complexity:
+Refactor or extend cautiously before adding major complexity:
 - `src/ebus_simulator/rendering.py`
-- `src/ebus_simulator/render_cli.py`
-- `src/ebus_simulator/render_all_cli.py`
+- app metadata formatting / UI presentation surfaces
+- shared render-state preparation only where clearly needed
 
-Preferred additions for the next major passes:
-- `src/ebus_simulator/render_engines.py`
-- `src/ebus_simulator/localizer_renderer.py`
-- `src/ebus_simulator/acoustic_properties.py`
-- `src/ebus_simulator/physics_renderer.py`
-- `src/ebus_simulator/artifacts.py`
-- `src/ebus_simulator/eval.py`
-- `src/ebus_simulator/app.py`
-- `.github/workflows/ci.yml`
+Preferred additions for near-term passes:
+- app-side metadata adapter / inspector helpers
+- clearer pose/fan/localizer bridge visualization
+- app ergonomics that reinforce the linked multi-view model
 
-The current renderer should become the explicit **localizer** engine.
-Any future ultrasound-like renderer should be a separate **physics** engine.
-
-The next active milestone is:
-- desktop preset browser refinement and manual validation
-- reviewer-facing bundle iteration informed by the existing review outputs
-- review / calibration tuning as real feedback arrives
-
----
-
-## Next-pass priorities
-Preferred order for remaining work:
-1. desktop preset browser refinement and manual validation
-2. small review/render coupling cleanup where it has clear value
-3. review / calibration tuning using the current physics-aware bundles
-
-Trainer/quiz layers are deferred until the above are stable.
-
----
-
-## Rendering requirements
-For the current localizer / geometry path:
-- keep direct probe-centered sampling
-- keep overlay and metadata support
-- keep deterministic, preset-driven outputs
-
-For the future physics path:
-- use a fast, inspectable scanline model
-- start with label-first tissue logic
-- add reflection, backscatter, attenuation, TGC/log compression
-- add seeded speckle, reverberation/comet-tail, and simple shadowing
-- do **not** start with GAN-first rendering
+The current localizer renderer should remain the geometry/localizer engine.
+Ultrasound-like appearance work should remain a separate physics engine.
 
 Do not chase appearance ahead of geometry correctness.
 
 ---
 
 ## UI guidance
-The first desktop UI should be a **stable preset browser**, not unrestricted free navigation.
+The first desktop UI is a stable preset-driven teaching browser, not unrestricted free navigation.
+
+Required UI concept:
+one shared active preset/pose state should drive the visible panes together.
+
+The app should expose:
+- a 2D EBUS pane
+- a 3D context pane
+- a reviewer/inspector panel that explains the active preset and render
 
 Desired controls:
 - preset selector
 - approach selector
+- localizer / physics engine toggle
 - depth
 - sector angle
 - fine roll
@@ -261,9 +248,58 @@ Desired controls:
 - overlay toggles
 - screenshot export
 
-The app should expose:
-- a 2D EBUS pane
-- a 3D context pane
+Desired inspector content:
+- preset id
+- station
+- node/target label
+- approach
+- engine
+- current pose values
+- whether target/wall/vessel are present in the current render
+- non-null eval values such as target/vessel/wall contrast where available
+- warning/auto-flag reasons
+- overlay state
+- seed / reproducibility metadata when useful
+
+Prefer improving in-window metadata clarity before adding:
+- favorites
+- preset search
+- richer export bundles
+
+Those can come later if manual usage shows real friction.
+
+---
+
+## Rendering requirements
+For the current localizer / geometry path:
+- keep direct probe-centered sampling
+- keep overlay and metadata support
+- keep deterministic, preset-driven outputs
+- keep the 3D context path useful for anatomy teaching
+
+For the physics path:
+- use a fast, inspectable scanline-style model
+- keep label-first tissue logic
+- keep reflection, backscatter, attenuation, TGC/log compression
+- keep seeded speckle, reverberation/comet-tail, and simple shadowing
+- do not pivot to GAN-first rendering
+
+A good feature is one that strengthens the learner’s understanding of:
+pose, contact, fan geometry, and resulting image content.
+
+---
+
+## Scope protections
+Do not broaden into these unless explicitly requested:
+- unrestricted airway navigation
+- full live scope animation through the airway tree
+- radial EBUS
+- web deployment
+- scoring / quiz / study logic
+- Doppler
+- Slicer runtime work
+- learned image synthesis as the primary renderer
+- automated staging recommendations
 
 ---
 
@@ -284,12 +320,15 @@ These commands should already work from repo root or remain working as the repo 
 - Work in small, mergeable changes.
 - Do not silently broaden scope.
 - Prefer extending existing modules over rewrites.
+- Preserve current working commands and tests.
+- Preserve station 7 `lms` and `rms` separation everywhere.
 - At the end of each bounded pass:
   - summarize what changed
   - list exact files changed
-  - list commands to run
+  - list exact commands run
   - list validation or test results
   - state known limitations honestly
+  - recommend the next bounded pass
 
 ---
 
@@ -300,6 +339,8 @@ The project is successful when:
 - station 7 `lms` and `rms` remain distinct and correct
 - the localizer renderer stays reliable for geometry review
 - the near field remains anchored to the airway contact point
-- a physics renderer can produce believable CP-EBUS-like sector images
+- the physics renderer produces believable CP-EBUS-like sector images
 - reviewer bundles expose localizer, physics, eval summaries, and review sheets in a deterministic layout
-- the desktop app can browse presets and export screenshots consistently
+- the desktop app behaves like a linked multi-view CP-EBUS teaching simulator
+- the app clearly explains the active preset, pose, anatomy-in-fan, and review flags without requiring sidecar JSON inspection
+- screenshots export consistently

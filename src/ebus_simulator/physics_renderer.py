@@ -914,6 +914,17 @@ def render_physics_preset(
             "mesh_wall_normal_world": list(device_pose.wall_normal_world),
             "voxel_nUS_world": list(device_pose.voxel_probe_axis_world),
             "mesh_nUS_world": list(device_pose.probe_axis_world),
+            "nUS_angular_difference_deg": float(
+                np.degrees(
+                    np.arccos(
+                        np.clip(
+                            float(np.dot(device_pose.voxel_probe_axis_world, device_pose.probe_axis_world)),
+                            -1.0,
+                            1.0,
+                        )
+                    )
+                )
+            ),
             "final_nB_world": list(device_pose.shaft_axis_world),
             "final_nUS_world": list(device_pose.probe_axis_world),
             "final_nC_world": list(device_pose.video_axis_world),
@@ -945,6 +956,7 @@ def render_physics_preset(
         cutaway_mesh_source="none",
         show_full_airway=cutaway_config.show_full_airway,
         overlays_enabled=_overlay_summary(overlay_config),
+        visible_overlay_names=[layer.key for layer in visible_layers],
         preset_override_applied=(preset_overrides is not None),
         preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
         preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),

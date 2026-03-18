@@ -1,9 +1,9 @@
 # PLANS.md
 
-## Execution plan: standalone linear EBUS simulator
+## Execution plan: standalone linear CP-EBUS simulator
 
 This plan supersedes the original scaffold-first roadmap.
-The repo already contains the core geometry/localizer scaffold, so the remaining work should focus on **hardening, separating renderer responsibilities, adding a physics image engine, and then exposing the simulator through a desktop UI**.
+The repo already contains the core geometry/localizer scaffold, a first-pass physics renderer, review-bundle workflow, and a working desktop preset browser. Remaining work should focus on hardening the linked teaching workflow, refining renderer responsibilities, improving reviewer ergonomics, and preserving the preset-driven architecture.
 
 Each bounded pass should still end with:
 - a brief implementation summary
@@ -22,40 +22,66 @@ These earlier milestones are already in the repo and should not be reopened unle
 - `validate-case` CLI with machine-readable reporting
 - centerline graph and preset pose generation
 - `generate-poses` CLI
-- direct probe-centered CT/localizer rendering
+- direct probe-centered localizer rendering
 - `render-preset` CLI with clean/debug modes and metadata sidecars
+- explicit localizer / physics engine split
 - overlay controls for airway, target, station, and vessels
 - cutaway/context rendering support
 - `render-all-presets` batch exports
 - `review-presets` physics-aware review bundles with localizer and physics outputs, eval summaries, debug maps, and rubric sheets
+- `compare-review-bundles`
+- `launch-app` desktop browser with queued rendering, 2D EBUS, 3D context, reviewer summary, and screenshot export
 
 Important interpretation:
-- the current renderer is useful and should be preserved
-- it is best described as a **localizer / QA renderer**, not the final CP-EBUS physics renderer
+- the current localizer renderer is useful and should be preserved
+- it is best described as a localizer / QA renderer, not the final CP-EBUS image model
+- the current app is useful and should be preserved
+- it should now evolve from a preset browser into a clearer linked multi-view teaching workflow
 
 ---
 
 ## Current gaps
 The main remaining gaps are:
-- the review workflow is now physics-aware, but calibration/tuning is still early and the reviewer loop is intentionally lightweight
-- the repo guidance still needs periodic synchronization as features land
-- rendering responsibilities are still somewhat concentrated in `rendering.py`
-- the current desktop preset browser has queued rendering and summary text, but it still needs broader manual Qt validation and packaging polish
+- the desktop UI still explains itself too weakly during use
+- the current reviewer-facing summary should become a clearer structured inspector
+- the 3D context / fan / image relationship is present but still under-explained
+- the physics-review workflow is usable but still early in calibration against real CP-EBUS reference material
+- rendering responsibilities are still somewhat concentrated in shared layers
+- broader packaging and manual desktop validation are still incomplete
 
 These gaps define the active roadmap.
 
 ---
 
 ## Overall objective
-Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a portable, inspectable simulator with:
+Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a portable, inspectable, linked multi-view teaching simulator with:
 - reliable preset-driven geometry
 - an explicit localizer renderer
 - a working first-pass physics-based CP-EBUS renderer
 - calibration/review hooks
-- a local desktop UI for preset browsing and screenshot export
+- a local desktop UI that synchronizes anatomy context, fan/pose understanding, and simulated image output
 
-The next active milestone is the **desktop preset browser refinement layer**.
-The review defaults are now stable enough to support the current app layer, so the next pass is UI hardening rather than more threshold churn.
+Version 1 remains preset-driven.
+Version 1 does not require unrestricted airway navigation.
+
+The next active milestone is the desktop linked-workflow refinement layer.
+
+---
+
+## Product direction
+Treat the intended end product as a linked multi-view CP-EBUS simulator.
+
+A single shared probe pose/state should conceptually drive:
+- external 3D anatomy/context
+- fan/localizer bridge representation
+- simulated CP-EBUS image
+
+The educational goal is to teach:
+- where the scope/probe is contacting the airway
+- what surrounding anatomy is near the active sector
+- why a given pose/orientation produces a given EBUS image
+
+The project should avoid drifting into a disconnected “static preset image browser” design.
 
 ---
 
@@ -64,9 +90,9 @@ The review defaults are now stable enough to support the current app layer, so t
 Complete.
 
 ### Goal
-Make the repo portable and explicit about the fact that the current renderer is the **localizer** engine.
+Make the repo portable and explicit about the fact that the original renderer is the localizer engine.
 
-### Implement
+### Implemented
 - portable manifest roots
 - support for repo-relative paths
 - support for `${REPO_ROOT}` and `${DATA_ROOT}`
@@ -75,25 +101,9 @@ Make the repo portable and explicit about the fact that the current renderer is 
 - `RenderRequest`
 - `RenderResult`
 - expanded render metadata with engine/version/seed/view-kind fields
-- extraction of the current renderer into `localizer_renderer.py`
-- thin engine dispatch/orchestration in `rendering.py`
+- extraction of the original renderer into `localizer_renderer.py`
+- engine dispatch/orchestration in `rendering.py`
 - CI smoke tests for validation, pose generation, and localizer rendering
-
-### Files expected to change
-- `README.md`
-- `pyproject.toml`
-- `configs/3d_slicer_files.yaml`
-- `src/ebus_simulator/models.py`
-- `src/ebus_simulator/manifest.py`
-- `src/ebus_simulator/rendering.py`
-- `src/ebus_simulator/render_cli.py`
-- `src/ebus_simulator/render_all_cli.py`
-
-### Files expected to add
-- `src/ebus_simulator/render_engines.py`
-- `src/ebus_simulator/localizer_renderer.py`
-- `.github/workflows/ci.yml`
-- tests covering manifest portability, engine dispatch, and CLI smoke behavior
 
 ### Acceptance criteria
 - a fresh clone can run `validate-case` without editing a hard-coded absolute path
@@ -106,7 +116,7 @@ Make the repo portable and explicit about the fact that the current renderer is 
 - desktop UI work
 - scoring / trainer mode
 - radial EBUS
-- any large rewrite of the geometry scaffold
+- large rewrites of the geometry scaffold
 
 ---
 
@@ -117,7 +127,7 @@ Complete as a first bounded slice.
 ### Goal
 Generate the first believable CP-EBUS-like B-mode images from the existing pose/device logic.
 
-### Implement
+### Implemented
 - label-first acoustic property mapping
 - `AcousticTissueProfile`
 - `AcousticVolume`
@@ -127,18 +137,6 @@ Generate the first believable CP-EBUS-like B-mode images from the existing pose/
 - TGC and log compression
 - deterministic seed handling
 - `render-preset ... --engine physics`
-
-### Files expected to add
-- `src/ebus_simulator/acoustic_properties.py`
-- `src/ebus_simulator/physics_renderer.py`
-- tests for acoustic mapping and physics-renderer phantoms
-
-### Files expected to change
-- `src/ebus_simulator/models.py`
-- `src/ebus_simulator/rendering.py`
-- `src/ebus_simulator/render_cli.py`
-- `src/ebus_simulator/render_all_cli.py`
-- `README.md`
 
 ### Acceptance criteria
 - phantom tests show a bright air boundary and distal suppression
@@ -150,31 +148,26 @@ Generate the first believable CP-EBUS-like B-mode images from the existing pose/
 
 ### Explicitly out of scope
 - GAN-first image synthesis
-- advanced Doppler or full ultrasound-console emulation
-- desktop app work during the same pass
+- advanced Doppler or full console emulation
+- unrelated desktop app work during the same pass
 
 ---
 
-## Phase C — artifacts, debug maps, and evaluation hooks
+## Phase C — artifacts, debug maps, evaluation hooks, and review bundles
 ### Status
-Complete as a first bounded slice; refinement remains.
+Complete as a first bounded slice; calibration refinement remains.
 
 ### Goal
 Improve realism while keeping the renderer inspectable and tunable.
 
-### Implement
+### Implemented
 - seeded speckle
 - reverberation / comet-tail behavior near strong air interfaces
 - simple distal shadowing
 - optional debug-map exports
 - histogram and region-contrast summaries
-- review folder layout for real-vs-synthetic comparison
-- a simple human review rubric
-
-### Files expected to add
-- `src/ebus_simulator/artifacts.py`
-- `src/ebus_simulator/eval.py`
-- tests for artifact determinism and evaluation helpers
+- review folder layout and rubric workflow
+- deterministic review-bundle and comparison summaries
 
 ### Acceptance criteria
 - artifacts can be toggled and tuned
@@ -183,38 +176,48 @@ Improve realism while keeping the renderer inspectable and tunable.
 - the review workflow stays repeatable instead of ad hoc
 
 ### Remaining work in Phase C
-- use the current bundle outputs to tune physics appearance and reviewer thresholds
-- make calibration passes easier to compare with deterministic before/after bundle summaries
-- keep the new default wall-contrast threshold under observation across broader runs before making vessel thresholds stricter
-- iterate on reviewer-facing summaries and rubric ergonomics as real feedback arrives
+- continue tuning physics appearance against better reference material
+- refine reviewer thresholds and summary surfaces as expert feedback arrives
+- continue using deterministic before/after bundle summaries for calibration
 - keep docs and smoke examples synchronized with the review workflow
 
 ### Explicitly out of scope
 - changing geometry logic to chase cosmetics
-- free-navigation simulator work
+- unrestricted free navigation
 
 ---
 
-## Phase D — desktop preset browser
+## Phase D — linked multi-view desktop CP-EBUS simulator
 ### Status
 In progress.
 
-Current browser baseline already implemented:
+### Current browser baseline already implemented
 - preset and approach selectors
 - localizer / physics engine toggle
 - depth, angle, roll, gain, and attenuation controls
 - overlay toggles
-- 2D EBUS and 3D context panes
+- 2D EBUS pane
+- 3D context pane
 - queued background rendering
 - reviewer-facing metadata summary
 - screenshot export
 
 ### Goal
-Expose the simulator through a stable local desktop app for review and teaching.
+Expose the simulator through a stable local desktop app that synchronizes external anatomy context, active render state, and simulated CP-EBUS output from one shared preset/pose state.
+
+This phase is not just about launching a browser.
+It is about turning the current desktop surface into a clearer teaching workstation.
+
+### Core principles for Phase D
+- preserve preset-driven v1 scope
+- preserve one shared active state across visible panes
+- improve clarity of pose/anatomy/image relationships
+- improve reviewer ergonomics inside the app before adding convenience features like favorites/search
+- keep the UI responsive under queued rendering
 
 ### Implement
 - `launch-app` CLI
-- PySide6 preset browser
+- PySide6 desktop app
 - preset selector
 - approach selector
 - localizer/physics engine toggle
@@ -223,13 +226,28 @@ Expose the simulator through a stable local desktop app for review and teaching.
 - 2D EBUS pane
 - 3D context pane
 - queued background rendering
-- reviewer-facing metadata summary
+- structured in-window metadata inspector
 - screenshot export
 
-### Files expected to add
+### Required in-window inspector content
+The app should surface, directly in the window:
+- preset id
+- station label
+- target/node label
+- approach
+- engine
+- current pose values
+- current render settings
+- target/wall/vessel presence when available
+- review/eval values such as target/vessel/wall contrast when available
+- warning / auto-flag reasons
+- seed / reproducibility metadata where useful
+
+### Files expected to exist or evolve in this phase
 - `src/ebus_simulator/app.py`
 - `src/ebus_simulator/ui/` package
 - app smoke tests
+- app metadata formatting / inspector helper surfaces
 
 ### Acceptance criteria
 - the app launches locally from CLI
@@ -237,30 +255,49 @@ Expose the simulator through a stable local desktop app for review and teaching.
 - switching station 7 from `lms` to `rms` changes the approach correctly
 - control changes do not block the UI thread during longer renders
 - reviewer-facing pose/eval metadata is visible without opening sidecar JSON manually
+- the metadata surface is structured enough to explain the active preset and render state
 - screenshots export successfully
+
+### Next preferred order inside Phase D
+1. improve in-window structured metadata / inspector surface
+2. improve pose/fan/context clarity in the 3D teaching workflow
+3. add light ergonomic aids such as favorites/search only if manual usage shows real friction
+4. expand export polish only after the live app surface is clearer
 
 ### Explicitly out of scope
 - unrestricted free navigation
+- live scope animation through the airway tree
 - scoring / quiz logic in the same pass
+- radial EBUS
+- web deployment
 
 ---
 
-## Deferred after the active roadmap
-These were part of earlier brainstorming but are **not** on the current critical path:
+## Phase E — post-v1 expansion
+### Status
+Deferred.
+
+### Potential future work after the active roadmap
+These can return only after the geometry, localizer, physics path, review loop, and linked desktop UI are stable:
+- constrained micro-navigation between curated contact regions
+- smoother continuous pose manipulation
+- guided navigation mode
+- favorites/search/history if not already added
+- richer export bundles and comparison sheets from the live app
 - study mode
 - quiz mode
-- hide / reveal target
+- hide/reveal target
 - session logging
 - scoring engine
 
-They can return only after the geometry, renderer split, physics path, and desktop UI are stable.
+These are not on the current critical path.
 
 ---
 
 ## Out of scope for v1
 Do not implement these unless explicitly requested:
 - radial EBUS
-- full procedural bronchoscopy navigation
+- unrestricted full procedural bronchoscopy navigation
 - live scope animation through the airway tree
 - Slicer runtime module
 - web deployment
@@ -307,10 +344,8 @@ Current commands expected to work from repo root:
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
-- `pytest -q`
-
-Current command expected to work:
 - `launch-app configs/3d_slicer_files.yaml`
+- `pytest -q`
 
 ---
 

@@ -59,24 +59,36 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
         "preset_id": "station_4r_node_b",
         "approach": "default",
         "engine": "physics",
-        "image_size": [128, 128],
+        "mode": "clean",
+        "view_kind": "physics_bmode",
         "max_depth_mm": 40.0,
         "sector_angle_deg": 60.0,
         "roll_deg": 5.0,
         "gain": 1.1,
         "attenuation": 0.2,
+        "seed": 17,
         "contact_world": [0.0, 0.0, 0.0],
         "target_world": [0.0, 15.0, -2.0],
         "pose_axes": {
             "depth_axis": [0.0, 1.0, 0.0],
             "lateral_axis": [0.0, 0.0, 1.0],
         },
-        "contact_to_airway_distance_mm": 0.3,
+        "refined_contact_to_airway_distance_mm": 0.3,
         "centerline_projection_distance_mm": 1.5,
         "overlays_enabled": ["airway_lumen", "target"],
-        "metadata_path": "/tmp/sector.json",
+        "visible_overlay_names": ["target"],
+        "contact_refinement_method": "raw_mesh_projection_search",
+        "pose_comparison": {
+            "branch_hint": "network:0",
+            "branch_hint_applied": True,
+        },
+        "preset_override_notes": "Review SVC/azygous relationship.",
         "engine_diagnostics": {
             "eval_summary": {
+                "sector": {"pixel_count": 25, "mean": 0.31},
+                "target": {"pixel_count": 12, "mean": 0.18},
+                "wall": {"pixel_count": 5, "mean": 0.45},
+                "vessel": {"pixel_count": 8, "mean": 0.26},
                 "target_contrast_vs_sector": 0.12,
                 "wall_contrast_vs_sector": 0.45,
                 "vessel_contrast_vs_sector": -0.05,
@@ -89,19 +101,43 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
         },
     }
     context_metadata = {
+        "engine": "localizer",
+        "mode": "debug",
+        "view_kind": "diagnostic_panel",
         "cutaway_side": "right",
+        "cutaway_mode": "lateral",
         "overlays_enabled": ["airway_lumen", "airway_wall", "target", "contact"],
-        "metadata_path": "/tmp/context.json",
+        "visible_overlay_names": ["airway_wall", "contact"],
+    }
+    review_metrics = {
+        "target_in_sector": True,
+        "nUS_delta_deg_from_voxel_baseline": 3.25,
+        "contact_delta_mm_from_voxel_baseline": 0.8,
+        "station_overlap_fraction_in_fan": 0.0142,
     }
 
-    summary = build_render_summary_text(sector_metadata, context_metadata)
+    summary = build_render_summary_text(
+        sector_metadata,
+        context_metadata,
+        station_label="4r",
+        node_label="b",
+        review_metrics=review_metrics,
+        flag_reasons=["wall contrast 0.450 < 0.500"],
+        warnings=["Flagged local pose optimization selected branch_shift_mm=4.0."],
+        screenshot_name_hint="station_4r_node_b_default_physics_depth40.0_angle60.0_roll5.0_browser.png",
+    )
 
-    assert "Preset: station_4r_node_b / default" in summary
-    assert "Pose: target depth 15.00 mm, lateral -2.00 mm, in sector True" in summary
-    assert "Physics eval: target 0.1200, wall 0.4500, vessel -0.0500" in summary
-    assert "Artifacts: speckle 0.22, reverberation 0.28, shadow 0.47" in summary
-    assert "Sector sidecar: /tmp/sector.json" in summary
-    assert "Context sidecar: /tmp/context.json" in summary
+    assert "Preset" in summary
+    assert "- Station: Station 4R" in summary
+    assert "- Target / Node: Node B" in summary
+    assert "- Contact Refinement: Raw Mesh Projection Search" in summary
+    assert "- Target Present: Yes (eval)" in summary
+    assert "- Vessel Present: Yes (eval)" in summary
+    assert "- Target Contrast: 0.1200" in summary
+    assert "- nUS Delta vs Voxel Baseline: 3.25 deg" in summary
+    assert "- 3D Context: Localizer / Debug (diagnostic_panel)" in summary
+    assert "wall contrast 0.450 < 0.500" in summary
+    assert "station_4r_node_b_default_physics_depth40.0_angle60.0_roll5.0_browser.png" in summary
 
 
 def test_build_browser_screenshot_name_uses_render_state():
@@ -153,6 +189,38 @@ def test_preset_browser_session_renders_sector_and_context():
         assert Path(rendered.sector_metadata_path).exists()
         assert Path(rendered.context_metadata_path).exists()
         assert rendered.summary_text
-        assert "Preset: station_4r_node_b / default" in rendered.summary_text
+        assert "Render Settings" in rendered.summary_text
+        assert "- Station: Station 4R" in rendered.summary_text
+        assert rendered.inspector_sections
+        assert rendered.screenshot_name_hint.endswith("_browser.png")
+    finally:
+        session.close()
+
+
+def test_preset_browser_session_station_7_approaches_remain_distinct_in_inspector():
+    session = PresetBrowserSession(MANIFEST_PATH, width=64, height=64)
+    try:
+        lms = session.render(
+            replace(
+                session.default_state(),
+                preset_id="station_7_node_a",
+                approach="lms",
+                engine="physics",
+            )
+        )
+        rms = session.render(
+            replace(
+                session.default_state(),
+                preset_id="station_7_node_a",
+                approach="rms",
+                engine="physics",
+            )
+        )
+
+        assert "- Station: Station 7" in lms.summary_text
+        assert "- Approach: LMS" in lms.summary_text
+        assert "- Station: Station 7" in rms.summary_text
+        assert "- Approach: RMS" in rms.summary_text
+        assert lms.summary_text != rms.summary_text
     finally:
         session.close()

@@ -27,7 +27,7 @@ The current state is:
 - a first `physics` renderer exists and can render repo presets
 - the physics renderer now supports tunable artifacts, debug-map export, and basic evaluation summaries
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
-- the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and reviewer-facing summary text
+- the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and a structured reviewer/teaching inspector
 
 In practical terms, the repo is already useful for:
 - loading and validating the dataset
@@ -106,7 +106,8 @@ The active development focus is:
 - 2D EBUS pane driven by the selected render engine
 - 3D context pane derived from the existing localizer diagnostic/context path
 - queued background rendering so the UI no longer blocks during preset changes
-- reviewer-facing summary panel with pose, overlay, eval, and sidecar metadata
+- structured inspector with preset, pose, anatomy-in-fan, review/eval, and render-setting sections
+- live warning and auto-flag surfacing inside the inspector using current render metadata plus derived review metrics
 - screenshot export from the current browser state with state-aware default filenames
 
 ---
@@ -187,7 +188,7 @@ This is the largest remaining v1 deliverable.
 ## Known Limitations Right Now
 
 - The desktop app currently requires the optional `ui` dependency (`PySide6`) rather than the default bootstrap path.
-- The desktop UI now has queued rendering and reviewer summary text, but it still needs broader manual interaction testing and packaged distribution setup.
+- The desktop UI now has queued rendering and a structured inspector, but it still needs broader manual interaction testing and packaged distribution setup.
 - The full `pytest -q` suite was not rerun after the latest desktop UI pass, so the current verified test evidence is the targeted app and review subsets plus the offscreen Qt smoke.
 - The physics renderer is still an inspectable first-pass model, not a mature ultrasound simulation.
 - The physics path currently renders only the 2D sector view; it does not have a dedicated physics-specific 3D context panel.
@@ -221,7 +222,7 @@ Note:
 ## Latest Validation Snapshot
 
 Latest verified run snapshot from `2026-03-18`:
-- `.venv/bin/python -m pytest tests/test_app.py -q` -> `6 passed in 70.99s (0:01:10)`
+- `.venv/bin/python -m pytest tests/test_app.py -q` -> `7 passed in 154.01s (0:02:34)`
 - `.venv/bin/python -m pytest tests/test_review.py -q` -> `6 passed in 238.11s (0:03:58)`
 - `.venv/bin/python -m pip install -e '.[ui]'` -> succeeded and installed `PySide6 6.10.2`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_calibration_all --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 128 --height 128` -> succeeded with `review_count: 16`, `flagged_count: 8`, `wall_present_count: 16`, `vessel_present_count: 15`, and broad-run wall contrast ranging from `0.0389` to `0.9648`
@@ -246,7 +247,7 @@ The review smoke bundle shape remains:
 If work resumes in a fresh session, the highest-value next step is:
 
 1. run `launch-app` against the checked-in dataset for a longer manual desktop validation pass
-2. exercise preset switching, screenshot export, and summary-panel usefulness now that queued rendering is in place
+2. exercise preset switching, screenshot export, and inspector usefulness now that queued rendering is in place
 3. add a few navigation/ergonomic affordances such as preset search, favorites, or recent renders if manual use shows friction
 
 ---

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import atexit
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Empty, SimpleQueue
 import re
@@ -13,6 +13,14 @@ from typing import TYPE_CHECKING, Mapping
 import numpy as np
 from PIL import Image
 
+from ebus_simulator.inspector import (
+    InspectorSection,
+    build_render_inspector_sections,
+    build_render_summary_text,
+    compute_target_offsets_mm,
+    render_inspector_sections_html,
+)
+from ebus_simulator.review import compute_render_review_metrics, compute_review_flag_reasons
 from ebus_simulator.rendering import build_render_context, render_metadata_to_dict, render_preset
 
 
@@ -59,6 +67,10 @@ class PresetBrowserRender:
     context_metadata_path: str
     summary_text: str
     warnings: list[str]
+    review_metrics: dict[str, object] = field(default_factory=dict)
+    flag_reasons: list[str] = field(default_factory=list)
+    inspector_sections: list[InspectorSection] = field(default_factory=list)
+    screenshot_name_hint: str = ""
 
 
 def collect_preset_browser_options(context: RenderContext) -> list[PresetBrowserOption]:
@@ -92,142 +104,6 @@ class _RenderOutcome:
     error_message: str | None = None
 
 
-def _coerce_vector3(value: object) -> np.ndarray | None:
-    if not isinstance(value, (list, tuple)) or len(value) != 3:
-        return None
-    try:
-        return np.asarray(value, dtype=np.float64)
-    except (TypeError, ValueError):
-        return None
-
-
-def _coerce_float(value: object) -> float | None:
-    if value is None:
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def compute_target_offsets_mm(metadata: Mapping[str, object]) -> tuple[float | None, float | None]:
-    contact_world = _coerce_vector3(metadata.get("contact_world"))
-    target_world = _coerce_vector3(metadata.get("target_world"))
-    pose_axes = metadata.get("pose_axes")
-    if (
-        contact_world is None
-        or target_world is None
-        or not isinstance(pose_axes, Mapping)
-    ):
-        return None, None
-
-    depth_axis = _coerce_vector3(pose_axes.get("depth_axis"))
-    lateral_axis = _coerce_vector3(pose_axes.get("lateral_axis"))
-    if depth_axis is None:
-        return None, None
-
-    offset = target_world - contact_world
-    target_depth_mm = float(np.dot(offset, depth_axis))
-    target_lateral_mm = None if lateral_axis is None else float(np.dot(offset, lateral_axis))
-    return target_depth_mm, target_lateral_mm
-
-
-def _target_in_sector(metadata: Mapping[str, object], *, target_depth_mm: float | None, target_lateral_mm: float | None) -> bool | None:
-    if target_depth_mm is None or target_lateral_mm is None:
-        return None
-    max_depth_mm = _coerce_float(metadata.get("max_depth_mm"))
-    sector_angle_deg = _coerce_float(metadata.get("sector_angle_deg"))
-    if max_depth_mm is None or sector_angle_deg is None:
-        return None
-    fan_half_tan = float(np.tan(np.deg2rad(sector_angle_deg / 2.0)))
-    return bool(
-        0.0 <= target_depth_mm <= max_depth_mm
-        and abs(target_lateral_mm) <= ((target_depth_mm * fan_half_tan) + 1e-9)
-    )
-
-
-def _format_float(value: float | None, *, precision: int = 2, suffix: str = "") -> str:
-    return "n/a" if value is None else f"{value:.{precision}f}{suffix}"
-
-
-def _format_overlay_names(value: object) -> str:
-    if not isinstance(value, list):
-        return "none"
-    names = [str(name) for name in value if str(name)]
-    return ", ".join(names) if names else "none"
-
-
-def _format_image_size(value: object) -> str:
-    if not isinstance(value, list) or len(value) != 2:
-        return "n/a"
-    return f"{value[0]}x{value[1]}"
-
-
-def build_render_summary_text(
-    sector_metadata: Mapping[str, object],
-    context_metadata: Mapping[str, object],
-) -> str:
-    target_depth_mm, target_lateral_mm = compute_target_offsets_mm(sector_metadata)
-    target_in_sector = _target_in_sector(
-        sector_metadata,
-        target_depth_mm=target_depth_mm,
-        target_lateral_mm=target_lateral_mm,
-    )
-    lines = [
-        f"Preset: {sector_metadata.get('preset_id', 'n/a')} / {sector_metadata.get('approach', 'n/a')}",
-        f"2D engine: {sector_metadata.get('engine', 'n/a')}",
-        (
-            "Display: "
-            f"{_format_image_size(sector_metadata.get('image_size'))} px, "
-            f"depth {_format_float(_coerce_float(sector_metadata.get('max_depth_mm')), precision=1, suffix=' mm')}, "
-            f"sector {_format_float(_coerce_float(sector_metadata.get('sector_angle_deg')), precision=1, suffix=' deg')}, "
-            f"roll {_format_float(_coerce_float(sector_metadata.get('roll_deg')), precision=1, suffix=' deg')}"
-        ),
-        (
-            "Gain / attenuation: "
-            f"{_format_float(_coerce_float(sector_metadata.get('gain')))} / "
-            f"{_format_float(_coerce_float(sector_metadata.get('attenuation')))}"
-        ),
-        (
-            "Pose: "
-            f"target depth {_format_float(target_depth_mm, suffix=' mm')}, "
-            f"lateral {_format_float(target_lateral_mm, suffix=' mm')}, "
-            f"in sector {target_in_sector if target_in_sector is not None else 'n/a'}"
-        ),
-        (
-            "Contact: "
-            f"airway {_format_float(_coerce_float(sector_metadata.get('contact_to_airway_distance_mm')), suffix=' mm')}, "
-            f"centerline {_format_float(_coerce_float(sector_metadata.get('centerline_projection_distance_mm')), suffix=' mm')}"
-        ),
-        f"2D overlays: {_format_overlay_names(sector_metadata.get('overlays_enabled'))}",
-        f"Context cutaway: {context_metadata.get('cutaway_side', 'n/a')}",
-        f"Context overlays: {_format_overlay_names(context_metadata.get('overlays_enabled'))}",
-    ]
-
-    engine_diagnostics = sector_metadata.get("engine_diagnostics")
-    if isinstance(engine_diagnostics, Mapping):
-        eval_summary = engine_diagnostics.get("eval_summary")
-        if isinstance(eval_summary, Mapping):
-            lines.append(
-                "Physics eval: "
-                f"target {_format_float(_coerce_float(eval_summary.get('target_contrast_vs_sector')), precision=4)}, "
-                f"wall {_format_float(_coerce_float(eval_summary.get('wall_contrast_vs_sector')), precision=4)}, "
-                f"vessel {_format_float(_coerce_float(eval_summary.get('vessel_contrast_vs_sector')), precision=4)}"
-            )
-        artifact_settings = engine_diagnostics.get("artifact_settings")
-        if isinstance(artifact_settings, Mapping):
-            lines.append(
-                "Artifacts: "
-                f"speckle {_format_float(_coerce_float(artifact_settings.get('speckle_strength')))}, "
-                f"reverberation {_format_float(_coerce_float(artifact_settings.get('reverberation_strength')))}, "
-                f"shadow {_format_float(_coerce_float(artifact_settings.get('shadow_strength')))}"
-            )
-
-    lines.append(f"Sector sidecar: {sector_metadata.get('metadata_path', 'n/a')}")
-    lines.append(f"Context sidecar: {context_metadata.get('metadata_path', 'n/a')}")
-    return "\n".join(lines)
-
-
 def build_browser_screenshot_name(rendered: PresetBrowserRender) -> str:
     raw_name = (
         f"{rendered.preset_id}_{rendered.approach}_{rendered.engine}_"
@@ -254,6 +130,7 @@ class PresetBrowserSession:
         self.preset_options = collect_preset_browser_options(self.context)
         if not self.preset_options:
             raise ValueError("The manifest does not define any presets.")
+        self._preset_by_id = {preset.id: preset for preset in self.context.manifest.presets}
 
     def close(self) -> None:
         self._temp_dir.cleanup()
@@ -263,6 +140,12 @@ class PresetBrowserSession:
             if option.preset_id == preset_id:
                 return list(option.approaches)
         raise ValueError(f"Unknown preset_id {preset_id!r}.")
+
+    def _preset_manifest(self, preset_id: str):
+        try:
+            return self._preset_by_id[preset_id]
+        except KeyError as exc:  # pragma: no cover - guarded by preset selection
+            raise ValueError(f"Unknown preset_id {preset_id!r}.") from exc
 
     def default_state(self) -> PresetBrowserState:
         defaults = self.context.manifest.render_defaults
@@ -288,6 +171,7 @@ class PresetBrowserSession:
             raise ValueError(f"Preset {state.preset_id!r} does not support approach {state.approach!r}.")
 
         defaults = self.context.manifest.render_defaults
+        preset_manifest = self._preset_manifest(state.preset_id)
         original_gain = defaults.get("gain")
         original_attenuation = defaults.get("attenuation")
         defaults["gain"] = float(state.gain)
@@ -368,7 +252,22 @@ class PresetBrowserSession:
         sector_metadata = render_metadata_to_dict(sector.metadata)
         context_metadata = render_metadata_to_dict(context_panel.metadata)
         warnings = list(dict.fromkeys(sector.metadata.warnings + context_panel.metadata.warnings))
-        return PresetBrowserRender(
+        physics_eval_summary: dict[str, object] = {}
+        if isinstance(sector.metadata.engine_diagnostics, Mapping):
+            eval_summary = sector.metadata.engine_diagnostics.get("eval_summary", {})
+            if isinstance(eval_summary, Mapping):
+                physics_eval_summary = dict(eval_summary)
+        review_metrics = compute_render_review_metrics(
+            self.context,
+            preset_manifest=preset_manifest,
+            metadata=sector.metadata,
+            sector_mask=sector.sector_mask,
+        )
+        flag_reasons = compute_review_flag_reasons(
+            review_metrics,
+            physics_eval_summary=physics_eval_summary,
+        )
+        rendered = PresetBrowserRender(
             preset_id=state.preset_id,
             approach=state.approach,
             engine=state.engine,
@@ -379,9 +278,33 @@ class PresetBrowserSession:
             context_metadata=context_metadata,
             sector_metadata_path=sector.metadata.metadata_path,
             context_metadata_path=context_panel.metadata.metadata_path,
-            summary_text=build_render_summary_text(sector_metadata, context_metadata),
+            summary_text="",
             warnings=warnings,
+            review_metrics=review_metrics,
+            flag_reasons=flag_reasons,
         )
+        rendered.screenshot_name_hint = build_browser_screenshot_name(rendered)
+        rendered.inspector_sections = build_render_inspector_sections(
+            sector_metadata,
+            context_metadata,
+            station_label=preset_manifest.station,
+            node_label=preset_manifest.node,
+            review_metrics=review_metrics,
+            flag_reasons=flag_reasons,
+            warnings=warnings,
+            screenshot_name_hint=rendered.screenshot_name_hint,
+        )
+        rendered.summary_text = build_render_summary_text(
+            sector_metadata,
+            context_metadata,
+            station_label=preset_manifest.station,
+            node_label=preset_manifest.node,
+            review_metrics=review_metrics,
+            flag_reasons=flag_reasons,
+            warnings=warnings,
+            screenshot_name_hint=rendered.screenshot_name_hint,
+        )
+        return rendered
 
 
 def launch_app(
@@ -405,9 +328,9 @@ def launch_app(
             QHBoxLayout,
             QLabel,
             QMainWindow,
-            QPlainTextEdit,
             QPushButton,
             QSplitter,
+            QTextBrowser,
             QVBoxLayout,
             QWidget,
         )
@@ -455,7 +378,7 @@ def launch_app(
             self.setCentralWidget(root)
 
             controls = QWidget(root)
-            controls.setMinimumWidth(280)
+            controls.setMinimumWidth(360)
             controls_layout = QVBoxLayout(controls)
             controls_layout.setContentsMargins(0, 0, 0, 0)
             controls_layout.setSpacing(12)
@@ -543,21 +466,15 @@ def launch_app(
             self.status_label.setWordWrap(True)
             controls_layout.addWidget(self.status_label)
 
-            summary_heading = QLabel("Render Summary", controls)
-            controls_layout.addWidget(summary_heading)
+            inspector_heading = QLabel("Inspector", controls)
+            controls_layout.addWidget(inspector_heading)
 
-            self.summary_box = QPlainTextEdit(controls)
-            self.summary_box.setReadOnly(True)
-            self.summary_box.setPlaceholderText("Render metadata summary will appear here.")
-            controls_layout.addWidget(self.summary_box, stretch=1)
-
-            warning_heading = QLabel("Warnings", controls)
-            controls_layout.addWidget(warning_heading)
-
-            self.warning_box = QPlainTextEdit(controls)
-            self.warning_box.setReadOnly(True)
-            self.warning_box.setPlaceholderText("Render warnings will appear here.")
-            controls_layout.addWidget(self.warning_box, stretch=1)
+            self.inspector_box = QTextBrowser(controls)
+            self.inspector_box.setPlaceholderText("Structured render metadata will appear here.")
+            self.inspector_box.setStyleSheet(
+                "QTextBrowser { background-color: #101010; border: 1px solid #333333; border-radius: 8px; }"
+            )
+            controls_layout.addWidget(self.inspector_box, stretch=1)
 
             root_layout.addWidget(controls)
 
@@ -667,7 +584,7 @@ def launch_app(
                 self.refresh_button.setEnabled(True)
                 if outcome.error_message is not None:
                     self.status_label.setText(f"Render failed: {outcome.error_message}")
-                    self.warning_box.setPlainText(outcome.error_message)
+                    self.inspector_box.setPlainText(outcome.error_message)
                 elif outcome.rendered is not None:
                     self._apply_render(outcome.rendered)
 
@@ -696,13 +613,11 @@ def launch_app(
             self._sector_source_pixmap = _to_pixmap(rendered.sector_rgb)
             self._context_source_pixmap = _to_pixmap(rendered.context_rgb)
             self._refresh_panel_pixmaps()
-            self.summary_box.setPlainText(rendered.summary_text)
-            warnings_text = "\n".join(rendered.warnings) if rendered.warnings else "No render warnings."
-            self.warning_box.setPlainText(warnings_text)
+            self.inspector_box.setHtml(render_inspector_sections_html(rendered.inspector_sections))
             self.screenshot_button.setEnabled(True)
             self.status_label.setText(
                 f"{rendered.preset_id} / {rendered.approach} rendered with {rendered.engine}; "
-                f"{len(rendered.warnings)} warning(s)."
+                f"{len(rendered.flag_reasons)} auto-flag(s), {len(rendered.warnings)} warning(s)."
             )
             if self._close_on_first_render:
                 QTimer.singleShot(0, self.close)
@@ -734,7 +649,7 @@ def launch_app(
             if self._current_render is None:
                 self.status_label.setText("Nothing to export yet.")
                 return
-            default_name = build_browser_screenshot_name(self._current_render)
+            default_name = self._current_render.screenshot_name_hint or build_browser_screenshot_name(self._current_render)
             output_path, _ = QFileDialog.getSaveFileName(
                 self,
                 "Export Browser Screenshot",

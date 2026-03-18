@@ -439,10 +439,13 @@ def render_localizer_preset(
         _draw_cross_marker(virtual_rgb, row=0, column=resolved_width // 2, color_rgb=CONTACT_MARKER_COLOR, radius=4)
 
     legend_entries = [(layer.label, layer.color_rgb) for layer in visible_layers]
+    visible_overlay_names = [layer.key for layer in visible_layers]
     if overlay_config.target_enabled and target_pixel is not None:
         legend_entries.append(("Target", TARGET_MARKER_COLOR))
+        visible_overlay_names.append("target")
     if overlay_config.contact_enabled:
         legend_entries.append(("Refined contact", CONTACT_MARKER_COLOR))
+        visible_overlay_names.append("contact")
     virtual_view = _annotate_legend_and_labels(
         virtual_rgb,
         visible_layers=visible_layers,
@@ -790,6 +793,7 @@ def render_localizer_preset(
         cutaway_mesh_source=cutaway_display.mesh_source,
         show_full_airway=cutaway_display.show_full_airway,
         overlays_enabled=_overlay_summary(overlay_config),
+        visible_overlay_names=list(dict.fromkeys(visible_overlay_names)),
         preset_override_applied=(preset_overrides is not None),
         preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
         preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
