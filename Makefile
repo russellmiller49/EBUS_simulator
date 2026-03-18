@@ -4,7 +4,7 @@ PIP := $(PYTHON) -m pip
 PYTEST := $(PYTHON) -m pytest
 MANIFEST := configs/3d_slicer_files.yaml
 
-.PHONY: bootstrap test validate poses render-smoke physics-smoke review-smoke ci-smoke clean-venv
+.PHONY: bootstrap test test-fast test-integration validate poses render-smoke physics-smoke review-smoke ci-smoke clean-venv
 
 bootstrap: $(VENV)/.bootstrap-stamp
 
@@ -13,6 +13,12 @@ $(VENV)/.bootstrap-stamp: scripts/bootstrap.sh pyproject.toml
 
 test: $(VENV)/.bootstrap-stamp
 	$(PYTEST) -q
+
+test-fast: $(VENV)/.bootstrap-stamp
+	$(PYTEST) tests/unit -q
+
+test-integration: $(VENV)/.bootstrap-stamp
+	$(PYTEST) tests/integration -q
 
 validate: $(VENV)/.bootstrap-stamp
 	$(VENV)/bin/validate-case $(MANIFEST)

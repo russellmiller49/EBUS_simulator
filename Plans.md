@@ -46,7 +46,7 @@ The main remaining gaps are:
 - the current reviewer-facing summary should become a clearer structured inspector
 - the 3D context / fan / image relationship is present but still under-explained
 - the physics-review workflow is usable but still early in calibration against real CP-EBUS reference material
-- rendering responsibilities are still somewhat concentrated in shared layers
+- some rendering responsibilities still live in shared orchestration/context helpers even though a first-pass `render_state.py` / `transforms.py` / `annotations.py` split now exists
 - broader packaging and manual desktop validation are still incomplete
 
 These gaps define the active roadmap.
@@ -103,6 +103,9 @@ Make the repo portable and explicit about the fact that the original renderer is
 - expanded render metadata with engine/version/seed/view-kind fields
 - extraction of the original renderer into `localizer_renderer.py`
 - engine dispatch/orchestration in `rendering.py`
+- shared request/pose/device preparation in `render_state.py`
+- shared sampling/math helpers in `transforms.py`
+- shared contour/legend/marker helpers in `annotations.py`
 - CI smoke tests for validation, pose generation, and localizer rendering
 
 ### Acceptance criteria

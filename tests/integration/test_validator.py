@@ -3,7 +3,7 @@ from pathlib import Path
 from ebus_simulator.validation import validate_case
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "configs" / "3d_slicer_files.yaml"
 
 

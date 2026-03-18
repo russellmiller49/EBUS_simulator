@@ -1,0 +1,48 @@
+consistency_profiles:
+  baseline:
+    signal_threshold: 0.05
+    near_field_fraction: 0.20
+    target_region_radius_mm: 4.0
+    target_prominent_min_contrast: 0.08
+    target_prominent_min_coverage: 0.02
+    wall_dominant_min_near_field_occupancy: 0.16
+    wall_dominant_min_contrast: 0.35
+    wall_dominant_max_target_contrast: 0.04
+    sparse_empty_fraction: 0.82
+    sparse_non_background_max: 0.18
+
+physics_profiles:
+  baseline:
+    target_focus_sigma_mm: 4.5
+    log_compression_gain_factor: 6.0
+    normalization_reference_percentile: 99.5
+    normalization_aux_percentile: 98.5
+    normalization_spike_ratio: 1.22
+    normalization_aux_blend_weight: 0.45
+    sparse_signal_threshold: 0.01
+    sparse_support_empty_fraction: 0.90
+    wall_guardrail_empty_fraction: 0.86
+    sparse_support_floor_base: 0.034
+    sparse_support_floor_scale: 0.028
+    sparse_support_anatomy_weight: 0.014
+    sparse_support_target_weight: 0.018
+    wall_guardrail_floor_base: 0.032
+    wall_guardrail_floor_scale: 0.020
+    wall_guardrail_anatomy_weight: 0.008
+    wall_guardrail_target_weight: 0.010
+    wall_guardrail_moderation: 0.94
+    speckle_strength_default: 0.18
+    reverberation_strength_default: 0.30
+    shadow_strength_default: 0.42
+  sparse_support_boost:
+    sparse_support_floor_base: 0.040
+    sparse_support_floor_scale: 0.034
+    sparse_support_anatomy_weight: 0.020
+    sparse_support_target_weight: 0.024
+    wall_guardrail_floor_base: 0.035
+    wall_guardrail_floor_scale: 0.024
+    wall_guardrail_anatomy_weight: 0.010
+    wall_guardrail_target_weight: 0.012
+    speckle_strength_default: 0.14
+    reverberation_strength_default: 0.24
+    shadow_strength_default: 0.36

@@ -43,3 +43,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--capture=sys"
+markers = [
+  "unit: fast synthetic or helper-level tests that do not require the dataset-backed render path",
+  "integration: slower dataset-backed or end-to-end rendering, review, and app tests",
+]

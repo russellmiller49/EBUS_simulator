@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from ebus_simulator.render_engines import RenderEngine
+from ebus_simulator.render_profiles import DEFAULT_PHYSICS_PROFILE_NAME, list_physics_profile_names
 from ebus_simulator.rendering import render_preset
 
 
@@ -23,6 +24,7 @@ def _parse_vessel_overlays(value: str) -> list[str]:
 
 
 def main() -> int:
+    available_profiles = ", ".join(list_physics_profile_names())
     parser = argparse.ArgumentParser(description="Render a single linear EBUS preset to PNG.")
     parser.add_argument("manifest", help="Path to the case manifest YAML file.")
     parser.add_argument("preset_id", help="Preset identifier to render.")
@@ -65,6 +67,13 @@ def main() -> int:
     parser.add_argument("--cutaway-origin", choices=["contact", "probe_origin", "custom"], default=None, help="Reference origin used to derive the cutaway plane.")
     parser.add_argument("--show-full-airway", type=_parse_bool, default=None, help="Show the full smoothed airway mesh instead of clipping it for the 3D context panel.")
     parser.add_argument("--debug-map-dir", help="Optional directory for engine-specific debug map exports.")
+    parser.add_argument(
+        "--physics-profile",
+        help=(
+            "Optional physics tuning profile name. "
+            f"Defaults to {DEFAULT_PHYSICS_PROFILE_NAME}. Available: {available_profiles}."
+        ),
+    )
     parser.add_argument("--speckle-strength", type=float, help="Optional physics speckle strength override.")
     parser.add_argument("--reverberation-strength", type=float, help="Optional physics reverberation strength override.")
     parser.add_argument("--shadow-strength", type=float, help="Optional physics distal shadow strength override.")
@@ -112,6 +121,7 @@ def main() -> int:
         cutaway_origin=args.cutaway_origin,
         show_full_airway=args.show_full_airway,
         debug_map_dir=args.debug_map_dir,
+        physics_profile=args.physics_profile,
         speckle_strength=args.speckle_strength,
         reverberation_strength=args.reverberation_strength,
         shadow_strength=args.shadow_strength,
@@ -149,6 +159,10 @@ def main() -> int:
     print(f"overlays_enabled: {rendered.metadata.overlays_enabled}")
     if rendered.metadata.engine_diagnostics:
         print(f"engine_diagnostics: {sorted(rendered.metadata.engine_diagnostics.keys())}")
+        profile = rendered.metadata.engine_diagnostics.get("profile")
+        if isinstance(profile, dict):
+            print(f"physics_profile: {profile.get('name')}")
+            print(f"physics_profile_overrides: {profile.get('explicit_overrides')}")
     print(f"warnings: {len(rendered.metadata.warnings)}")
     for warning in rendered.metadata.warnings:
         print(f"  - {warning}")

@@ -9,51 +9,49 @@ from PIL import Image
 from scipy import ndimage
 
 from ebus_simulator.cutaway import build_display_cutaway
-from ebus_simulator.device import build_device_pose
-from ebus_simulator.manifest import resolve_preset_overrides
+from ebus_simulator.annotations import (
+    _add_panel_label,
+    _annotate_legend_and_labels,
+    _apply_contour_overlay,
+    _draw_cross_marker,
+    _filter_mask_components,
+)
 from ebus_simulator.render_engines import RenderEngine, RenderRequest, RenderResult
-from ebus_simulator.rendering import (
-    AIRWAY_LUMEN_COLOR,
-    AIRWAY_WALL_COLOR,
-    CONTACT_MARKER_COLOR,
-    DEFAULT_SLAB_SAMPLES,
-    FAN_BOUNDARY_COLOR,
-    OPTIMIZATION_EPSILON,
-    STATION_COLOR,
-    TARGET_MARKER_COLOR,
-    VESSEL_OVERLAY_PALETTE,
+from ebus_simulator.render_state import (
     OverlayLayer,
     RenderContext,
     RenderMetadata,
     RenderedPreset,
     SourceSection,
-    _LOCAL_POSE_OPTIMIZATION_CACHE,
-    _annotate_legend_and_labels,
-    _apply_contour_overlay,
-    _build_cp_context_snapshot,
-    _build_sector_grid,
-    compute_render_consistency_metrics,
-    _compose_cp_diagnostic_panel,
-    _draw_cross_marker,
-    _extract_local_mask_points,
-    _fan_target_row_col,
-    _filter_mask_components,
     _get_mask_volume,
-    _map_plane_to_fan,
-    _optimize_flagged_pose_locally,
     _overlay_summary,
+    prepare_localizer_render_state,
+)
+from ebus_simulator.transforms import (
+    DEFAULT_SLAB_SAMPLES,
+    OPTIMIZATION_EPSILON,
+    _build_sector_grid,
+    _fan_target_row_col,
+    _map_plane_to_fan,
     _plane_point_to_pixel,
     _preprocess_source_section,
-    _resolve_branch_shift_seed,
-    _resolve_cutaway_config,
-    _resolve_overlay_config,
-    _resolve_pose,
-    _resolve_preset_manifest,
-    _resolve_slice_thickness_mm,
     _sample_contact_plane,
     _sample_plane,
     _window_ct,
-    build_render_context,
+)
+from ebus_simulator.rendering import (
+    AIRWAY_LUMEN_COLOR,
+    AIRWAY_WALL_COLOR,
+    CONTACT_MARKER_COLOR,
+    FAN_BOUNDARY_COLOR,
+    STATION_COLOR,
+    TARGET_MARKER_COLOR,
+    VESSEL_OVERLAY_PALETTE,
+    _build_cp_context_snapshot,
+    compute_render_consistency_metrics,
+    _compose_cp_diagnostic_panel,
+    _extract_local_mask_points,
+    _optimize_flagged_pose_locally,
 )
 
 
@@ -68,189 +66,47 @@ def render_localizer_preset(
     if request.engine is not RenderEngine.LOCALIZER:
         raise ValueError(f"render_localizer_preset expected engine=localizer, got {request.engine.value!r}.")
 
-    manifest_path = request.manifest_path
-    preset_id = request.preset_id
-    approach = request.approach
+    prepared_state = prepare_localizer_render_state(
+        request,
+        context=context,
+        optimize_pose_fn=_optimize_flagged_pose_locally,
+    )
     output_path = request.output_path
     metadata_path = request.metadata_path
-    width = request.width
-    height = request.height
-    sector_angle_deg = request.sector_angle_deg
-    max_depth_mm = request.max_depth_mm
-    roll_deg = request.roll_deg
-    mode = request.mode
-    airway_overlay = request.airway_overlay
-    airway_lumen_overlay = request.airway_lumen_overlay
-    airway_wall_overlay = request.airway_wall_overlay
-    target_overlay = request.target_overlay
-    contact_overlay = request.contact_overlay
-    station_overlay = request.station_overlay
-    vessel_overlay_names = request.vessel_overlay_names
-    slice_thickness_mm = request.slice_thickness_mm
-    diagnostic_panel = request.diagnostic_panel
-    device = request.device
     refine_contact = request.refine_contact
-    virtual_ebus = request.virtual_ebus
-    simulated_ebus = request.simulated_ebus
-    reference_fov_mm = request.reference_fov_mm
-    source_oblique_size_mm = request.source_oblique_size_mm
-    single_vessel = request.single_vessel
-    show_legend = request.show_legend
-    label_overlays = request.label_overlays
-    min_contour_area_px = request.min_contour_area_px
-    min_contour_length_px = request.min_contour_length_px
-    show_contact = request.show_contact
-    show_frustum = request.show_frustum
-    cutaway_mode = request.cutaway_mode
-    cutaway_side = request.cutaway_side
-    cutaway_depth_mm = request.cutaway_depth_mm
-    cutaway_origin = request.cutaway_origin
-    show_full_airway = request.show_full_airway
-    cutaway_custom_origin_world = request.cutaway_custom_origin_world
     seed = request.seed
+    cutaway_custom_origin_world = request.cutaway_custom_origin_world
 
-    render_context = build_render_context(manifest_path, roll_deg=roll_deg) if context is None else context
-    manifest = render_context.manifest
-    defaults = manifest.render_defaults
-    pose = _resolve_pose(render_context.pose_report, preset_id=preset_id, approach=approach)
-    preset_manifest = _resolve_preset_manifest(manifest, pose.preset_id)
-    preset_overrides = resolve_preset_overrides(preset_manifest, approach=pose.contact_approach)
-
-    overlay_config = _resolve_overlay_config(
-        manifest,
-        mode=mode,
-        airway_overlay=airway_overlay,
-        airway_lumen_overlay=airway_lumen_overlay,
-        airway_wall_overlay=airway_wall_overlay,
-        target_overlay=target_overlay,
-        contact_overlay=(show_contact if contact_overlay is None else contact_overlay),
-        station_overlay=station_overlay,
-        vessel_overlay_names=vessel_overlay_names,
-        diagnostic_panel=diagnostic_panel,
-        virtual_ebus=virtual_ebus,
-        simulated_ebus=simulated_ebus,
-        show_legend=show_legend,
-        label_overlays=label_overlays,
-        show_frustum=show_frustum,
-        min_contour_area_px=min_contour_area_px,
-        min_contour_length_px=min_contour_length_px,
-        single_vessel_name=single_vessel,
-        preset_default_vessel_names=(None if preset_overrides is None else preset_overrides.vessel_overlays),
-    )
-    cutaway_config = _resolve_cutaway_config(
-        cutaway_mode=cutaway_mode,
-        cutaway_side=cutaway_side,
-        cutaway_depth_mm=cutaway_depth_mm,
-        cutaway_origin=cutaway_origin,
-        show_full_airway=show_full_airway,
-        default_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
-    )
-    if not overlay_config.virtual_ebus_enabled and not overlay_config.simulated_ebus_enabled:
-        raise ValueError("At least one of virtual_ebus or simulated_ebus must be enabled.")
-
-    resolved_width = int(defaults.get("image_size", [512, 512])[0] if width is None else width)
-    resolved_height = int(defaults.get("image_size", [512, 512])[1] if height is None else height)
-    preset_roll_offset_deg = 0.0 if preset_overrides is None or preset_overrides.roll_offset_deg is None else float(preset_overrides.roll_offset_deg)
-    configured_axis_sign_override = None if preset_overrides is None else preset_overrides.axis_sign_override
-    configured_branch_hint = None if preset_overrides is None else preset_overrides.branch_hint
-    configured_branch_shift_mm = None if preset_overrides is None else preset_overrides.branch_shift_mm
-    resolved_gain = float(defaults.get("gain", 1.0))
-    resolved_attenuation = float(defaults.get("attenuation", 0.15))
-    resolved_slice_thickness_mm = _resolve_slice_thickness_mm(overlay_config.mode, slice_thickness_mm)
-    fallback_probe_axis_world = np.asarray(
-        pose.depth_axis if pose.depth_axis is not None else pose.default_depth_axis,
-        dtype=np.float64,
-    )
-    branch_shift_seed = (
-        None
-        if configured_branch_hint is None or configured_branch_shift_mm is None
-        else _resolve_branch_shift_seed(
-            render_context,
-            pose=pose,
-            branch_hint=configured_branch_hint,
-            branch_shift_mm=float(configured_branch_shift_mm),
-            fallback_contact_world=np.asarray(pose.contact_world, dtype=np.float64),
-            fallback_probe_axis_world=fallback_probe_axis_world,
-        )
-    )
-    device_pose = build_device_pose(
-        pose,
-        device_name=device,
-        ct_volume=render_context.ct_volume,
-        airway_lumen=render_context.airway_lumen_volume,
-        airway_solid=render_context.airway_solid_volume,
-        raw_airway_mesh=render_context.airway_geometry_mesh,
-        main_graph=render_context.main_graph,
-        network_graph=render_context.network_graph,
-        refine_contact=refine_contact,
-        roll_offset_deg=preset_roll_offset_deg,
-        axis_sign_override=configured_axis_sign_override,
-        branch_hint=configured_branch_hint,
-        contact_seed_world=(None if branch_shift_seed is None else branch_shift_seed[0]),
-        shaft_axis_override=(None if branch_shift_seed is None else branch_shift_seed[1]),
-        depth_axis_override=(None if branch_shift_seed is None else branch_shift_seed[2]),
-    )
-    baseline_device_pose = device_pose
-
-    resolved_sector_angle_deg = float(device_pose.device_model.sector_angle_deg if sector_angle_deg is None else sector_angle_deg)
-    resolved_max_depth_mm = float(device_pose.device_model.displayed_range_mm if max_depth_mm is None else max_depth_mm)
-    resolved_source_oblique_size_mm = float(device_pose.device_model.source_oblique_size_mm if source_oblique_size_mm is None else source_oblique_size_mm)
-    optimization_cache_key = None if configured_branch_hint is None or configured_branch_shift_mm is not None else (
-        str(render_context.manifest.manifest_path),
-        pose.preset_id,
-        pose.contact_approach,
-        device,
-        configured_branch_hint,
-        resolved_width,
-        resolved_height,
-        round(resolved_source_oblique_size_mm, 4),
-        round(resolved_max_depth_mm, 4),
-        round(resolved_sector_angle_deg, 4),
-        round(resolved_slice_thickness_mm, 4),
-        round(preset_roll_offset_deg, 4),
-        configured_axis_sign_override,
-    )
-    optimization_result = None if optimization_cache_key is None else _LOCAL_POSE_OPTIMIZATION_CACHE.get(optimization_cache_key)
-    if optimization_result is None and configured_branch_hint is not None and configured_branch_shift_mm is None:
-        optimization_result = _optimize_flagged_pose_locally(
-            render_context,
-            pose=pose,
-            preset_manifest=preset_manifest,
-            device=device,
-            branch_hint=configured_branch_hint,
-            base_device_pose=device_pose,
-            base_roll_offset_deg=preset_roll_offset_deg,
-            base_axis_sign_override=configured_axis_sign_override,
-            width=resolved_width,
-            height=resolved_height,
-            source_oblique_size_mm=resolved_source_oblique_size_mm,
-            max_depth_mm=resolved_max_depth_mm,
-            sector_angle_deg=resolved_sector_angle_deg,
-            slice_thickness_mm=resolved_slice_thickness_mm,
-        )
-        if optimization_cache_key is not None and optimization_result is not None:
-            _LOCAL_POSE_OPTIMIZATION_CACHE[optimization_cache_key] = optimization_result
-    if optimization_result is not None:
-        device_pose = optimization_result.device_pose
-        preset_roll_offset_deg = float(optimization_result.roll_offset_deg)
-        configured_axis_sign_override = optimization_result.axis_sign_override
-    resolved_roll_deg = float(pose.roll_deg + preset_roll_offset_deg)
-    resolved_reference_fov_mm = float(
-        (
-            device_pose.device_model.reference_fov_mm
-            if preset_overrides is None or preset_overrides.reference_fov_mm is None
-            else preset_overrides.reference_fov_mm
-        )
-        if reference_fov_mm is None
-        else reference_fov_mm
-    )
-
-    contact_world = np.asarray(device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
-    original_contact_world = np.asarray(device_pose.contact_refinement.original_contact_world, dtype=np.float64)
-    target_world = np.asarray(device_pose.target_world, dtype=np.float64)
-    shaft_axis = np.asarray(device_pose.shaft_axis_world, dtype=np.float64)
-    probe_axis = np.asarray(device_pose.probe_axis_world, dtype=np.float64)
-    lateral_axis = np.asarray(device_pose.lateral_axis_world, dtype=np.float64)
+    render_context = prepared_state.context
+    manifest = prepared_state.manifest
+    pose = prepared_state.pose
+    preset_manifest = prepared_state.preset_manifest
+    preset_overrides = prepared_state.preset_overrides
+    overlay_config = prepared_state.overlay_config
+    cutaway_config = prepared_state.cutaway_config
+    baseline_device_pose = prepared_state.baseline_device_pose
+    device_pose = prepared_state.device_pose
+    optimization_result = prepared_state.optimization_result
+    resolved_width = prepared_state.resolved_width
+    resolved_height = prepared_state.resolved_height
+    resolved_sector_angle_deg = prepared_state.resolved_sector_angle_deg
+    resolved_max_depth_mm = prepared_state.resolved_max_depth_mm
+    resolved_source_oblique_size_mm = prepared_state.resolved_source_oblique_size_mm
+    resolved_reference_fov_mm = prepared_state.resolved_reference_fov_mm
+    resolved_roll_deg = prepared_state.resolved_roll_deg
+    resolved_gain = prepared_state.resolved_gain
+    resolved_attenuation = prepared_state.resolved_attenuation
+    resolved_slice_thickness_mm = prepared_state.resolved_slice_thickness_mm
+    preset_roll_offset_deg = prepared_state.preset_roll_offset_deg
+    configured_axis_sign_override = prepared_state.configured_axis_sign_override
+    configured_branch_hint = prepared_state.configured_branch_hint
+    configured_branch_shift_mm = prepared_state.configured_branch_shift_mm
+    contact_world = prepared_state.contact_world
+    original_contact_world = prepared_state.original_contact_world
+    target_world = prepared_state.target_world
+    shaft_axis = prepared_state.shaft_axis
+    probe_axis = prepared_state.probe_axis
+    lateral_axis = prepared_state.lateral_axis
     station_local = _extract_local_mask_points(
         _get_mask_volume(render_context, preset_manifest.station_mask),
         center_world=contact_world,

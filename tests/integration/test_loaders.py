@@ -6,7 +6,7 @@ from ebus_simulator.io.vtp import load_vtp_polydata
 from ebus_simulator.manifest import load_case_manifest
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "configs" / "3d_slicer_files.yaml"
 
 

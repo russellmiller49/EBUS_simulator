@@ -183,6 +183,14 @@ def _artifact_settings(sector_metadata: Mapping[str, object]) -> Mapping[str, ob
     return value if isinstance(value, Mapping) else {}
 
 
+def _profile_settings(sector_metadata: Mapping[str, object]) -> Mapping[str, object]:
+    engine_diagnostics = sector_metadata.get("engine_diagnostics")
+    if not isinstance(engine_diagnostics, Mapping):
+        return {}
+    value = engine_diagnostics.get("profile")
+    return value if isinstance(value, Mapping) else {}
+
+
 def _consistency_metrics(sector_metadata: Mapping[str, object]) -> Mapping[str, object]:
     value = sector_metadata.get("consistency_metrics")
     return value if isinstance(value, Mapping) else {}
@@ -329,6 +337,23 @@ def _format_artifact_settings(settings: Mapping[str, object]) -> str | None:
     return ", ".join(parts) if parts else None
 
 
+def _format_profile_settings(settings: Mapping[str, object]) -> str | None:
+    name = settings.get("name")
+    if name is None:
+        return None
+    overrides = settings.get("explicit_overrides")
+    if not isinstance(overrides, Mapping) or not overrides:
+        return str(name)
+    parts: list[str] = []
+    for key in ("speckle_strength", "reverberation_strength", "shadow_strength"):
+        value = _coerce_float(overrides.get(key))
+        if value is not None:
+            parts.append(f"{key}={value:.2f}")
+    if not parts:
+        return str(name)
+    return f"{name} ({', '.join(parts)})"
+
+
 def _format_support_settings(metrics: Mapping[str, object]) -> str | None:
     active = _coerce_bool(metrics.get("support_logic_active"))
     mode = metrics.get("support_logic_mode")
@@ -377,6 +402,7 @@ def build_render_inspector_sections(
     combined_metrics.update(metrics)
     eval_summary = _eval_summary(sector_metadata)
     artifact_settings = _artifact_settings(sector_metadata)
+    profile_settings = _profile_settings(sector_metadata)
     pose_comparison = _extract_mapping(sector_metadata, "pose_comparison")
     target_depth_mm, target_lateral_mm = compute_target_offsets_mm(sector_metadata)
     target_in_sector = _coerce_bool(combined_metrics.get("target_in_sector"))
@@ -543,6 +569,7 @@ def build_render_inspector_sections(
         InspectorField("3D Enabled Overlays", _format_list(_overlay_names(context_metadata, "overlays_enabled"))),
     ]
     _field_if_value(render_fields, "Cutaway", _cutaway_description(context_metadata))
+    _field_if_value(render_fields, "Physics Profile", _format_profile_settings(profile_settings))
     _field_if_value(render_fields, "Artifact Settings", _format_artifact_settings(artifact_settings))
     _field_if_value(
         render_fields,

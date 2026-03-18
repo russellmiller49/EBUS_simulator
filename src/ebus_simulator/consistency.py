@@ -271,6 +271,7 @@ def analyze_render_consistency(
     show_full_airway: bool | None = None,
     vessel_overlay_names: list[str] | None = None,
     preset_ids: list[str] | None = None,
+    physics_profile: str | None = None,
     physics_speckle_strength: float | None = None,
     physics_reverberation_strength: float | None = None,
     physics_shadow_strength: float | None = None,
@@ -359,6 +360,7 @@ def analyze_render_consistency(
             cutaway_depth_mm=cutaway_depth_mm,
             cutaway_origin=cutaway_origin,
             show_full_airway=show_full_airway,
+            physics_profile=physics_profile,
             speckle_strength=physics_speckle_strength,
             reverberation_strength=physics_reverberation_strength,
             shadow_strength=physics_shadow_strength,
@@ -367,6 +369,7 @@ def analyze_render_consistency(
 
         localizer_metrics = dict(localizer.metadata.consistency_metrics)
         physics_metrics = dict(physics.metadata.consistency_metrics)
+        physics_profile_settings = dict(physics.metadata.engine_diagnostics.get("profile", {}))
         reasons = _entry_reasons(localizer_metrics=localizer_metrics, physics_metrics=physics_metrics)
 
         entries.append(
@@ -377,6 +380,7 @@ def analyze_render_consistency(
                 "localizer_json": localizer.metadata.metadata_path,
                 "physics_png": str(physics_path),
                 "physics_json": physics.metadata.metadata_path,
+                "physics_profile": physics_profile_settings,
                 "localizer_consistency_metrics": localizer_metrics,
                 "physics_consistency_metrics": physics_metrics,
                 "physics_eval_summary": dict(physics.metadata.engine_diagnostics.get("eval_summary", {})),
@@ -405,6 +409,25 @@ def analyze_render_consistency(
         "analysis_count": len(entries),
         "preset_filter": ([] if preset_ids is None else list(preset_ids)),
         "physics_settings": {
+            "profile_name": (
+                None
+                if not entries
+                else dict(entries[0].get("physics_profile", {})).get("name")
+            ),
+            "profile_source_path": (
+                None
+                if not entries
+                else dict(entries[0].get("physics_profile", {})).get("source_path")
+            ),
+            "explicit_overrides": {
+                key: value
+                for key, value in {
+                    "speckle_strength": physics_speckle_strength,
+                    "reverberation_strength": physics_reverberation_strength,
+                    "shadow_strength": physics_shadow_strength,
+                }.items()
+                if value is not None
+            },
             "speckle_strength": physics_speckle_strength,
             "reverberation_strength": physics_reverberation_strength,
             "shadow_strength": physics_shadow_strength,

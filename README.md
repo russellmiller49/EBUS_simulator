@@ -13,6 +13,10 @@ Current implemented capabilities:
 - Centerline graph abstraction and preset pose generation
 - `generate-poses` CLI
 - explicit render-engine split between `localizer` and `physics`
+- first-class shared render-state preparation in `render_state.py`
+- transform/sampling helpers split into `transforms.py`
+- overlay/annotation helpers split into `annotations.py`
+- typed renderer tuning profiles in `render_profiles.py` backed by `configs/render_profiles.yaml`
 - direct probe-centered preset rendering
 - `render-preset` CLI
 - clean/debug render modes, station/vessel overlays, metadata sidecars, and batch render indexes
@@ -23,7 +27,9 @@ Current implemented capabilities:
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, eval summaries, first-class consistency metrics, and bounded sparse-case signal-support guardrails
+- baseline and named physics tuning profiles with CLI selection, validation, and metadata-visible override reporting
 - current desktop preset browser with queued rendering, a structured teaching-console inspector, 2D EBUS, and 3D context panes
+- split test layout with fast `tests/unit` coverage and slower dataset-backed `tests/integration` coverage
 - CI smoke workflow
 
 Not implemented yet:
@@ -82,7 +88,28 @@ Run tests:
 make test
 ```
 
-`make test` runs the full suite, including dataset-backed rendering tests, so it can take materially longer than the small unit-test subset.
+`make test` runs the full suite, including the slower dataset-backed rendering, review, and app paths.
+
+Fast local unit path:
+
+```bash
+make test-fast
+pytest tests/unit -q
+```
+
+Slower integration path:
+
+```bash
+make test-integration
+pytest tests/integration -q
+```
+
+Pytest markers are also available:
+
+```bash
+pytest -m unit -q
+pytest -m integration -q
+```
 
 Validate the configured case:
 
@@ -114,6 +141,12 @@ Render the physics engine with tunable artifact strengths and per-render debug m
 render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --speckle-strength 0.22 --reverberation-strength 0.28 --shadow-strength 0.47 --debug-map-dir reports/renders/station_4r_node_b_debug_maps --output reports/renders/station_4r_node_b_physics.png
 ```
 
+Render the physics engine with a named non-default tuning profile:
+
+```bash
+render-preset configs/3d_slicer_files.yaml station_7_node_a --approach lms --engine physics --mode clean --virtual-ebus false --physics-profile sparse_support_boost --output reports/renders/station_7_node_a_lms_sparse_support_boost.png
+```
+
 Render a CP-EBUS diagnostic multi-panel export with a refined wall contact, larger source oblique section, and labeled contour overlays:
 
 ```bash
@@ -138,6 +171,13 @@ Generate a filtered physics-aware review bundle with debug maps and tuned auto-f
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01
 ```
 
+Use a named physics profile during review or consistency sweeps:
+
+```bash
+review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_7_node_a --physics-profile sparse_support_boost
+analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --physics-profile sparse_support_boost --width 64 --height 64
+```
+
 Disable the default wall-contrast auto-flag threshold for a calibration run:
 
 ```bash
@@ -159,6 +199,8 @@ analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/con
 Convenience targets:
 
 ```bash
+make test-fast
+make test-integration
 make validate
 make poses
 make render-smoke
@@ -167,6 +209,16 @@ make review-smoke
 make ci-smoke
 make test
 ```
+
+## Testing
+
+The suite is split by intent:
+
+- `tests/unit/` holds fast synthetic/helper tests for centerline math, pose-generation helpers, transform helpers, render-state assembly, profile/config loading, and metadata/adaptor logic.
+- `tests/integration/` holds dataset-backed validation, pose generation, rendering, review, consistency, and app-session coverage.
+- files under those directories are auto-marked as `unit` or `integration` during pytest collection
+
+Use `make test-fast` during local iteration, then run `make test-integration` or `make test` before finishing a renderer or workflow change.
 
 Launch the current desktop preset browser:
 
@@ -185,3 +237,18 @@ Current browser surface:
 - sparse-support bucket, activation mode, and support weights surfaced when the physics guardrails activate
 - live auto-flags and warnings sourced from current render metadata and review metrics
 - screenshot export for the active browser state
+
+## Render Profiles
+
+Renderer tuning now lives in `configs/render_profiles.yaml` and is loaded by `src/ebus_simulator/render_profiles.py`.
+
+Current behavior:
+- the default physics render path uses the `baseline` profile
+- `--physics-profile <name>` selects a named profile for `render-preset`, `render-all-presets`, `review-presets`, and `analyze-render-consistency`
+- explicit CLI artifact flags such as `--speckle-strength`, `--reverberation-strength`, and `--shadow-strength` override the selected profile for that render
+- the active profile name, source path, effective settings, and explicit overrides are recorded in physics render metadata and review/consistency outputs
+
+To add a profile:
+- add a new entry under `physics_profiles:` in `configs/render_profiles.yaml`
+- keep the field names aligned with `PhysicsTuningProfile` in `render_profiles.py`
+- validate it by running `render-preset ... --engine physics --physics-profile <name>` and checking the JSON sidecar `engine_diagnostics.profile` block

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from csv import DictWriter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 import json
 import math
 from pathlib import Path
@@ -11,44 +11,70 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
 
-from ebus_simulator.centerline import CenterlineGraph
+from ebus_simulator.annotations import (
+    _add_panel_label,
+    _annotate_legend_and_labels,
+    _apply_contour_overlay,
+    _color_tuple,
+    _draw_cross_marker,
+    _filter_mask_components,
+)
 from ebus_simulator.cutaway import CutawayDisplay, build_display_cutaway
 from ebus_simulator.device import DevicePose, build_device_pose, _parse_branch_hint
-from ebus_simulator.io.nifti import load_nifti
-from ebus_simulator.io.vtp import load_vtp_polydata
-from ebus_simulator.manifest import load_case_manifest, resolve_preset_overrides
-from ebus_simulator.models import CaseManifest, PolyData, VolumeData
-from ebus_simulator.poses import generate_pose_report
 from ebus_simulator.render_engines import RenderEngine, RenderRequest, RenderResult, parse_render_engine
+from ebus_simulator.render_profiles import load_consistency_profile
+from ebus_simulator.render_state import (
+    DEFAULT_RENDER_MODE,
+    _LOCAL_POSE_OPTIMIZATION_CACHE,
+    BatchRenderIndex,
+    CutawayConfig,
+    LocalPoseOptimizationResult,
+    OverlayConfig,
+    OverlayLayer,
+    RenderContext,
+    RenderIndexEntry,
+    RenderMetadata,
+    RenderedPreset,
+    SourceSection,
+    _get_mask_volume,
+    _overlay_summary,
+    _resolve_branch_shift_seed,
+    _resolve_cutaway_config,
+    _resolve_overlay_config,
+    _resolve_pose,
+    _resolve_preset_manifest,
+    _resolve_slice_thickness_mm,
+    build_render_context,
+)
+from ebus_simulator.transforms import (
+    DEFAULT_SLAB_SAMPLES,
+    OPTIMIZATION_EPSILON,
+    _angle_deg,
+    _build_sector_grid,
+    _fan_target_row_col,
+    _map_plane_to_fan,
+    _normalize,
+    _plane_point_to_pixel,
+    _points_to_voxel,
+    _preprocess_source_section,
+    _project_perpendicular,
+    _sample_contact_plane,
+    _sample_plane,
+    _sample_slab,
+    _window_ct,
+)
 
 
-WINDOW_CENTER_HU = 40.0
-WINDOW_WIDTH_HU = 300.0
-DEFAULT_SLAB_SAMPLES = 5
-CLEAN_SLICE_THICKNESS_MM = 4.0
-DEBUG_SLICE_THICKNESS_MM = 1.5
-DEFAULT_RENDER_MODE = "debug"
 CONTEXT_AXIS_LENGTH_MM = 12.0
 CONTEXT_CENTERLINE_WINDOW_MM = 28.0
 DEFAULT_DEVICE_NAME = "bf_uc180f"
 DEFAULT_REFERENCE_FOV_MM = 100.0
 DEFAULT_SOURCE_OBLIQUE_SIZE_MM = 51.79
-SOURCE_SECTION_PREPROCESS_BLEND = 0.30
 FLAGGED_BRANCH_SHIFT_MM = (-4.0, 0.0, 4.0)
 FLAGGED_ROLL_DELTA_DEG = (0.0,)
 FLAGGED_AXIS_SIGN_OVERRIDES = ()
-OPTIMIZATION_EPSILON = 1e-9
-CONSISTENCY_SIGNAL_THRESHOLD = 0.05
-CONSISTENCY_NEAR_FIELD_FRACTION = 0.20
-CONSISTENCY_TARGET_REGION_RADIUS_MM = 4.0
-CONSISTENCY_TARGET_PROMINENT_MIN_CONTRAST = 0.08
-CONSISTENCY_TARGET_PROMINENT_MIN_COVERAGE = 0.02
-CONSISTENCY_WALL_DOMINANT_MIN_NEAR_FIELD_OCCUPANCY = 0.16
-CONSISTENCY_WALL_DOMINANT_MIN_CONTRAST = 0.35
-CONSISTENCY_WALL_DOMINANT_MAX_TARGET_CONTRAST = 0.04
-CONSISTENCY_SPARSE_EMPTY_FRACTION = 0.82
-CONSISTENCY_SPARSE_NON_BACKGROUND_MAX = 0.18
 _LOCAL_POSE_OPTIMIZATION_CACHE: dict[tuple[object, ...], LocalPoseOptimizationResult] = {}
+DEFAULT_CONSISTENCY_PROFILE = load_consistency_profile().settings
 
 AIRWAY_LUMEN_COLOR = np.asarray([0.22, 0.92, 0.94], dtype=np.float32)
 AIRWAY_WALL_COLOR = np.asarray([0.16, 0.47, 0.96], dtype=np.float32)
@@ -72,289 +98,6 @@ CUTAWAY_TRIANGLE_EPSILON_MM = 0.35
 CONTEXT_SCREEN_X_BASIS = np.asarray([0.92, 0.35, 0.0], dtype=np.float64)
 CONTEXT_SCREEN_Y_BASIS = np.asarray([0.0, 0.24, -0.82], dtype=np.float64)
 CONTEXT_VIEW_DIRECTION = np.cross(CONTEXT_SCREEN_X_BASIS, CONTEXT_SCREEN_Y_BASIS)
-
-
-@dataclass(slots=True)
-class CutawayConfig:
-    mode: str
-    side: str
-    depth_mm: float
-    origin_mode: str
-    show_full_airway: bool
-
-
-@dataclass(slots=True)
-class OverlayConfig:
-    mode: str
-    airway_lumen_enabled: bool
-    airway_wall_enabled: bool
-    station_enabled: bool
-    target_enabled: bool
-    contact_enabled: bool
-    vessel_names: list[str]
-    diagnostic_panel_enabled: bool
-    virtual_ebus_enabled: bool
-    simulated_ebus_enabled: bool
-    show_legend: bool
-    label_overlays: bool
-    show_frustum: bool
-    min_contour_area_px: float
-    min_contour_length_px: float
-    single_vessel_name: str | None
-
-
-@dataclass(slots=True)
-class RenderContext:
-    manifest: CaseManifest
-    pose_report: object
-    ct_volume: VolumeData
-    airway_lumen_volume: VolumeData
-    airway_solid_volume: VolumeData
-    airway_display_mesh: PolyData | None
-    airway_geometry_mesh: PolyData | None
-    mask_cache: dict[str, VolumeData]
-    main_graph: CenterlineGraph
-    network_graph: CenterlineGraph
-
-
-@dataclass(slots=True)
-class RenderMetadata:
-    manifest_path: str
-    case_id: str
-    preset_id: str
-    approach: str
-    mode: str
-    output_path: str
-    metadata_path: str
-    engine: str
-    engine_version: str
-    seed: int | None
-    view_kind: str
-    image_size: list[int]
-    device_model: str
-    device_label: str
-    sector_angle_deg: float
-    max_depth_mm: float
-    roll_deg: float
-    gain: float
-    attenuation: float
-    slice_thickness_mm: float
-    slice_samples: int
-    source_oblique_size_mm: float
-    reference_fov_mm: float
-    source_plane: str
-    display_plane: str
-    reference_plane: str
-    refine_contact_enabled: bool
-    diagnostic_panel_enabled: bool
-    diagnostic_panel_layout: list[str]
-    virtual_ebus_enabled: bool
-    simulated_ebus_enabled: bool
-    contact_world: list[float]
-    original_contact_world: list[float]
-    voxel_refined_contact_world: list[float]
-    refined_contact_world: list[float]
-    tip_start_world: list[float]
-    target_world: list[float]
-    nearest_centerline_point: list[float] | None
-    pose_axes: dict[str, list[float] | None]
-    device_axes: dict[str, list[float] | None]
-    target_in_default_forward_hemisphere: bool | None
-    contact_to_airway_distance_mm: float | None
-    original_contact_to_airway_distance_mm: float | None
-    voxel_refined_contact_to_airway_distance_mm: float | None
-    refined_contact_to_airway_distance_mm: float | None
-    centerline_projection_distance_mm: float | None
-    contact_refinement_method: str
-    pose_comparison: dict[str, object]
-    airway_overlay_enabled: bool
-    airway_lumen_overlay_enabled: bool
-    airway_wall_overlay_enabled: bool
-    target_overlay_enabled: bool
-    contact_overlay_enabled: bool
-    station_overlay_enabled: bool
-    vessel_overlay_names: list[str]
-    single_vessel_name: str | None
-    show_legend: bool
-    label_overlays: bool
-    show_frustum: bool
-    cutaway_mode: str
-    cutaway_side: str
-    cutaway_side_source: str
-    cutaway_open_side: str
-    cutaway_depth_mm: float
-    cutaway_origin_mode: str
-    cutaway_origin: list[float]
-    cutaway_normal: list[float]
-    cutaway_mesh_source: str
-    show_full_airway: bool
-    overlays_enabled: list[str]
-    visible_overlay_names: list[str]
-    consistency_metrics: dict[str, object]
-    preset_override_applied: bool
-    preset_override_vessel_overlays: list[str]
-    preset_override_cutaway_side: str | None
-    preset_override_roll_offset_deg: float
-    preset_override_branch_hint: str | None
-    preset_override_branch_shift_mm: float | None
-    preset_override_axis_sign_override: str | None
-    preset_override_reference_fov_mm: float | None
-    preset_override_notes: str | None
-    warnings: list[str]
-    engine_diagnostics: dict[str, object]
-
-
-@dataclass(slots=True)
-class RenderedPreset:
-    image_rgb: np.ndarray
-    sector_mask: np.ndarray
-    metadata: RenderMetadata
-
-
-@dataclass(slots=True)
-class RenderIndexEntry:
-    preset_id: str
-    approach: str
-    mode: str
-    engine: str
-    output_image_path: str
-    sidecar_path: str
-    image_size: list[int]
-    sector_angle_deg: float
-    max_depth_mm: float
-    roll_deg: float
-    overlays_enabled: list[str]
-    airway_overlay_enabled: bool
-    target_overlay_enabled: bool
-    station_overlay_enabled: bool
-    vessel_overlay_names: list[str]
-    warnings_count: int
-
-
-@dataclass(slots=True)
-class BatchRenderIndex:
-    manifest_path: str
-    case_id: str
-    output_dir: str
-    mode: str
-    engine: str
-    render_count: int
-    renders: list[RenderIndexEntry]
-
-
-@dataclass(slots=True)
-class OverlayLayer:
-    key: str
-    label: str
-    color_rgb: np.ndarray
-    mask: np.ndarray
-    label_enabled: bool = True
-
-
-@dataclass(slots=True)
-class SourceSection:
-    hu: np.ndarray
-    preprocessed_hu: np.ndarray
-    forward_max_mm: float
-    shaft_half_width_mm: float
-    width: int
-    height: int
-
-
-@dataclass(slots=True)
-class LocalPoseOptimizationResult:
-    device_pose: DevicePose
-    branch_shift_mm: float
-    roll_offset_deg: float
-    axis_sign_override: str | None
-    objective: tuple[float | int, ...]
-    metrics: dict[str, object]
-
-
-def _points_to_voxel(points_lps: np.ndarray, inverse_affine_lps: np.ndarray) -> np.ndarray:
-    homogeneous = np.concatenate((points_lps, np.ones((points_lps.shape[0], 1), dtype=np.float64)), axis=1)
-    ijk = homogeneous @ inverse_affine_lps.T
-    return ijk[:, :3]
-
-
-def _normalize(vector: np.ndarray) -> np.ndarray | None:
-    norm = float(np.linalg.norm(vector))
-    if norm <= OPTIMIZATION_EPSILON:
-        return None
-    return np.asarray(vector, dtype=np.float64) / norm
-
-
-def _project_perpendicular(vector: np.ndarray, axis: np.ndarray) -> np.ndarray:
-    return np.asarray(vector, dtype=np.float64) - (float(np.dot(vector, axis)) * np.asarray(axis, dtype=np.float64))
-
-
-def _angle_deg(a: np.ndarray, b: np.ndarray) -> float:
-    a_unit = _normalize(a)
-    b_unit = _normalize(b)
-    if a_unit is None or b_unit is None:
-        return 0.0
-    return float(np.degrees(np.arccos(np.clip(float(np.dot(a_unit, b_unit)), -1.0, 1.0))))
-
-
-def _sample_slab(
-    data: np.ndarray,
-    *,
-    base_points_lps: np.ndarray,
-    thickness_axis: np.ndarray,
-    inverse_affine_lps: np.ndarray,
-    sample_count: int,
-    slab_thickness_mm: float,
-    order: int,
-    cval: float,
-) -> np.ndarray:
-    if base_points_lps.size == 0:
-        return np.asarray([], dtype=np.float32)
-
-    if sample_count <= 1 or slab_thickness_mm <= 0.0:
-        offsets = np.asarray([0.0], dtype=np.float64)
-    else:
-        offsets = np.linspace(-slab_thickness_mm / 2.0, slab_thickness_mm / 2.0, sample_count, dtype=np.float64)
-
-    stacked_points = base_points_lps[None, :, :] + offsets[:, None, None] * thickness_axis[None, None, :]
-    voxel_points = _points_to_voxel(stacked_points.reshape((-1, 3)), inverse_affine_lps)
-    sampled = ndimage.map_coordinates(
-        np.asarray(data, dtype=np.float32),
-        [voxel_points[:, 0], voxel_points[:, 1], voxel_points[:, 2]],
-        order=order,
-        mode="constant",
-        cval=cval,
-    )
-    return sampled.reshape((offsets.shape[0], base_points_lps.shape[0])).mean(axis=0)
-
-
-def _resolve_pose(report, *, preset_id: str, approach: str | None):
-    matches = [pose for pose in report.poses if pose.preset_id == preset_id]
-    if not matches:
-        raise ValueError(f"Preset {preset_id!r} is not defined in the manifest.")
-
-    if approach is None:
-        if len(matches) != 1:
-            available = ", ".join(sorted(pose.contact_approach for pose in matches))
-            raise ValueError(f"Preset {preset_id!r} has multiple approaches. Choose one of: {available}")
-        return matches[0]
-
-    for pose in matches:
-        if pose.contact_approach == approach:
-            return pose
-
-    available = ", ".join(sorted(pose.contact_approach for pose in matches))
-    raise ValueError(f"Preset {preset_id!r} does not have approach {approach!r}. Available: {available}")
-
-
-def _build_sector_grid(width: int, height: int, max_depth_mm: float, sector_angle_deg: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
-    tan_half = float(np.tan(np.deg2rad(sector_angle_deg / 2.0)))
-    max_lateral_mm = max_depth_mm * tan_half
-    depth_mm = (np.arange(height, dtype=np.float64) / max(1, height - 1)) * max_depth_mm
-    lateral_mm = ((np.arange(width, dtype=np.float64) - (width // 2)) / max(1, width // 2)) * max_lateral_mm
-    depth_grid = np.broadcast_to(depth_mm[:, None], (height, width))
-    lateral_grid = np.broadcast_to(lateral_mm[None, :], (height, width))
-    sector_mask = np.abs(lateral_grid) <= ((depth_grid * tan_half) + 1e-9)
-    return depth_grid, lateral_grid, sector_mask, max_lateral_mm
 
 
 def _compute_contact_to_centerline_mm(context: RenderContext, contact_world: np.ndarray) -> tuple[float | None, str | None]:
@@ -518,14 +261,15 @@ def _build_target_region_mask(
     sector_mask: np.ndarray,
     target_depth_mm: float | None,
     target_lateral_offset_mm: float | None,
-    radius_mm: float = CONSISTENCY_TARGET_REGION_RADIUS_MM,
+    radius_mm: float | None = None,
 ) -> np.ndarray:
     if target_depth_mm is None or target_lateral_offset_mm is None:
         return np.zeros_like(sector_mask, dtype=bool)
+    resolved_radius_mm = float(DEFAULT_CONSISTENCY_PROFILE.target_region_radius_mm if radius_mm is None else radius_mm)
     depth_delta = depth_grid_mm - float(target_depth_mm)
     lateral_delta = lateral_grid_mm - float(target_lateral_offset_mm)
     return np.asarray(
-        np.logical_and((depth_delta ** 2 + lateral_delta ** 2) <= float(radius_mm) ** 2, sector_mask),
+        np.logical_and((depth_delta ** 2 + lateral_delta ** 2) <= resolved_radius_mm ** 2, sector_mask),
         dtype=bool,
     )
 
@@ -540,7 +284,12 @@ def _metric_float(metrics: Mapping[str, object], key: str) -> float | None:
         return None
 
 
-def classify_render_consistency_bucket(metrics: Mapping[str, object]) -> str:
+def classify_render_consistency_bucket(
+    metrics: Mapping[str, object],
+    *,
+    profile=None,
+) -> str:
+    resolved_profile = DEFAULT_CONSISTENCY_PROFILE if profile is None else profile
     target_contrast = _metric_float(metrics, "target_region_contrast_vs_sector")
     target_coverage = _metric_float(metrics, "target_sector_coverage_fraction")
     near_field_wall_occupancy = _metric_float(metrics, "near_field_wall_occupancy_fraction")
@@ -551,25 +300,28 @@ def classify_render_consistency_bucket(metrics: Mapping[str, object]) -> str:
     if (
         target_contrast is not None
         and target_coverage is not None
-        and target_contrast >= CONSISTENCY_TARGET_PROMINENT_MIN_CONTRAST
-        and target_coverage >= CONSISTENCY_TARGET_PROMINENT_MIN_COVERAGE
+        and target_contrast >= float(resolved_profile.target_prominent_min_contrast)
+        and target_coverage >= float(resolved_profile.target_prominent_min_coverage)
     ):
         return "target_prominent"
 
     if (
         near_field_wall_occupancy is not None
         and wall_contrast is not None
-        and near_field_wall_occupancy >= CONSISTENCY_WALL_DOMINANT_MIN_NEAR_FIELD_OCCUPANCY
-        and wall_contrast >= CONSISTENCY_WALL_DOMINANT_MIN_CONTRAST
-        and (target_contrast is None or target_contrast <= CONSISTENCY_WALL_DOMINANT_MAX_TARGET_CONTRAST)
+        and near_field_wall_occupancy >= float(resolved_profile.wall_dominant_min_near_field_occupancy)
+        and wall_contrast >= float(resolved_profile.wall_dominant_min_contrast)
+        and (
+            target_contrast is None
+            or target_contrast <= float(resolved_profile.wall_dominant_max_target_contrast)
+        )
     ):
         return "wall_dominant"
 
     if (
         empty_sector_fraction is not None
         and non_background_occupancy is not None
-        and empty_sector_fraction >= CONSISTENCY_SPARSE_EMPTY_FRACTION
-        and non_background_occupancy <= CONSISTENCY_SPARSE_NON_BACKGROUND_MAX
+        and empty_sector_fraction >= float(resolved_profile.sparse_empty_fraction)
+        and non_background_occupancy <= float(resolved_profile.sparse_non_background_max)
     ):
         return "sparse_empty_dominant"
 
@@ -597,9 +349,12 @@ def compute_render_consistency_metrics(
     normalization_lower_bound: float | None = None,
     normalization_upper_bound: float | None = None,
     compression_gain_factor: float | None = None,
-    signal_threshold: float = CONSISTENCY_SIGNAL_THRESHOLD,
-    near_field_fraction: float = CONSISTENCY_NEAR_FIELD_FRACTION,
+    signal_threshold: float | None = None,
+    near_field_fraction: float | None = None,
 ) -> dict[str, object]:
+    resolved_profile = DEFAULT_CONSISTENCY_PROFILE
+    resolved_signal_threshold = float(resolved_profile.signal_threshold if signal_threshold is None else signal_threshold)
+    resolved_near_field_fraction = float(resolved_profile.near_field_fraction if near_field_fraction is None else near_field_fraction)
     gray = np.asarray(image_gray, dtype=np.float32)
     sector = np.asarray(sector_mask, dtype=bool)
     target_mask = (
@@ -616,8 +371,8 @@ def compute_render_consistency_metrics(
     wall = np.zeros_like(sector, dtype=bool) if airway_wall_mask is None else np.asarray(airway_wall_mask, dtype=bool) & sector
     vessel = np.zeros_like(sector, dtype=bool) if vessel_mask is None else np.asarray(vessel_mask, dtype=bool) & sector
     anatomy = wall | vessel | target_mask
-    near_field_mask = sector & (np.asarray(depth_grid_mm, dtype=np.float32) <= (float(max_depth_mm) * float(near_field_fraction)))
-    signal_mask = sector & (gray > float(signal_threshold))
+    near_field_mask = sector & (np.asarray(depth_grid_mm, dtype=np.float32) <= (float(max_depth_mm) * resolved_near_field_fraction))
+    signal_mask = sector & (gray > resolved_signal_threshold)
 
     sector_values = gray[sector]
     sector_mean = None if sector_values.size == 0 else float(np.mean(sector_values))
@@ -656,8 +411,8 @@ def compute_render_consistency_metrics(
         "normalization_lower_bound": normalization_lower_bound,
         "normalization_upper_bound": normalization_upper_bound,
         "compression_gain_factor": compression_gain_factor,
-        "signal_threshold": float(signal_threshold),
-        "near_field_fraction": float(near_field_fraction),
+        "signal_threshold": resolved_signal_threshold,
+        "near_field_fraction": resolved_near_field_fraction,
         "target_depth_mm": target_depth_mm,
         "target_lateral_offset_mm": target_lateral_offset_mm,
         "target_distance_from_sector_centerline_mm": (None if target_lateral_offset_mm is None else float(abs(target_lateral_offset_mm))),
@@ -687,284 +442,8 @@ def compute_render_consistency_metrics(
         "vessel_region_mean_intensity": vessel_mean,
         "vessel_region_contrast_vs_sector": (None if vessel_mean is None or sector_mean is None else float(vessel_mean - sector_mean)),
     }
-    metrics["consistency_bucket"] = classify_render_consistency_bucket(metrics)
+    metrics["consistency_bucket"] = classify_render_consistency_bucket(metrics, profile=resolved_profile)
     return metrics
-
-
-def _window_ct(values_hu: np.ndarray, *, gain: float, attenuation: float, depths_mm: np.ndarray, max_depth_mm: float) -> np.ndarray:
-    window_min = WINDOW_CENTER_HU - (WINDOW_WIDTH_HU / 2.0)
-    normalized = np.clip((values_hu - window_min) / WINDOW_WIDTH_HU, 0.0, 1.0)
-    attenuation_curve = np.exp(-attenuation * (depths_mm / max(max_depth_mm, 1e-6)))
-    return np.clip(normalized * gain * attenuation_curve, 0.0, 1.0)
-
-
-def _compute_contour(binary_mask: np.ndarray) -> np.ndarray:
-    if not np.any(binary_mask):
-        return np.zeros_like(binary_mask, dtype=bool)
-    eroded = ndimage.binary_erosion(binary_mask, border_value=0)
-    contour = np.logical_and(binary_mask, np.logical_not(eroded))
-    return ndimage.binary_dilation(contour, iterations=1)
-
-
-def _apply_contour_overlay(image_rgb: np.ndarray, binary_mask: np.ndarray, color_rgb: np.ndarray) -> None:
-    contour = _compute_contour(binary_mask)
-    if not np.any(contour):
-        return
-    image_rgb[contour] = image_rgb[contour] * 0.12 + color_rgb[None, :] * 0.88
-
-
-def _draw_cross_marker(image_rgb: np.ndarray, *, row: int, column: int, color_rgb: np.ndarray, radius: int = 4) -> None:
-    height, width = image_rgb.shape[:2]
-    for offset in range(-radius, radius + 1):
-        current_row = row + offset
-        current_column = column + offset
-        opposite_column = column - offset
-        if 0 <= current_row < height and 0 <= column < width:
-            image_rgb[current_row, column] = image_rgb[current_row, column] * 0.10 + color_rgb * 0.90
-        if 0 <= row < height and 0 <= current_column < width:
-            image_rgb[row, current_column] = image_rgb[row, current_column] * 0.10 + color_rgb * 0.90
-        if 0 <= current_row < height and 0 <= current_column < width:
-            image_rgb[current_row, current_column] = image_rgb[current_row, current_column] * 0.25 + color_rgb * 0.75
-        if 0 <= current_row < height and 0 <= opposite_column < width:
-            image_rgb[current_row, opposite_column] = image_rgb[current_row, opposite_column] * 0.25 + color_rgb * 0.75
-
-
-def _overlay_summary(config: OverlayConfig) -> list[str]:
-    enabled: list[str] = []
-    if config.airway_lumen_enabled:
-        enabled.append("airway_lumen")
-    if config.airway_wall_enabled:
-        enabled.append("airway_wall")
-    if config.station_enabled:
-        enabled.append("station")
-    enabled.extend(config.vessel_names)
-    if config.target_enabled:
-        enabled.append("target")
-    if config.contact_enabled:
-        enabled.append("contact")
-    return enabled
-
-
-def _resolve_overlay_config(
-    manifest: CaseManifest,
-    *,
-    mode: str | None,
-    airway_overlay: bool | None,
-    airway_lumen_overlay: bool | None,
-    airway_wall_overlay: bool | None,
-    target_overlay: bool | None,
-    contact_overlay: bool | None,
-    station_overlay: bool | None,
-    vessel_overlay_names: list[str] | None,
-    diagnostic_panel: bool,
-    virtual_ebus: bool,
-    simulated_ebus: bool,
-    show_legend: bool | None,
-    label_overlays: bool | None,
-    show_frustum: bool | None,
-    min_contour_area_px: float,
-    min_contour_length_px: float,
-    single_vessel_name: str | None,
-    preset_default_vessel_names: list[str] | None = None,
-) -> OverlayConfig:
-    resolved_mode = DEFAULT_RENDER_MODE if mode is None else mode
-    if resolved_mode not in {"clean", "debug"}:
-        raise ValueError(f"Unsupported render mode: {resolved_mode!r}")
-
-    if resolved_mode == "clean":
-        default_lumen = False
-        default_wall = False
-        default_station = False
-        default_target = False
-        default_contact = False
-        default_vessels: list[str] = []
-        default_legend = False
-        default_labels = False
-        default_frustum = False
-    else:
-        default_lumen = True
-        default_wall = True
-        default_station = True
-        default_target = True
-        default_contact = True
-        default_vessels = list(preset_default_vessel_names or [])
-        default_legend = True
-        default_labels = True
-        default_frustum = True
-
-    if airway_overlay is not None:
-        default_lumen = airway_overlay
-        default_wall = airway_overlay
-
-    resolved_vessels = list(default_vessels if vessel_overlay_names is None else vessel_overlay_names)
-    if single_vessel_name is not None:
-        resolved_vessels = [single_vessel_name]
-    available_vessels = set(manifest.overlay_masks.keys())
-    unknown_vessels = [name for name in resolved_vessels if name not in available_vessels]
-    if unknown_vessels:
-        available = ", ".join(sorted(available_vessels))
-        missing = ", ".join(unknown_vessels)
-        raise ValueError(f"Unknown vessel overlay(s): {missing}. Available overlay masks: {available}")
-
-    return OverlayConfig(
-        mode=resolved_mode,
-        airway_lumen_enabled=(default_lumen if airway_lumen_overlay is None else airway_lumen_overlay),
-        airway_wall_enabled=(default_wall if airway_wall_overlay is None else airway_wall_overlay),
-        station_enabled=(default_station if station_overlay is None else station_overlay),
-        target_enabled=(default_target if target_overlay is None else target_overlay),
-        contact_enabled=(default_contact if contact_overlay is None else contact_overlay),
-        vessel_names=resolved_vessels,
-        diagnostic_panel_enabled=diagnostic_panel,
-        virtual_ebus_enabled=virtual_ebus,
-        simulated_ebus_enabled=simulated_ebus,
-        show_legend=(default_legend if show_legend is None else show_legend),
-        label_overlays=(default_labels if label_overlays is None else label_overlays),
-        show_frustum=(default_frustum if show_frustum is None else show_frustum),
-        min_contour_area_px=float(min_contour_area_px),
-        min_contour_length_px=float(min_contour_length_px),
-        single_vessel_name=single_vessel_name,
-    )
-
-
-def _resolve_slice_thickness_mm(mode: str, slice_thickness_mm: float | None) -> float:
-    if slice_thickness_mm is not None:
-        return float(slice_thickness_mm)
-    return DEBUG_SLICE_THICKNESS_MM if mode == "debug" else CLEAN_SLICE_THICKNESS_MM
-
-
-def _load_optional_polydata(path: Path | None) -> PolyData | None:
-    if path is None or not path.exists():
-        return None
-    return load_vtp_polydata(path)
-
-
-def _resolve_cutaway_config(
-    *,
-    cutaway_mode: str | None,
-    cutaway_side: str | None,
-    cutaway_depth_mm: float | None,
-    cutaway_origin: str | None,
-    show_full_airway: bool | None,
-    default_side: str | None = None,
-) -> CutawayConfig:
-    resolved_side = cutaway_side if cutaway_side is not None else default_side
-    return CutawayConfig(
-        mode=("lateral" if cutaway_mode is None else cutaway_mode),
-        side=("auto" if resolved_side is None else resolved_side),
-        depth_mm=(0.0 if cutaway_depth_mm is None else float(cutaway_depth_mm)),
-        origin_mode=("contact" if cutaway_origin is None else cutaway_origin),
-        show_full_airway=(False if show_full_airway is None else bool(show_full_airway)),
-    )
-
-
-def _resolve_preset_manifest(manifest: CaseManifest, preset_id: str):
-    for preset in manifest.presets:
-        if preset.id == preset_id:
-            return preset
-    raise ValueError(f"Preset {preset_id!r} is not defined in the manifest.")
-
-
-def build_render_context(manifest_path: str | Path, *, roll_deg: float | None = None) -> RenderContext:
-    manifest = load_case_manifest(manifest_path)
-    return RenderContext(
-        manifest=manifest,
-        pose_report=generate_pose_report(manifest.manifest_path, roll_deg=roll_deg),
-        ct_volume=load_nifti(manifest.ct_image, kind="ct", load_data=True),
-        airway_lumen_volume=load_nifti(manifest.airway_lumen_mask, kind="mask", load_data=True),
-        airway_solid_volume=load_nifti(manifest.airway_solid_mask, kind="mask", load_data=True),
-        airway_display_mesh=_load_optional_polydata(
-            manifest.airway_cutaway_display_mesh if manifest.airway_cutaway_display_mesh is not None else manifest.airway_display_mesh
-        ),
-        airway_geometry_mesh=_load_optional_polydata(manifest.airway_raw_mesh),
-        mask_cache={},
-        main_graph=CenterlineGraph.from_vtp(str(manifest.centerline_main), name="main"),
-        network_graph=CenterlineGraph.from_vtp(str(manifest.centerline_network), name="network"),
-    )
-
-
-def _candidate_branch_keys_for_hint(context: RenderContext, branch_hint: str | None) -> list[tuple[str, int]]:
-    hint_spec = _parse_branch_hint(branch_hint)
-    if hint_spec is None:
-        return []
-
-    keys: list[tuple[str, int]] = []
-    for line_index in sorted(hint_spec.network_lines):
-        if int(line_index) in context.network_graph.polylines_by_index:
-            keys.append(("network", int(line_index)))
-    for line_index in sorted(hint_spec.main_lines):
-        if int(line_index) in context.main_graph.polylines_by_index:
-            keys.append(("main", int(line_index)))
-    for line_index in sorted(hint_spec.any_lines):
-        if int(line_index) in context.network_graph.polylines_by_index:
-            keys.append(("network", int(line_index)))
-        elif int(line_index) in context.main_graph.polylines_by_index:
-            keys.append(("main", int(line_index)))
-    return keys
-
-
-def _graph_for_key(context: RenderContext, graph_name: str) -> CenterlineGraph:
-    return context.network_graph if graph_name == "network" else context.main_graph
-
-
-def _derive_local_candidate_depth_axis(
-    *,
-    contact_seed_world: np.ndarray,
-    target_world: np.ndarray,
-    shaft_axis_world: np.ndarray,
-    fallback_probe_axis_world: np.ndarray,
-) -> np.ndarray:
-    projected_target = _project_perpendicular(target_world - contact_seed_world, shaft_axis_world)
-    candidate_depth = _normalize(projected_target)
-    if candidate_depth is not None:
-        return candidate_depth
-    fallback = _normalize(_project_perpendicular(fallback_probe_axis_world, shaft_axis_world))
-    if fallback is not None:
-        return fallback
-    return np.asarray(fallback_probe_axis_world, dtype=np.float64)
-
-
-def _resolve_branch_shift_seed(
-    context: RenderContext,
-    *,
-    pose,
-    branch_hint: str,
-    branch_shift_mm: float,
-    fallback_contact_world: np.ndarray,
-    fallback_probe_axis_world: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-    branch_keys = _candidate_branch_keys_for_hint(context, branch_hint)
-    if not branch_keys:
-        return None
-
-    target_world = np.asarray(pose.target_world, dtype=np.float64)
-    for graph_name, line_index in branch_keys:
-        graph = _graph_for_key(context, graph_name)
-        polyline = graph.polylines_by_index.get(int(line_index))
-        if polyline is None:
-            continue
-        base_projection = graph.nearest_point(fallback_contact_world)
-        if base_projection is not None and int(base_projection.line_index) == int(line_index):
-            base_arclength_mm = float(base_projection.line_arclength_mm)
-        else:
-            markup_projection = graph.nearest_point(np.asarray(pose.contact_world, dtype=np.float64))
-            if markup_projection is not None and int(markup_projection.line_index) == int(line_index):
-                base_arclength_mm = float(markup_projection.line_arclength_mm)
-            else:
-                base_arclength_mm = float(polyline.total_length_mm / 2.0)
-        candidate_s = float(np.clip(base_arclength_mm + float(branch_shift_mm), 0.0, polyline.total_length_mm))
-        contact_seed_world = polyline.point_at_arc_length(candidate_s)
-        shaft_axis_world = graph.estimate_tangent(line_index=int(line_index), line_arclength_mm=candidate_s)
-        shaft_axis_world = _normalize(shaft_axis_world) if shaft_axis_world is not None else None
-        if shaft_axis_world is None:
-            continue
-        depth_axis_world = _derive_local_candidate_depth_axis(
-            contact_seed_world=contact_seed_world,
-            target_world=target_world,
-            shaft_axis_world=shaft_axis_world,
-            fallback_probe_axis_world=fallback_probe_axis_world,
-        )
-        return contact_seed_world, shaft_axis_world, depth_axis_world
-    return None
 
 
 def _local_pose_objective(
@@ -1174,17 +653,6 @@ def _optimize_flagged_pose_locally(
 
     return best
 
-
-def _get_mask_volume(context: RenderContext, mask_path: Path) -> VolumeData:
-    key = str(mask_path.resolve())
-    cached = context.mask_cache.get(key)
-    if cached is not None:
-        return cached
-    volume = load_nifti(mask_path, kind="mask", load_data=True)
-    context.mask_cache[key] = volume
-    return volume
-
-
 def _sample_mask_presence(
     context: RenderContext,
     *,
@@ -1208,64 +676,6 @@ def _sample_mask_presence(
 
 def _default_output_stem(preset_id: str, approach: str) -> str:
     return preset_id if approach == "default" else f"{preset_id}_{approach}"
-
-
-def _sample_plane(
-    context: RenderContext,
-    *,
-    x_axis: np.ndarray,
-    y_axis: np.ndarray,
-    thickness_axis: np.ndarray,
-    center_world: np.ndarray,
-    x_min_mm: float,
-    x_max_mm: float,
-    y_min_mm: float,
-    y_max_mm: float,
-    width: int,
-    height: int,
-    slice_thickness_mm: float,
-    order: int,
-    cval: float,
-    data: np.ndarray,
-    inverse_affine_lps: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    x_coords = np.linspace(x_min_mm, x_max_mm, width, dtype=np.float64)
-    y_coords = np.linspace(y_max_mm, y_min_mm, height, dtype=np.float64)
-    x_grid, y_grid = np.meshgrid(x_coords, y_coords)
-    plane_points = (
-        center_world[None, None, :]
-        + x_grid[:, :, None] * x_axis[None, None, :]
-        + y_grid[:, :, None] * y_axis[None, None, :]
-    )
-    sampled = _sample_slab(
-        np.asarray(data, dtype=np.float32),
-        base_points_lps=plane_points.reshape((-1, 3)),
-        thickness_axis=thickness_axis,
-        inverse_affine_lps=inverse_affine_lps,
-        sample_count=DEFAULT_SLAB_SAMPLES,
-        slab_thickness_mm=slice_thickness_mm,
-        order=order,
-        cval=cval,
-    )
-    return sampled.reshape((height, width)), x_coords, y_coords, plane_points
-
-
-def _plane_point_to_pixel(x_mm: float, y_mm: float, *, x_min_mm: float, x_max_mm: float, y_min_mm: float, y_max_mm: float, width: int, height: int) -> tuple[int, int]:
-    column = int(round((x_mm - x_min_mm) / max(x_max_mm - x_min_mm, 1e-6) * (width - 1)))
-    row = int(round((y_max_mm - y_mm) / max(y_max_mm - y_min_mm, 1e-6) * (height - 1)))
-    return row, column
-
-
-def _to_uint8(image_rgb: np.ndarray) -> np.ndarray:
-    return np.clip(image_rgb * 255.0, 0.0, 255.0).astype(np.uint8)
-
-
-def _add_panel_label(image_rgb: np.ndarray, label: str) -> np.ndarray:
-    image = Image.fromarray(_to_uint8(image_rgb), mode="RGB")
-    draw = ImageDraw.Draw(image)
-    draw.rectangle((0, 0, 140, 20), fill=(0, 0, 0))
-    draw.text((6, 4), label, fill=(255, 255, 255))
-    return np.asarray(image, dtype=np.uint8)
 
 
 def _build_sector_render(
@@ -1637,193 +1047,6 @@ def _build_context_snapshot(
     draw.text((contact_xy[0] + 6, contact_xy[1] + 4), "contact", fill=(255, 235, 140))
     draw.ellipse((target_xy[0] - 4, target_xy[1] - 4, target_xy[0] + 4, target_xy[1] + 4), fill=(255, 85, 85))
     draw.text((target_xy[0] + 6, target_xy[1] + 4), "target", fill=(255, 85, 85))
-
-    return np.asarray(image, dtype=np.uint8)
-
-
-def _sample_contact_plane(
-    *,
-    data: np.ndarray,
-    inverse_affine_lps: np.ndarray,
-    origin_world: np.ndarray,
-    depth_axis: np.ndarray,
-    lateral_axis: np.ndarray,
-    thickness_axis: np.ndarray,
-    depth_max_mm: float,
-    lateral_half_width_mm: float,
-    width: int,
-    height: int,
-    slice_thickness_mm: float,
-    order: int,
-    cval: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    depth_coords = np.linspace(0.0, depth_max_mm, height, dtype=np.float64)
-    lateral_coords = np.linspace(-lateral_half_width_mm, lateral_half_width_mm, width, dtype=np.float64)
-    depth_grid = np.broadcast_to(depth_coords[:, None], (height, width))
-    lateral_grid = np.broadcast_to(lateral_coords[None, :], (height, width))
-    plane_points = (
-        origin_world[None, None, :]
-        + depth_grid[:, :, None] * depth_axis[None, None, :]
-        + lateral_grid[:, :, None] * lateral_axis[None, None, :]
-    )
-    sampled = _sample_slab(
-        np.asarray(data, dtype=np.float32),
-        base_points_lps=plane_points.reshape((-1, 3)),
-        thickness_axis=thickness_axis,
-        inverse_affine_lps=inverse_affine_lps,
-        sample_count=DEFAULT_SLAB_SAMPLES,
-        slab_thickness_mm=slice_thickness_mm,
-        order=order,
-        cval=cval,
-    )
-    return sampled.reshape((height, width)), depth_grid, lateral_grid, plane_points
-
-
-def _preprocess_source_section(source_hu: np.ndarray) -> np.ndarray:
-    smoothed = ndimage.gaussian_filter(source_hu.astype(np.float32), sigma=0.9)
-    detail = source_hu.astype(np.float32) - smoothed
-    return smoothed + (SOURCE_SECTION_PREPROCESS_BLEND * detail)
-
-
-def _fan_plane_coordinates(
-    depth_grid_mm: np.ndarray,
-    display_lateral_grid_mm: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    phi = np.arctan2(display_lateral_grid_mm, np.maximum(depth_grid_mm, 1e-9))
-    forward_mm = depth_grid_mm * np.cos(phi)
-    shaft_mm = depth_grid_mm * np.sin(phi)
-    return forward_mm, shaft_mm
-
-
-def _map_plane_to_fan(
-    source_plane: np.ndarray,
-    *,
-    source_forward_max_mm: float,
-    source_shaft_half_width_mm: float,
-    depth_grid_mm: np.ndarray,
-    display_lateral_grid_mm: np.ndarray,
-    sector_mask: np.ndarray,
-    order: int,
-    cval: float,
-) -> np.ndarray:
-    mapped = np.full(depth_grid_mm.shape, cval, dtype=np.float32)
-    if not np.any(sector_mask):
-        return mapped
-
-    forward_mm, shaft_mm = _fan_plane_coordinates(depth_grid_mm, display_lateral_grid_mm)
-    source_rows = (forward_mm[sector_mask] / max(source_forward_max_mm, 1e-6)) * max(1, source_plane.shape[0] - 1)
-    source_cols = (
-        (shaft_mm[sector_mask] + source_shaft_half_width_mm)
-        / max(source_shaft_half_width_mm * 2.0, 1e-6)
-        * max(1, source_plane.shape[1] - 1)
-    )
-    mapped_values = ndimage.map_coordinates(
-        np.asarray(source_plane, dtype=np.float32),
-        [source_rows, source_cols],
-        order=order,
-        mode="constant",
-        cval=cval,
-    )
-    mapped[sector_mask] = mapped_values
-    return mapped
-
-
-def _filter_mask_components(binary_mask: np.ndarray, *, min_area_px: float, min_length_px: float) -> np.ndarray:
-    if not np.any(binary_mask):
-        return np.zeros_like(binary_mask, dtype=bool)
-    labeled, component_count = ndimage.label(binary_mask)
-    filtered = np.zeros_like(binary_mask, dtype=bool)
-    for component_index in range(1, component_count + 1):
-        component = labeled == component_index
-        area = float(np.count_nonzero(component))
-        contour_length = float(np.count_nonzero(_compute_contour(component)))
-        if area < min_area_px or contour_length < min_length_px:
-            continue
-        filtered |= component
-    return filtered
-
-
-def _fan_target_row_col(
-    *,
-    contact_world: np.ndarray,
-    target_world: np.ndarray,
-    probe_axis: np.ndarray,
-    shaft_axis: np.ndarray,
-    max_depth_mm: float,
-    sector_angle_deg: float,
-    width: int,
-    height: int,
-    max_lateral_mm: float,
-) -> tuple[int, int] | None:
-    target_offset = target_world - contact_world
-    target_forward_mm = float(np.dot(target_offset, probe_axis))
-    target_shaft_mm = float(np.dot(target_offset, shaft_axis))
-    target_depth_mm = float(np.linalg.norm([target_forward_mm, target_shaft_mm]))
-    if target_forward_mm <= 0.0:
-        return None
-    target_phi = float(np.arctan2(target_shaft_mm, target_forward_mm))
-    target_lateral_mm = float(target_depth_mm * np.tan(target_phi))
-    fan_half_tan = float(np.tan(np.deg2rad(sector_angle_deg / 2.0)))
-    if not (0.0 <= target_depth_mm <= max_depth_mm):
-        return None
-    if abs(target_lateral_mm) > ((target_depth_mm * fan_half_tan) + 1e-9):
-        return None
-    row = int(round((target_depth_mm / max(max_depth_mm, 1e-6)) * (height - 1)))
-    column = int(round((target_lateral_mm / max(max_lateral_mm, 1e-6)) * max(1, width // 2) + (width // 2)))
-    return row, column
-
-
-def _color_tuple(color_rgb: np.ndarray) -> tuple[int, int, int]:
-    return tuple(int(np.clip(channel * 255.0, 0.0, 255.0)) for channel in color_rgb.tolist())
-
-
-def _annotate_legend_and_labels(
-    image_rgb: np.ndarray,
-    *,
-    visible_layers: list[OverlayLayer],
-    show_legend: bool,
-    label_overlays: bool,
-    legend_entries: list[tuple[str, np.ndarray]],
-) -> np.ndarray:
-    image = Image.fromarray(_to_uint8(image_rgb), mode="RGB")
-    draw = ImageDraw.Draw(image)
-    width, height = image.size
-
-    if label_overlays:
-        label_layers = [layer for layer in visible_layers if layer.label_enabled and np.any(layer.mask)]
-        for index, layer in enumerate(label_layers):
-            points = np.argwhere(_compute_contour(layer.mask))
-            if points.size == 0:
-                continue
-            center_row, center_col = points.mean(axis=0)
-            label_on_left = bool(center_col > (width * 0.55))
-            label_x = 10 if label_on_left else max(10, width - 156)
-            label_y = 26 + (index * 18)
-            text_color = _color_tuple(layer.color_rgb)
-            draw.line(
-                (
-                    float(center_col),
-                    float(center_row),
-                    float(label_x + (120 if label_on_left else 0)),
-                    float(label_y + 8),
-                ),
-                fill=text_color,
-                width=2,
-            )
-            draw.rectangle((label_x, label_y, label_x + 146, label_y + 16), fill=(0, 0, 0))
-            draw.text((label_x + 4, label_y + 2), layer.label, fill=text_color)
-
-    if show_legend and legend_entries:
-        legend_height = 8 + (18 * len(legend_entries))
-        legend_width = 186
-        legend_x = 10
-        legend_y = max(10, height - legend_height - 10)
-        draw.rectangle((legend_x, legend_y, legend_x + legend_width, legend_y + legend_height), fill=(0, 0, 0))
-        for index, (label, color_rgb) in enumerate(legend_entries):
-            top = legend_y + 4 + (index * 18)
-            text_color = _color_tuple(color_rgb)
-            draw.rectangle((legend_x + 6, top + 4, legend_x + 16, top + 14), fill=text_color)
-            draw.text((legend_x + 22, top + 1), label, fill=text_color)
 
     return np.asarray(image, dtype=np.uint8)
 
@@ -2202,6 +1425,7 @@ def _render_preset_localizer(
     show_full_airway: bool | None = None,
     cutaway_custom_origin_world: np.ndarray | None = None,
     debug_map_dir: str | Path | None = None,
+    physics_profile: str | None = None,
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
@@ -2253,6 +1477,7 @@ def _render_preset_localizer(
         show_full_airway=show_full_airway,
         cutaway_custom_origin_world=cutaway_custom_origin_world,
         debug_map_dir=debug_map_dir,
+        physics_profile=physics_profile,
         speckle_strength=speckle_strength,
         reverberation_strength=reverberation_strength,
         shadow_strength=shadow_strength,
@@ -2321,6 +1546,7 @@ def render_preset(
     show_full_airway: bool | None = None,
     cutaway_custom_origin_world: np.ndarray | None = None,
     debug_map_dir: str | Path | None = None,
+    physics_profile: str | None = None,
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
@@ -2369,6 +1595,7 @@ def render_preset(
         show_full_airway=show_full_airway,
         cutaway_custom_origin_world=cutaway_custom_origin_world,
         debug_map_dir=debug_map_dir,
+        physics_profile=physics_profile,
         speckle_strength=speckle_strength,
         reverberation_strength=reverberation_strength,
         shadow_strength=shadow_strength,
@@ -2394,6 +1621,7 @@ def render_all_presets(
     vessel_overlay_names: list[str] | None = None,
     slice_thickness_mm: float | None = None,
     debug_map_dir: str | Path | None = None,
+    physics_profile: str | None = None,
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
@@ -2428,6 +1656,7 @@ def render_all_presets(
                 vessel_overlay_names=vessel_overlay_names,
                 slice_thickness_mm=slice_thickness_mm,
                 debug_map_dir=(None if debug_map_dir is None else Path(debug_map_dir).expanduser().resolve() / stem),
+                physics_profile=physics_profile,
                 speckle_strength=speckle_strength,
                 reverberation_strength=reverberation_strength,
                 shadow_strength=shadow_strength,

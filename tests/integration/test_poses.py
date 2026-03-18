@@ -6,7 +6,7 @@ import pytest
 from ebus_simulator.poses import generate_pose_report, pose_report_to_dict
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "configs" / "3d_slicer_files.yaml"
 
 

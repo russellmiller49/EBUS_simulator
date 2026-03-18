@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 
+from ebus_simulator.render_profiles import DEFAULT_PHYSICS_PROFILE_NAME, list_physics_profile_names
 from ebus_simulator.render_cli import _parse_bool, _parse_vessel_overlays
 from ebus_simulator.review import DEFAULT_REVIEW_THRESHOLDS, ReviewThresholds, review_presets
 
@@ -49,6 +50,7 @@ def _build_review_thresholds(args: argparse.Namespace) -> ReviewThresholds:
 
 
 def main() -> int:
+    available_profiles = ", ".join(list_physics_profile_names())
     parser = argparse.ArgumentParser(description="Render and review all preset/contact approaches with mesh-backed pose metrics.")
     parser.add_argument("manifest", help="Path to the case manifest YAML file.")
     parser.add_argument("--output-dir", required=True, help="Directory for review PNGs, sidecars, summaries, and comparison bundles.")
@@ -68,6 +70,13 @@ def main() -> int:
     parser.add_argument("--overlay-vessels", type=_parse_vessel_overlays, help="Optional comma-separated vessel overlay override for all review renders.")
     parser.add_argument("--preset-id", action="append", dest="preset_ids", help="Optional preset identifier filter. Repeat to review multiple presets.")
     parser.add_argument("--physics-debug-maps", action="store_true", help="Bundle physics debug maps into each review entry.")
+    parser.add_argument(
+        "--physics-profile",
+        help=(
+            "Optional physics tuning profile name. "
+            f"Defaults to {DEFAULT_PHYSICS_PROFILE_NAME}. Available: {available_profiles}."
+        ),
+    )
     parser.add_argument("--physics-speckle-strength", type=float, help="Optional physics speckle strength override for review renders.")
     parser.add_argument("--physics-reverberation-strength", type=float, help="Optional physics reverberation strength override for review renders.")
     parser.add_argument("--physics-shadow-strength", type=float, help="Optional physics distal shadow strength override for review renders.")
@@ -108,6 +117,7 @@ def main() -> int:
         vessel_overlay_names=args.overlay_vessels,
         preset_ids=args.preset_ids,
         include_physics_debug_maps=args.physics_debug_maps,
+        physics_profile=args.physics_profile,
         physics_speckle_strength=args.physics_speckle_strength,
         physics_reverberation_strength=args.physics_reverberation_strength,
         physics_shadow_strength=args.physics_shadow_strength,

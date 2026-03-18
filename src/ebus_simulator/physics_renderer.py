@@ -10,117 +10,100 @@ from scipy import ndimage
 
 from ebus_simulator.acoustic_properties import AcousticField, map_acoustic_properties
 from ebus_simulator.artifacts import PhysicsArtifactConfig, apply_physics_artifacts
-from ebus_simulator.device import build_device_pose
+from ebus_simulator.annotations import (
+    _annotate_legend_and_labels,
+    _apply_contour_overlay,
+    _draw_cross_marker,
+    _filter_mask_components,
+)
 from ebus_simulator.eval import summarize_bmode_regions
-from ebus_simulator.manifest import resolve_preset_overrides
 from ebus_simulator.render_engines import RenderEngine, RenderRequest, RenderResult
-from ebus_simulator.rendering import (
-    AIRWAY_LUMEN_COLOR,
-    AIRWAY_WALL_COLOR,
-    CONTACT_MARKER_COLOR,
-    DEFAULT_SLAB_SAMPLES,
-    OPTIMIZATION_EPSILON,
-    STATION_COLOR,
-    TARGET_MARKER_COLOR,
-    VESSEL_OVERLAY_PALETTE,
+from ebus_simulator.render_profiles import PhysicsTuningProfile, load_physics_profile, resolve_physics_artifact_settings
+from ebus_simulator.render_state import (
     OverlayLayer,
     RenderContext,
     RenderMetadata,
     RenderedPreset,
-    _LOCAL_POSE_OPTIMIZATION_CACHE,
-    _annotate_legend_and_labels,
-    _apply_contour_overlay,
+    _get_mask_volume,
+    _overlay_summary,
+    prepare_physics_render_state,
+)
+from ebus_simulator.transforms import (
+    DEFAULT_SLAB_SAMPLES,
+    OPTIMIZATION_EPSILON,
     _build_sector_grid,
+    _fan_target_row_col,
+    _points_to_voxel,
+    _sample_slab,
+)
+from ebus_simulator.rendering import (
+    AIRWAY_LUMEN_COLOR,
+    AIRWAY_WALL_COLOR,
+    CONTACT_MARKER_COLOR,
+    STATION_COLOR,
+    TARGET_MARKER_COLOR,
+    VESSEL_OVERLAY_PALETTE,
     classify_render_consistency_bucket,
     compute_render_consistency_metrics,
-    _draw_cross_marker,
-    _fan_target_row_col,
-    _filter_mask_components,
-    _get_mask_volume,
     _optimize_flagged_pose_locally,
-    _overlay_summary,
-    _points_to_voxel,
-    _resolve_branch_shift_seed,
-    _resolve_cutaway_config,
-    _resolve_overlay_config,
-    _resolve_pose,
-    _resolve_preset_manifest,
-    _resolve_slice_thickness_mm,
-    _sample_slab,
-    build_render_context,
 )
 
 
 PHYSICS_ENGINE_VERSION = "physics-v1"
-TARGET_FOCUS_SIGMA_MM = 4.5
-PHYSICS_LOG_COMPRESSION_GAIN_FACTOR = 6.0
-PHYSICS_NORMALIZATION_REFERENCE_PERCENTILE = 99.5
-PHYSICS_NORMALIZATION_AUX_PERCENTILE = 98.5
-PHYSICS_NORMALIZATION_SPIKE_RATIO = 1.22
-PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT = 0.45
-PHYSICS_SPARSE_SIGNAL_THRESHOLD = 0.01
-PHYSICS_SPARSE_SUPPORT_EMPTY_FRACTION = 0.90
-PHYSICS_WALL_GUARDRAIL_EMPTY_FRACTION = 0.86
-PHYSICS_SPARSE_SUPPORT_FLOOR_BASE = 0.034
-PHYSICS_SPARSE_SUPPORT_FLOOR_SCALE = 0.028
-PHYSICS_SPARSE_SUPPORT_ANATOMY_WEIGHT = 0.014
-PHYSICS_SPARSE_SUPPORT_TARGET_WEIGHT = 0.018
-PHYSICS_WALL_GUARDRAIL_FLOOR_BASE = 0.032
-PHYSICS_WALL_GUARDRAIL_FLOOR_SCALE = 0.020
-PHYSICS_WALL_GUARDRAIL_ANATOMY_WEIGHT = 0.008
-PHYSICS_WALL_GUARDRAIL_TARGET_WEIGHT = 0.010
-PHYSICS_WALL_GUARDRAIL_MODERATION = 0.94
 
 
-def _resolve_artifact_config(request: RenderRequest) -> PhysicsArtifactConfig:
-    defaults = PhysicsArtifactConfig()
-    return PhysicsArtifactConfig(
-        speckle_strength=max(0.0, (
-            defaults.speckle_strength
-            if request.speckle_strength is None
-            else float(request.speckle_strength)
-        )),
-        reverberation_strength=max(0.0, (
-            defaults.reverberation_strength
-            if request.reverberation_strength is None
-            else float(request.reverberation_strength)
-        )),
-        shadow_strength=max(0.0, (
-            defaults.shadow_strength
-            if request.shadow_strength is None
-            else float(request.shadow_strength)
-        )),
+def _resolve_artifact_config(
+    request: RenderRequest,
+    *,
+    profile: PhysicsTuningProfile,
+) -> tuple[PhysicsArtifactConfig, dict[str, float], dict[str, float]]:
+    effective_settings, explicit_overrides = resolve_physics_artifact_settings(
+        profile,
+        speckle_strength=request.speckle_strength,
+        reverberation_strength=request.reverberation_strength,
+        shadow_strength=request.shadow_strength,
+    )
+    return (
+        PhysicsArtifactConfig(
+            speckle_strength=float(effective_settings["speckle_strength"]),
+            reverberation_strength=float(effective_settings["reverberation_strength"]),
+            shadow_strength=float(effective_settings["shadow_strength"]),
+        ),
+        effective_settings,
+        explicit_overrides,
     )
 
 
 def _normalize_compressed_bmode(
     compressed: np.ndarray,
+    *,
+    profile: PhysicsTuningProfile,
 ) -> tuple[np.ndarray, dict[str, float | str | None]]:
     positive = np.asarray(compressed, dtype=np.float32)
     positive = positive[positive > 0.0]
 
-    reference_percentile = float(PHYSICS_NORMALIZATION_REFERENCE_PERCENTILE)
-    aux_percentile = float(PHYSICS_NORMALIZATION_AUX_PERCENTILE)
+    reference_percentile = float(profile.normalization_reference_percentile)
+    aux_percentile = float(profile.normalization_aux_percentile)
     reference_value = float(np.percentile(positive, reference_percentile)) if positive.size > 0 else 0.0
     aux_value = float(np.percentile(positive, aux_percentile)) if positive.size > 0 else None
 
     if reference_value <= 0.0:
         scale = 1.0
-        method = "log_percentile_99.5"
+        method = f"log_percentile_{reference_percentile:.1f}"
     else:
         scale = float(reference_value)
-        method = "log_percentile_99.5"
+        method = f"log_percentile_{reference_percentile:.1f}"
         if aux_value is not None and aux_value > 0.0:
             spike_ratio = float(reference_value / aux_value)
-            if spike_ratio > PHYSICS_NORMALIZATION_SPIKE_RATIO:
+            if spike_ratio > float(profile.normalization_spike_ratio):
                 scale = max(
                     float(aux_value),
                     float(
-                        ((1.0 - PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT) * reference_value)
-                        + (PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT * aux_value)
+                        ((1.0 - float(profile.normalization_aux_blend_weight)) * reference_value)
+                        + (float(profile.normalization_aux_blend_weight) * aux_value)
                     ),
                 )
-                method = "log_percentile_99.5_blended_98.5"
+                method = f"log_percentile_{reference_percentile:.1f}_blended_{aux_percentile:.1f}"
 
     return (
         np.clip(np.asarray(compressed, dtype=np.float32) / float(scale), 0.0, 1.0).astype(np.float32),
@@ -132,7 +115,7 @@ def _normalize_compressed_bmode(
             "aux_value": (None if aux_value is None else float(aux_value)),
             "lower_bound": 0.0,
             "upper_bound": float(scale),
-            "compression_gain_factor": float(PHYSICS_LOG_COMPRESSION_GAIN_FACTOR),
+            "compression_gain_factor": float(profile.log_compression_gain_factor),
         },
     )
 
@@ -154,6 +137,7 @@ def _normalize_support_map(values: np.ndarray, *, sector_mask: np.ndarray, perce
 def _apply_sparse_signal_support(
     display_bmode: np.ndarray,
     *,
+    profile: PhysicsTuningProfile,
     sector_mask: np.ndarray,
     depth_grid_mm: np.ndarray,
     max_depth_mm: float,
@@ -175,21 +159,21 @@ def _apply_sparse_signal_support(
     target_weight = 0.0
     wall_moderation = 1.0
 
-    if bucket == "sparse_empty_dominant" and empty_sector_fraction >= PHYSICS_SPARSE_SUPPORT_EMPTY_FRACTION:
+    if bucket == "sparse_empty_dominant" and empty_sector_fraction >= float(profile.sparse_support_empty_fraction):
         support_active = True
         support_mode = "sparse_target_support" if target_coverage > 0.0 else "sparse_anatomy_support"
-        floor_base = PHYSICS_SPARSE_SUPPORT_FLOOR_BASE
-        floor_scale = PHYSICS_SPARSE_SUPPORT_FLOOR_SCALE
-        anatomy_weight = PHYSICS_SPARSE_SUPPORT_ANATOMY_WEIGHT
-        target_weight = PHYSICS_SPARSE_SUPPORT_TARGET_WEIGHT if target_coverage > 0.0 else 0.0
-    elif bucket == "wall_dominant" and empty_sector_fraction >= PHYSICS_WALL_GUARDRAIL_EMPTY_FRACTION:
+        floor_base = float(profile.sparse_support_floor_base)
+        floor_scale = float(profile.sparse_support_floor_scale)
+        anatomy_weight = float(profile.sparse_support_anatomy_weight)
+        target_weight = float(profile.sparse_support_target_weight) if target_coverage > 0.0 else 0.0
+    elif bucket == "wall_dominant" and empty_sector_fraction >= float(profile.wall_guardrail_empty_fraction):
         support_active = True
         support_mode = "sparse_wall_guardrail"
-        floor_base = PHYSICS_WALL_GUARDRAIL_FLOOR_BASE
-        floor_scale = PHYSICS_WALL_GUARDRAIL_FLOOR_SCALE
-        anatomy_weight = PHYSICS_WALL_GUARDRAIL_ANATOMY_WEIGHT
-        target_weight = PHYSICS_WALL_GUARDRAIL_TARGET_WEIGHT if target_coverage > 0.0 else 0.0
-        wall_moderation = PHYSICS_WALL_GUARDRAIL_MODERATION
+        floor_base = float(profile.wall_guardrail_floor_base)
+        floor_scale = float(profile.wall_guardrail_floor_scale)
+        anatomy_weight = float(profile.wall_guardrail_anatomy_weight)
+        target_weight = float(profile.wall_guardrail_target_weight) if target_coverage > 0.0 else 0.0
+        wall_moderation = float(profile.wall_guardrail_moderation)
 
     support_debug = {
         "support_map": np.zeros_like(display_bmode, dtype=np.float32),
@@ -236,7 +220,7 @@ def _apply_sparse_signal_support(
     sampled_anatomy_mask = np.asarray(
         sector_mask
         & (
-            (compressed_map > (PHYSICS_SPARSE_SIGNAL_THRESHOLD * 1.8))
+            (compressed_map > (float(profile.sparse_signal_threshold) * 1.8))
             | np.asarray(wall_mask, dtype=bool)
             | np.asarray(vessel_mask, dtype=bool)
             | np.asarray(target_mask, dtype=bool)
@@ -285,6 +269,7 @@ def _apply_sparse_signal_support(
 def _simulate_bmode_with_diagnostics(
     field: AcousticField,
     *,
+    profile: PhysicsTuningProfile,
     depth_step_mm: float,
     gain: float,
     attenuation_scale: float,
@@ -332,8 +317,8 @@ def _simulate_bmode_with_diagnostics(
     smoothed = ndimage.gaussian_filter(np.asarray(raw_with_artifacts, dtype=np.float32), sigma=(0.85, 0.45))
     smoothed *= np.linspace(0.92, 1.10, smoothed.shape[0], dtype=np.float32)[:, None]
 
-    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (PHYSICS_LOG_COMPRESSION_GAIN_FACTOR * float(gain)))
-    normalized, normalization_details = _normalize_compressed_bmode(compressed)
+    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (float(profile.log_compression_gain_factor) * float(gain)))
+    normalized, normalization_details = _normalize_compressed_bmode(compressed, profile=profile)
 
     diagnostics = {
         "boundary_map": boundary.astype(np.float32),
@@ -354,18 +339,26 @@ def simulate_bmode_from_acoustic_field(
     gain: float,
     attenuation_scale: float,
     seed: int | None,
+    physics_profile: str | None = None,
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
 ) -> np.ndarray:
-    defaults = PhysicsArtifactConfig()
+    loaded_profile = load_physics_profile(physics_profile)
+    effective_artifact_settings, _ = resolve_physics_artifact_settings(
+        loaded_profile.settings,
+        speckle_strength=speckle_strength,
+        reverberation_strength=reverberation_strength,
+        shadow_strength=shadow_strength,
+    )
     artifact_config = PhysicsArtifactConfig(
-        speckle_strength=max(0.0, defaults.speckle_strength if speckle_strength is None else float(speckle_strength)),
-        reverberation_strength=max(0.0, defaults.reverberation_strength if reverberation_strength is None else float(reverberation_strength)),
-        shadow_strength=max(0.0, defaults.shadow_strength if shadow_strength is None else float(shadow_strength)),
+        speckle_strength=float(effective_artifact_settings["speckle_strength"]),
+        reverberation_strength=float(effective_artifact_settings["reverberation_strength"]),
+        shadow_strength=float(effective_artifact_settings["shadow_strength"]),
     )
     image, _, _ = _simulate_bmode_with_diagnostics(
         field,
+        profile=loaded_profile.settings,
         depth_step_mm=depth_step_mm,
         gain=gain,
         attenuation_scale=attenuation_scale,
@@ -565,147 +558,54 @@ def render_physics_preset(
     if request.engine is not RenderEngine.PHYSICS:
         raise ValueError(f"render_physics_preset expected engine=physics, got {request.engine.value!r}.")
 
-    render_context = build_render_context(request.manifest_path, roll_deg=request.roll_deg) if context is None else context
-    manifest = render_context.manifest
-    defaults = manifest.render_defaults
-    pose = _resolve_pose(render_context.pose_report, preset_id=request.preset_id, approach=request.approach)
-    preset_manifest = _resolve_preset_manifest(manifest, pose.preset_id)
-    preset_overrides = resolve_preset_overrides(preset_manifest, approach=pose.contact_approach)
-
-    overlay_config = _resolve_overlay_config(
-        manifest,
-        mode=request.mode,
-        airway_overlay=request.airway_overlay,
-        airway_lumen_overlay=request.airway_lumen_overlay,
-        airway_wall_overlay=request.airway_wall_overlay,
-        target_overlay=(False if request.target_overlay is None else request.target_overlay),
-        contact_overlay=(request.show_contact if request.contact_overlay is None else request.contact_overlay),
-        station_overlay=request.station_overlay,
-        vessel_overlay_names=request.vessel_overlay_names,
-        diagnostic_panel=False,
-        virtual_ebus=False,
-        simulated_ebus=True,
-        show_legend=request.show_legend,
-        label_overlays=request.label_overlays,
-        show_frustum=False,
-        min_contour_area_px=request.min_contour_area_px,
-        min_contour_length_px=request.min_contour_length_px,
-        single_vessel_name=request.single_vessel,
-        preset_default_vessel_names=(None if preset_overrides is None else preset_overrides.vessel_overlays),
-    )
-    cutaway_config = _resolve_cutaway_config(
-        cutaway_mode=request.cutaway_mode,
-        cutaway_side=request.cutaway_side,
-        cutaway_depth_mm=request.cutaway_depth_mm,
-        cutaway_origin=request.cutaway_origin,
-        show_full_airway=request.show_full_airway,
-        default_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
-    )
-    if not request.virtual_ebus and not request.simulated_ebus:
-        raise ValueError("At least one of virtual_ebus or simulated_ebus must be enabled.")
-
-    resolved_width = int(defaults.get("image_size", [512, 512])[0] if request.width is None else request.width)
-    resolved_height = int(defaults.get("image_size", [512, 512])[1] if request.height is None else request.height)
-    preset_roll_offset_deg = 0.0 if preset_overrides is None or preset_overrides.roll_offset_deg is None else float(preset_overrides.roll_offset_deg)
-    configured_axis_sign_override = None if preset_overrides is None else preset_overrides.axis_sign_override
-    configured_branch_hint = None if preset_overrides is None else preset_overrides.branch_hint
-    configured_branch_shift_mm = None if preset_overrides is None else preset_overrides.branch_shift_mm
-    resolved_gain = float(defaults.get("gain", 1.0))
-    resolved_attenuation = float(defaults.get("attenuation", 0.15))
-    resolved_slice_thickness_mm = _resolve_slice_thickness_mm(overlay_config.mode, request.slice_thickness_mm)
-    fallback_probe_axis_world = np.asarray(
-        pose.depth_axis if pose.depth_axis is not None else pose.default_depth_axis,
-        dtype=np.float64,
-    )
-    branch_shift_seed = (
-        None
-        if configured_branch_hint is None or configured_branch_shift_mm is None
-        else _resolve_branch_shift_seed(
-            render_context,
-            pose=pose,
-            branch_hint=configured_branch_hint,
-            branch_shift_mm=float(configured_branch_shift_mm),
-            fallback_contact_world=np.asarray(pose.contact_world, dtype=np.float64),
-            fallback_probe_axis_world=fallback_probe_axis_world,
-        )
-    )
-    device_pose = build_device_pose(
-        pose,
-        device_name=request.device,
-        ct_volume=render_context.ct_volume,
-        airway_lumen=render_context.airway_lumen_volume,
-        airway_solid=render_context.airway_solid_volume,
-        raw_airway_mesh=render_context.airway_geometry_mesh,
-        main_graph=render_context.main_graph,
-        network_graph=render_context.network_graph,
-        refine_contact=request.refine_contact,
-        roll_offset_deg=preset_roll_offset_deg,
-        axis_sign_override=configured_axis_sign_override,
-        branch_hint=configured_branch_hint,
-        contact_seed_world=(None if branch_shift_seed is None else branch_shift_seed[0]),
-        shaft_axis_override=(None if branch_shift_seed is None else branch_shift_seed[1]),
-        depth_axis_override=(None if branch_shift_seed is None else branch_shift_seed[2]),
-    )
-    baseline_device_pose = device_pose
-
-    resolved_sector_angle_deg = float(device_pose.device_model.sector_angle_deg if request.sector_angle_deg is None else request.sector_angle_deg)
-    resolved_max_depth_mm = float(device_pose.device_model.displayed_range_mm if request.max_depth_mm is None else request.max_depth_mm)
-    resolved_source_oblique_size_mm = float(device_pose.device_model.source_oblique_size_mm if request.source_oblique_size_mm is None else request.source_oblique_size_mm)
-    optimization_cache_key = None if configured_branch_hint is None or configured_branch_shift_mm is not None else (
-        str(render_context.manifest.manifest_path),
-        pose.preset_id,
-        pose.contact_approach,
-        request.device,
-        configured_branch_hint,
-        resolved_width,
-        resolved_height,
-        round(resolved_source_oblique_size_mm, 4),
-        round(resolved_max_depth_mm, 4),
-        round(resolved_sector_angle_deg, 4),
-        round(resolved_slice_thickness_mm, 4),
-        round(preset_roll_offset_deg, 4),
-        configured_axis_sign_override,
-    )
-    optimization_result = None if optimization_cache_key is None else _LOCAL_POSE_OPTIMIZATION_CACHE.get(optimization_cache_key)
-    if optimization_result is None and configured_branch_hint is not None and configured_branch_shift_mm is None:
-        optimization_result = _optimize_flagged_pose_locally(
-            render_context,
-            pose=pose,
-            preset_manifest=preset_manifest,
-            device=request.device,
-            branch_hint=configured_branch_hint,
-            base_device_pose=device_pose,
-            base_roll_offset_deg=preset_roll_offset_deg,
-            base_axis_sign_override=configured_axis_sign_override,
-            width=resolved_width,
-            height=resolved_height,
-            source_oblique_size_mm=resolved_source_oblique_size_mm,
-            max_depth_mm=resolved_max_depth_mm,
-            sector_angle_deg=resolved_sector_angle_deg,
-            slice_thickness_mm=resolved_slice_thickness_mm,
-        )
-        if optimization_cache_key is not None and optimization_result is not None:
-            _LOCAL_POSE_OPTIMIZATION_CACHE[optimization_cache_key] = optimization_result
-    if optimization_result is not None:
-        device_pose = optimization_result.device_pose
-        preset_roll_offset_deg = float(optimization_result.roll_offset_deg)
-        configured_axis_sign_override = optimization_result.axis_sign_override
-    resolved_roll_deg = float(pose.roll_deg + preset_roll_offset_deg)
-    resolved_reference_fov_mm = float(
-        (
-            device_pose.device_model.reference_fov_mm
-            if preset_overrides is None or preset_overrides.reference_fov_mm is None
-            else preset_overrides.reference_fov_mm
-        )
-        if request.reference_fov_mm is None
-        else request.reference_fov_mm
+    prepared_state = prepare_physics_render_state(
+        request,
+        context=context,
+        optimize_pose_fn=_optimize_flagged_pose_locally,
     )
 
-    contact_world = np.asarray(device_pose.contact_refinement.refined_contact_world, dtype=np.float64)
-    target_world = np.asarray(device_pose.target_world, dtype=np.float64)
-    probe_axis = np.asarray(device_pose.probe_axis_world, dtype=np.float64)
-    shaft_axis = np.asarray(device_pose.shaft_axis_world, dtype=np.float64)
-    lateral_axis = np.asarray(device_pose.lateral_axis_world, dtype=np.float64)
+    render_context = prepared_state.context
+    manifest = prepared_state.manifest
+    pose = prepared_state.pose
+    preset_manifest = prepared_state.preset_manifest
+    preset_overrides = prepared_state.preset_overrides
+    overlay_config = prepared_state.overlay_config
+    cutaway_config = prepared_state.cutaway_config
+    baseline_device_pose = prepared_state.baseline_device_pose
+    device_pose = prepared_state.device_pose
+    optimization_result = prepared_state.optimization_result
+    resolved_width = prepared_state.resolved_width
+    resolved_height = prepared_state.resolved_height
+    resolved_sector_angle_deg = prepared_state.resolved_sector_angle_deg
+    resolved_max_depth_mm = prepared_state.resolved_max_depth_mm
+    resolved_source_oblique_size_mm = prepared_state.resolved_source_oblique_size_mm
+    resolved_reference_fov_mm = prepared_state.resolved_reference_fov_mm
+    resolved_roll_deg = prepared_state.resolved_roll_deg
+    resolved_gain = prepared_state.resolved_gain
+    resolved_attenuation = prepared_state.resolved_attenuation
+    resolved_slice_thickness_mm = prepared_state.resolved_slice_thickness_mm
+    preset_roll_offset_deg = prepared_state.preset_roll_offset_deg
+    configured_axis_sign_override = prepared_state.configured_axis_sign_override
+    configured_branch_hint = prepared_state.configured_branch_hint
+    configured_branch_shift_mm = prepared_state.configured_branch_shift_mm
+    contact_world = prepared_state.contact_world
+    target_world = prepared_state.target_world
+    probe_axis = prepared_state.probe_axis
+    shaft_axis = prepared_state.shaft_axis
+    lateral_axis = prepared_state.lateral_axis
+    loaded_profile = load_physics_profile(request.physics_profile)
+    artifact_config, effective_artifact_settings, explicit_profile_overrides = _resolve_artifact_config(
+        request,
+        profile=loaded_profile.settings,
+    )
+    effective_profile_settings = asdict(loaded_profile.settings)
+    effective_profile_settings.update(
+        {
+            "speckle_strength_default": float(artifact_config.speckle_strength),
+            "reverberation_strength_default": float(artifact_config.reverberation_strength),
+            "shadow_strength_default": float(artifact_config.shadow_strength),
+        }
+    )
 
     ray_depth_grid_mm, ray_angle_grid_rad = _build_polar_grid(
         resolved_height,
@@ -760,7 +660,9 @@ def render_physics_preset(
     )
 
     target_distance_mm = np.linalg.norm(ray_points_world - target_world[None, None, :], axis=2)
-    target_focus = np.exp(-0.5 * ((target_distance_mm / TARGET_FOCUS_SIGMA_MM) ** 2)).astype(np.float32)
+    target_focus = np.exp(
+        -0.5 * ((target_distance_mm / float(loaded_profile.settings.target_focus_sigma_mm)) ** 2)
+    ).astype(np.float32)
     if np.any(station_ray):
         target_focus *= np.where(station_ray, 1.0, 0.35).astype(np.float32)
 
@@ -773,9 +675,9 @@ def render_physics_preset(
         target_focus=target_focus,
     )
     depth_step_mm = float(resolved_max_depth_mm / max(1, resolved_height - 1))
-    artifact_config = _resolve_artifact_config(request)
     polar_bmode, polar_diagnostics, normalization_details = _simulate_bmode_with_diagnostics(
         acoustic_field,
+        profile=loaded_profile.settings,
         depth_step_mm=depth_step_mm,
         gain=resolved_gain,
         attenuation_scale=(1.0 + (resolved_attenuation * 2.0)),
@@ -934,6 +836,7 @@ def render_physics_preset(
     )
     display_bmode, support_details, support_debug_maps = _apply_sparse_signal_support(
         display_bmode,
+        profile=loaded_profile.settings,
         sector_mask=sector_mask,
         depth_grid_mm=display_depth_grid_mm,
         max_depth_mm=resolved_max_depth_mm,
@@ -1113,7 +1016,15 @@ def render_physics_preset(
         ),
     )
     consistency_metrics.update(support_details)
+    consistency_metrics["physics_profile_name"] = loaded_profile.name
     engine_diagnostics = {
+        "profile": {
+            "name": loaded_profile.name,
+            "requested_name": request.physics_profile,
+            "source_path": loaded_profile.source_path,
+            "explicit_overrides": explicit_profile_overrides,
+            "effective_settings": effective_profile_settings,
+        },
         "artifact_settings": {
             "speckle_strength": float(artifact_config.speckle_strength),
             "reverberation_strength": float(artifact_config.reverberation_strength),

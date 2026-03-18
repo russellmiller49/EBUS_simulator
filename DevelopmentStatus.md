@@ -26,7 +26,10 @@ The current state is:
 - the original renderer is now an explicit `localizer` / QA renderer
 - a first `physics` renderer exists and can render repo presets
 - the physics renderer now supports tunable artifacts, debug-map export, basic evaluation summaries, and first-class consistency metrics
+- shared render-state preparation is now explicit in `render_state.py`, with transform/sampling helpers in `transforms.py` and drawing helpers in `annotations.py`
+- renderer tuning profiles are now externalized in `configs/render_profiles.yaml` and validated through `render_profiles.py`
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
+- the test suite is now split into fast `tests/unit` coverage and slower dataset-backed `tests/integration` coverage
 - the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and a structured reviewer/teaching inspector
 - a cross-preset `analyze-render-consistency` workflow now exists for localizer/physics divergence summaries
 
@@ -50,6 +53,7 @@ The active development focus is:
 - hardening the desktop preset browser around responsiveness and reviewer ergonomics
 - reducing avoidable cross-preset render instability where the evidence supports a narrow fix
 - reducing the remaining physics sparsity gap on weak presets with metadata-visible, geometry-aware guardrails
+- moving calibration/tuning iteration onto named profiles instead of repeated source edits
 - manually validating the PySide6 browser against the checked-in dataset
 - keeping the current review defaults stable while the desktop workflow comes online
 - using first-class consistency metrics to separate anatomy-driven differences from normalization artifacts
@@ -78,12 +82,14 @@ The active development focus is:
 
 ### Rendering
 - explicit render-engine dispatch
+- first-class `PreparedRenderState` / `RenderContext` preparation shared by localizer and physics
 - `localizer` renderer for geometry / QA review
 - `physics` renderer for first-pass CP-EBUS-like B-mode output
 - clean and debug render modes
 - per-render JSON sidecars
 - batch rendering through `render-all-presets`
 - deterministic seeds recorded in metadata
+- baseline and named physics tuning profiles with explicit CLI override precedence
 
 ### Physics renderer capabilities
 - label-first acoustic property mapping from CT plus masks
@@ -92,9 +98,11 @@ The active development focus is:
 - guarded blended high-percentile normalization when the physics upper tail is spike-dominated
 - sparse-case target/anatomy support and wall-guardrail activation for very empty or wall-dominant sectors
 - tunable speckle, reverberation, and distal shadow controls
+- baseline and named physics tuning profiles covering normalization, sparse-support guardrails, artifact defaults, and related magic numbers
 - optional debug-map export for boundary, transmission, shadow, reverberation, speckle, target focus, precompression, and compressed signal maps
 - basic region-level evaluation summaries in metadata
 - first-class per-render consistency metrics covering target position, occupancy, brightness, normalization stats, and sparse-support activation metadata
+- active physics profile name, source path, effective settings, and explicit overrides recorded in metadata
 - wall-eval fallback derived from the visible lumen shell when direct airway-wall samples are too sparse for review summaries
 
 ### Review and automation
@@ -107,6 +115,7 @@ The active development focus is:
 - default wall-contrast auto-flagging set to a conservative floor, with CLI support to disable it for experiments
 - CI smoke workflow for validation, pose generation, and localizer rendering
 - repo-root smoke targets such as `make render-smoke`, `make physics-smoke`, and `make ci-smoke`
+- a fast local developer path through `make test-fast` / `pytest tests/unit -q`, while keeping dataset-backed integration coverage intact
 
 ### Desktop app
 - `launch-app` CLI wired to the current PySide6 preset browser
@@ -158,15 +167,20 @@ Still missing:
 - calibration iteration informed by expert feedback rather than synthetic-only inspection
 
 ### Renderer code structure
-The engine split is in place, but the shared rendering layer is still heavier than ideal.
+The engine split is in place, and the shared layer is now more explicit.
 
 Current state:
-- `localizer_renderer.py` and `physics_renderer.py` exist
-- `rendering.py` is acting as the shared orchestration layer
+- `render_state.py` owns shared manifest/pose/device preparation and reusable `PreparedRenderState`
+- `transforms.py` owns voxel/world/probe sampling and fan/plane mapping helpers
+- `annotations.py` owns contour, marker, legend, and label drawing helpers
+- `render_profiles.py` owns typed render-tuning profiles and YAML validation/loading
+- `localizer_renderer.py` and `physics_renderer.py` consume the prepared state instead of rebuilding the request preamble ad hoc
+- `rendering.py` is thinner and focused on orchestration, shared consistency helpers, and the remaining shared context/render helpers
 
 Still missing:
-- further reduction of shared coupling
-- cleaner separation of common render-state preparation from engine-specific image synthesis
+- further reduction of the remaining orchestration/context helper weight in `rendering.py`
+- cleaner separation of shared context-panel construction from engine-specific synthesis where it is still mixed
+- broader profile-driven tuning beyond the current physics baseline/non-default examples
 
 ---
 
@@ -174,8 +188,9 @@ Still missing:
 
 ### Near-term remaining work
 - continue tuning the physics renderer for better vessel, airway-wall, and node appearance
+- expand named render profiles as calibration evidence accumulates, rather than editing constants in source
 - use the bundled review outputs and consistency summaries to refine thresholds and reviewer ergonomics, now that wall metrics are no longer mostly null
-- decide whether more render-state preparation should move out of `rendering.py`
+- continue reducing the remaining shared helper weight in `rendering.py` now that render-state prep is explicit
 
 ### Major remaining milestone: polished desktop workflow
 The main remaining milestone is turning the current preset browser into a polished desktop workflow.
@@ -200,7 +215,7 @@ This is the largest remaining v1 deliverable.
 
 - The desktop app currently requires the optional `ui` dependency (`PySide6`) rather than the default bootstrap path.
 - The desktop UI now has queued rendering and a structured inspector, but it still needs broader manual interaction testing and packaged distribution setup.
-- The full `pytest -q` suite was not rerun after the sparse-support pass, so the current verified test evidence is the targeted rendering/review/physics/app/consistency subset plus the offscreen Qt smoke and the all-presets consistency sweep.
+- The full suite is still materially slower than the fast unit slice because the integration half intentionally exercises the checked-in dataset, rendering stack, review flow, and app session path.
 - The physics renderer is still an inspectable first-pass model, not a mature ultrasound simulation.
 - The physics path currently renders only the 2D sector view; it does not have a dedicated physics-specific 3D context panel.
 - The review bundle is implemented, but its rubric and eval summaries are still lightweight rather than expert-calibrated.
@@ -213,15 +228,21 @@ This is the largest remaining v1 deliverable.
 These commands are part of the current usable surface area:
 
 - `make bootstrap`
+- `make test-fast`
+- `make test-integration`
 - `make test`
+- `.venv/bin/python -m pytest tests/unit -q`
+- `.venv/bin/python -m pytest tests/integration -q`
 - `validate-case configs/3d_slicer_files.yaml`
 - `generate-poses configs/3d_slicer_files.yaml --report-json reports/pose_report.json`
 - `render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/renders/station_4r_node_b.png`
 - `render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --debug-map-dir reports/renders/station_4r_node_b_debug_maps --output reports/renders/station_4r_node_b_physics.png`
+- `render-preset configs/3d_slicer_files.yaml station_7_node_a --approach lms --engine physics --mode clean --virtual-ebus false --physics-profile sparse_support_boost --output reports/renders/station_7_node_a_lms_sparse_support_boost.png`
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug --mode debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
+- `analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --physics-profile sparse_support_boost --width 64 --height 64`
 - `analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --width 64 --height 64`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - `launch-app configs/3d_slicer_files.yaml`
@@ -234,7 +255,17 @@ Note:
 ## Latest Validation Snapshot
 
 Latest verified run snapshot from `2026-03-18`:
-- `.venv/bin/python -m pytest tests/test_rendering.py tests/test_physics_renderer.py tests/test_review.py tests/test_app.py tests/test_consistency.py -q` -> `25 passed in 891.97s (0:14:51)`
+- `make test-fast` -> `47 passed in 0.94s`
+- `make test-integration` -> `26 passed in 1025.94s (0:17:05)`
+- `.venv/bin/python -m pytest -q` -> `73 passed in 1034.21s (0:17:14)`
+- `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/_render_profiles/localizer_baseline.png --width 64 --height 64` -> succeeded with `engine: localizer`
+- `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --simulated-ebus true --output reports/_render_profiles/physics_baseline.png --width 64 --height 64` -> succeeded with `physics_profile: baseline` and no explicit profile overrides
+- `.venv/bin/render-preset configs/3d_slicer_files.yaml station_7_node_a --approach lms --engine physics --mode clean --virtual-ebus false --simulated-ebus true --physics-profile sparse_support_boost --speckle-strength 0.22 --output reports/_render_profiles/physics_sparse_support_boost.png --width 64 --height 64` -> succeeded with `physics_profile: sparse_support_boost` and `physics_profile_overrides: {'speckle_strength': 0.22}`
+- `.venv/bin/launch-app --help` -> succeeded and printed the current CLI usage
+- `QT_QPA_PLATFORM=offscreen .venv/bin/python - <<'PY' ... launch_app('configs/3d_slicer_files.yaml', width=64, height=64, close_after_ms=300000, close_on_first_render=True) ... PY` -> exited `0`
+- `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --output reports/_render_state_refactor/localizer_smoke.png --width 64 --height 64` -> succeeded with `engine: localizer`
+- `.venv/bin/render-preset configs/3d_slicer_files.yaml station_4r_node_b --engine physics --mode clean --virtual-ebus false --simulated-ebus true --output reports/_render_state_refactor/physics_smoke.png --width 64 --height 64` -> succeeded with `engine: physics`
+- `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_render_state_smoke --preset-id station_4r_node_b --width 64 --height 64` -> succeeded with `review_count: 1` and emitted review summary/index artifacts
 - `.venv/bin/python -m pip install -e '.[dev,ui]'` -> succeeded and refreshed the editable install plus console scripts
 - `.venv/bin/analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/_consistency_signal_support_all --width 64 --height 64` -> succeeded with `analysis_count: 16`, `support_logic_activations: 2`, `sparse_sector_cases: 7`, and representative improvements on `station_7_node_a/lms` and `station_11ri_node_a/default`
 - `.venv/bin/python - <<'PY' ... compare_consistency_summaries(...) ... PY` -> matched `16` entries and reported `2` improvements each for empty-sector fraction, non-background occupancy, target contrast, and occupancy-gap trend

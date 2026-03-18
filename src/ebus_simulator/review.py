@@ -289,6 +289,7 @@ def _render_review_entry(
     show_full_airway: bool | None,
     vessel_overlay_names: list[str] | None,
     include_physics_debug_maps: bool,
+    physics_profile: str | None,
     physics_speckle_strength: float | None,
     physics_reverberation_strength: float | None,
     physics_shadow_strength: float | None,
@@ -413,6 +414,7 @@ def _render_review_entry(
         cutaway_origin=cutaway_origin,
         show_full_airway=show_full_airway,
         debug_map_dir=debug_map_dir,
+        physics_profile=physics_profile,
         speckle_strength=physics_speckle_strength,
         reverberation_strength=physics_reverberation_strength,
         shadow_strength=physics_shadow_strength,
@@ -425,6 +427,7 @@ def _render_review_entry(
     physics_diagnostics = dict(physics.metadata.engine_diagnostics)
     physics_eval_summary = dict(physics_diagnostics.get("eval_summary", {}))
     physics_artifact_settings = dict(physics_diagnostics.get("artifact_settings", {}))
+    physics_profile_settings = dict(physics_diagnostics.get("profile", {}))
     physics_debug_maps = dict(physics_diagnostics.get("debug_map_paths", {}))
     localizer_consistency_metrics = dict(clean.metadata.consistency_metrics)
     physics_consistency_metrics = dict(physics.metadata.consistency_metrics)
@@ -438,6 +441,7 @@ def _render_review_entry(
         "approach": approach,
         "engine": physics.metadata.engine,
         "engine_version": physics.metadata.engine_version,
+        "profile": physics_profile_settings,
         "artifact_settings": physics_artifact_settings,
         "localizer_consistency_metrics": localizer_consistency_metrics,
         "physics_consistency_metrics": physics_consistency_metrics,
@@ -458,6 +462,7 @@ def _render_review_entry(
         "review_sheet_md": str(review_sheet_path),
         "physics_debug_maps": physics_debug_maps,
         "physics_debug_map_count": len(physics_debug_maps),
+        "physics_profile": physics_profile_settings,
         "physics_artifact_settings": physics_artifact_settings,
         "physics_eval_summary": physics_eval_summary,
         "localizer_consistency_metrics": localizer_consistency_metrics,
@@ -1092,6 +1097,7 @@ def review_presets(
     vessel_overlay_names: list[str] | None = None,
     preset_ids: list[str] | None = None,
     include_physics_debug_maps: bool = False,
+    physics_profile: str | None = None,
     physics_speckle_strength: float | None = None,
     physics_reverberation_strength: float | None = None,
     physics_shadow_strength: float | None = None,
@@ -1127,6 +1133,7 @@ def review_presets(
                 show_full_airway=show_full_airway,
                 vessel_overlay_names=vessel_overlay_names,
                 include_physics_debug_maps=include_physics_debug_maps,
+                physics_profile=physics_profile,
                 physics_speckle_strength=physics_speckle_strength,
                 physics_reverberation_strength=physics_reverberation_strength,
                 physics_shadow_strength=physics_shadow_strength,
@@ -1182,6 +1189,25 @@ def review_presets(
         "preset_filter": ([] if preset_ids is None else list(preset_ids)),
         "include_physics_debug_maps": bool(include_physics_debug_maps),
         "physics_settings": {
+            "profile_name": (
+                None
+                if not entries
+                else dict(entries[0].get("physics_profile", {})).get("name")
+            ),
+            "profile_source_path": (
+                None
+                if not entries
+                else dict(entries[0].get("physics_profile", {})).get("source_path")
+            ),
+            "explicit_overrides": {
+                key: value
+                for key, value in {
+                    "speckle_strength": physics_speckle_strength,
+                    "reverberation_strength": physics_reverberation_strength,
+                    "shadow_strength": physics_shadow_strength,
+                }.items()
+                if value is not None
+            },
             "speckle_strength": physics_speckle_strength,
             "reverberation_strength": physics_reverberation_strength,
             "shadow_strength": physics_shadow_strength,

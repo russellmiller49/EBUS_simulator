@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 
 from ebus_simulator.render_engines import RenderEngine
+from ebus_simulator.render_profiles import DEFAULT_PHYSICS_PROFILE_NAME, list_physics_profile_names
 from ebus_simulator.render_cli import _parse_bool, _parse_vessel_overlays
 from ebus_simulator.rendering import render_all_presets
 
 
 def main() -> int:
+    available_profiles = ", ".join(list_physics_profile_names())
     parser = argparse.ArgumentParser(description="Render all configured presets/contact approaches.")
     parser.add_argument("manifest", help="Path to the case manifest YAML file.")
     parser.add_argument("--output-dir", required=True, help="Directory for PNGs, sidecars, and index files.")
@@ -24,6 +26,13 @@ def main() -> int:
     parser.add_argument("--overlay-station", type=_parse_bool, help="Enable or disable the station mask overlay.")
     parser.add_argument("--overlay-vessels", type=_parse_vessel_overlays, help="Comma-separated vessel overlay keys, or 'none'.")
     parser.add_argument("--debug-map-dir", help="Optional root directory for per-render engine debug maps.")
+    parser.add_argument(
+        "--physics-profile",
+        help=(
+            "Optional physics tuning profile name. "
+            f"Defaults to {DEFAULT_PHYSICS_PROFILE_NAME}. Available: {available_profiles}."
+        ),
+    )
     parser.add_argument("--speckle-strength", type=float, help="Optional physics speckle strength override.")
     parser.add_argument("--reverberation-strength", type=float, help="Optional physics reverberation strength override.")
     parser.add_argument("--shadow-strength", type=float, help="Optional physics distal shadow strength override.")
@@ -45,6 +54,7 @@ def main() -> int:
         station_overlay=args.overlay_station,
         vessel_overlay_names=args.overlay_vessels,
         debug_map_dir=args.debug_map_dir,
+        physics_profile=args.physics_profile,
         speckle_strength=args.speckle_strength,
         reverberation_strength=args.reverberation_strength,
         shadow_strength=args.shadow_strength,

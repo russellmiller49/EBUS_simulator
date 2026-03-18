@@ -1,13 +1,16 @@
+from dataclasses import replace
 from pathlib import Path
 import json
 
 import numpy as np
 from PIL import Image
 
-from ebus_simulator.rendering import render_all_presets, render_preset
+from ebus_simulator.render_engines import RenderEngine, RenderRequest
+from ebus_simulator.render_state import PREPARED_RENDER_STATE_VERSION, prepare_localizer_render_state, prepare_physics_render_state
+from ebus_simulator.rendering import build_render_context, render_all_presets, render_preset
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "configs" / "3d_slicer_files.yaml"
 
 
@@ -176,6 +179,75 @@ def test_station_7_render_variants_differ(tmp_path):
     assert rms.metadata.cutaway_side == "right"
     assert lms.metadata.cutaway_normal != rms.metadata.cutaway_normal
     assert not np.array_equal(lms.image_rgb, rms.image_rgb)
+
+
+def test_prepared_render_state_captures_shared_geometry(tmp_path):
+    context = build_render_context(MANIFEST_PATH)
+    localizer_request = RenderRequest(
+        manifest_path=MANIFEST_PATH,
+        preset_id="station_4r_node_b",
+        output_path=tmp_path / "prepared_state_localizer.png",
+        engine=RenderEngine.LOCALIZER,
+        width=64,
+        height=64,
+        mode="clean",
+    )
+    physics_request = replace(
+        localizer_request,
+        output_path=tmp_path / "prepared_state_physics.png",
+        engine=RenderEngine.PHYSICS,
+        virtual_ebus=False,
+        simulated_ebus=True,
+    )
+
+    localizer_state = prepare_localizer_render_state(localizer_request, context=context)
+    physics_state = prepare_physics_render_state(physics_request, context=context)
+
+    assert localizer_state.state_version == PREPARED_RENDER_STATE_VERSION
+    assert physics_state.state_version == PREPARED_RENDER_STATE_VERSION
+    assert localizer_state.context is context
+    assert physics_state.context is context
+    assert localizer_state.pose.preset_id == physics_state.pose.preset_id == "station_4r_node_b"
+    assert localizer_state.resolved_width == physics_state.resolved_width == 64
+    assert localizer_state.resolved_height == physics_state.resolved_height == 64
+    assert np.allclose(localizer_state.contact_world, physics_state.contact_world)
+    assert np.allclose(localizer_state.target_world, physics_state.target_world)
+    assert np.allclose(localizer_state.probe_axis, physics_state.probe_axis)
+
+def test_baseline_physics_profile_matches_default_request(tmp_path):
+    context = build_render_context(MANIFEST_PATH)
+    default_render = render_preset(
+        MANIFEST_PATH,
+        "station_4r_node_b",
+        output_path=tmp_path / "station_4r_node_b_default_physics.png",
+        engine="physics",
+        width=64,
+        height=64,
+        mode="clean",
+        virtual_ebus=False,
+        simulated_ebus=True,
+        context=context,
+    )
+    baseline_render = render_preset(
+        MANIFEST_PATH,
+        "station_4r_node_b",
+        output_path=tmp_path / "station_4r_node_b_baseline_profile_physics.png",
+        engine="physics",
+        width=64,
+        height=64,
+        mode="clean",
+        virtual_ebus=False,
+        simulated_ebus=True,
+        physics_profile="baseline",
+        context=context,
+    )
+
+    assert np.array_equal(default_render.image_rgb, baseline_render.image_rgb)
+    assert default_render.metadata.engine_diagnostics["artifact_settings"] == baseline_render.metadata.engine_diagnostics["artifact_settings"]
+    assert default_render.metadata.engine_diagnostics["profile"]["name"] == "baseline"
+    assert baseline_render.metadata.engine_diagnostics["profile"]["name"] == "baseline"
+    assert default_render.metadata.engine_diagnostics["profile"]["explicit_overrides"] == {}
+    assert baseline_render.metadata.engine_diagnostics["profile"]["explicit_overrides"] == {}
 
 
 def test_render_all_presets_writes_index_and_all_outputs(tmp_path):

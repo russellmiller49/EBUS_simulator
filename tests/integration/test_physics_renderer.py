@@ -8,7 +8,7 @@ from ebus_simulator.physics_renderer import PHYSICS_ENGINE_VERSION, simulate_bmo
 from ebus_simulator.rendering import render_preset
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "configs" / "3d_slicer_files.yaml"
 
 
@@ -88,6 +88,12 @@ def test_render_preset_supports_physics_engine(tmp_path):
     assert rendered.metadata.virtual_ebus_enabled is False
     assert rendered.metadata.simulated_ebus_enabled is True
     assert rendered.metadata.display_plane == "nUS_nB_fan"
+    assert rendered.metadata.engine_diagnostics["profile"]["name"] == "baseline"
+    assert rendered.metadata.engine_diagnostics["profile"]["explicit_overrides"] == {
+        "speckle_strength": 0.22,
+        "reverberation_strength": 0.28,
+        "shadow_strength": 0.47,
+    }
     assert rendered.metadata.engine_diagnostics["artifact_settings"] == {
         "speckle_strength": 0.22,
         "reverberation_strength": 0.28,
@@ -99,6 +105,7 @@ def test_render_preset_supports_physics_engine(tmp_path):
     assert rendered.metadata.consistency_metrics["non_background_occupancy_fraction"] >= 0.0
     assert rendered.metadata.consistency_metrics["target_sector_coverage_fraction"] >= 0.0
     assert rendered.metadata.consistency_metrics["consistency_bucket"] is not None
+    assert rendered.metadata.consistency_metrics["physics_profile_name"] == "baseline"
     assert rendered.metadata.consistency_metrics["support_logic_active"] in {True, False}
     assert rendered.metadata.consistency_metrics["support_logic_mode"] is not None
     assert "normalization" in rendered.metadata.engine_diagnostics
@@ -110,6 +117,32 @@ def test_render_preset_supports_physics_engine(tmp_path):
     assert "support_map" in debug_map_paths
     assert all(Path(path).exists() for path in debug_map_paths.values())
     assert np.any(image > 0)
+
+
+def test_render_preset_supports_named_physics_profile_without_cli_overrides(tmp_path):
+    output_path = tmp_path / "station_7_node_a_sparse_support_boost.png"
+    rendered = render_preset(
+        MANIFEST_PATH,
+        "station_7_node_a",
+        approach="lms",
+        output_path=output_path,
+        engine="physics",
+        width=64,
+        height=64,
+        mode="clean",
+        virtual_ebus=False,
+        simulated_ebus=True,
+        physics_profile="sparse_support_boost",
+    )
+
+    assert rendered.metadata.engine_diagnostics["profile"]["name"] == "sparse_support_boost"
+    assert rendered.metadata.engine_diagnostics["profile"]["explicit_overrides"] == {}
+    assert rendered.metadata.engine_diagnostics["artifact_settings"] == {
+        "speckle_strength": 0.14,
+        "reverberation_strength": 0.24,
+        "shadow_strength": 0.36,
+    }
+    assert rendered.metadata.consistency_metrics["physics_profile_name"] == "sparse_support_boost"
 
 
 def test_sparse_case_support_activates_without_touching_target_prominent_control(tmp_path):

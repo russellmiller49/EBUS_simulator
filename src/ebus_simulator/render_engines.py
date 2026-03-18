@@ -68,6 +68,7 @@ class RenderRequest:
     show_full_airway: bool | None = None
     cutaway_custom_origin_world: Any | None = None
     debug_map_dir: str | Path | None = None
+    physics_profile: str | None = None
     speckle_strength: float | None = None
     reverberation_strength: float | None = None
     shadow_strength: float | None = None
