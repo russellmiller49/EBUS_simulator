@@ -93,6 +93,12 @@ def test_render_preset_supports_physics_engine(tmp_path):
         "reverberation_strength": 0.28,
         "shadow_strength": 0.47,
     }
+    assert rendered.metadata.consistency_metrics["normalization_method"].startswith("log_percentile_99.5")
+    assert rendered.metadata.consistency_metrics["normalization_reference_percentile"] == 99.5
+    assert rendered.metadata.consistency_metrics["normalization_reference_value"] is not None
+    assert rendered.metadata.consistency_metrics["non_background_occupancy_fraction"] >= 0.0
+    assert rendered.metadata.consistency_metrics["target_sector_coverage_fraction"] >= 0.0
+    assert "normalization" in rendered.metadata.engine_diagnostics
     assert "eval_summary" in rendered.metadata.engine_diagnostics
     assert rendered.metadata.engine_diagnostics["eval_summary"]["wall"]["pixel_count"] > 0
     assert rendered.metadata.engine_diagnostics["eval_summary"]["wall_contrast_vs_sector"] is not None

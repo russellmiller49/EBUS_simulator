@@ -25,9 +25,10 @@ The current state is:
 - geometry and preset pose generation are implemented and test-covered
 - the original renderer is now an explicit `localizer` / QA renderer
 - a first `physics` renderer exists and can render repo presets
-- the physics renderer now supports tunable artifacts, debug-map export, and basic evaluation summaries
+- the physics renderer now supports tunable artifacts, debug-map export, basic evaluation summaries, and first-class consistency metrics
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
 - the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and a structured reviewer/teaching inspector
+- a cross-preset `analyze-render-consistency` workflow now exists for localizer/physics divergence summaries
 
 In practical terms, the repo is already useful for:
 - loading and validating the dataset
@@ -47,8 +48,10 @@ It is not yet at the intended end state for:
 
 The active development focus is:
 - hardening the desktop preset browser around responsiveness and reviewer ergonomics
+- reducing avoidable cross-preset render instability where the evidence supports a narrow fix
 - manually validating the PySide6 browser against the checked-in dataset
 - keeping the current review defaults stable while the desktop workflow comes online
+- using first-class consistency metrics to separate anatomy-driven differences from normalization artifacts
 - keeping the renderer split intact rather than reopening scaffold or geometry phases
 
 ---
@@ -85,14 +88,17 @@ The active development focus is:
 - label-first acoustic property mapping from CT plus masks
 - ray-domain sector sampling derived from the current `DevicePose`
 - attenuation and log compression
+- guarded blended high-percentile normalization when the physics upper tail is spike-dominated
 - tunable speckle, reverberation, and distal shadow controls
-- optional debug-map export for boundary, transmission, shadow, reverberation, speckle, target focus, and precompression signal maps
+- optional debug-map export for boundary, transmission, shadow, reverberation, speckle, target focus, precompression, and compressed signal maps
 - basic region-level evaluation summaries in metadata
+- first-class per-render consistency metrics covering target position, occupancy, brightness, and normalization stats
 - wall-eval fallback derived from the visible lumen shell when direct airway-wall samples are too sparse for review summaries
 
 ### Review and automation
 - `review-presets` physics-aware batch review exports with deterministic preset/approach folders
 - `compare-review-bundles` before/after summaries for calibration passes across review bundle runs
+- `analyze-render-consistency` summaries for cross-preset localizer/physics divergence analysis
 - JSON, CSV, and Markdown review indexes
 - per-entry review sheets and a shared rubric template
 - configurable geometry and physics auto-flag thresholds for review bundles
@@ -107,6 +113,7 @@ The active development focus is:
 - 3D context pane derived from the existing localizer diagnostic/context path
 - queued background rendering so the UI no longer blocks during preset changes
 - structured inspector with preset, pose, anatomy-in-fan, review/eval, and render-setting sections
+- inspector surfacing for occupancy, target-prominence, brightness, and normalization metrics
 - live warning and auto-flag surfacing inside the inspector using current render metadata plus derived review metrics
 - screenshot export from the current browser state with state-aware default filenames
 
@@ -135,6 +142,7 @@ The repo can already generate structured physics-aware review bundles, but calib
 Current state:
 - localizer and physics renders are bundled per preset/approach
 - evaluation summaries are extracted into reviewer-facing JSON artifacts
+- localizer and physics consistency metrics are now stored as first-class metadata and bundled into review entries
 - airway-wall eval stats now fall back to a lumen-adjacent shell when direct wall samples are too sparse
 - physics debug maps can be bundled on request
 - deterministic JSON, CSV, and Markdown indexes are generated for batch review
@@ -163,7 +171,7 @@ Still missing:
 
 ### Near-term remaining work
 - continue tuning the physics renderer for better vessel, airway-wall, and node appearance
-- use the bundled review outputs to refine thresholds and reviewer ergonomics, now that wall metrics are no longer mostly null
+- use the bundled review outputs and consistency summaries to refine thresholds and reviewer ergonomics, now that wall metrics are no longer mostly null
 - decide whether more render-state preparation should move out of `rendering.py`
 
 ### Major remaining milestone: polished desktop workflow
@@ -189,7 +197,7 @@ This is the largest remaining v1 deliverable.
 
 - The desktop app currently requires the optional `ui` dependency (`PySide6`) rather than the default bootstrap path.
 - The desktop UI now has queued rendering and a structured inspector, but it still needs broader manual interaction testing and packaged distribution setup.
-- The full `pytest -q` suite was not rerun after the latest desktop UI pass, so the current verified test evidence is the targeted app and review subsets plus the offscreen Qt smoke.
+- The full `pytest -q` suite was not rerun after the latest render-consistency pass, so the current verified test evidence is the targeted rendering/review/physics/app/consistency subset plus the offscreen Qt smoke.
 - The physics renderer is still an inspectable first-pass model, not a mature ultrasound simulation.
 - The physics path currently renders only the 2D sector view; it does not have a dedicated physics-specific 3D context panel.
 - The review bundle is implemented, but its rubric and eval summaries are still lightweight rather than expert-calibrated.
@@ -211,6 +219,7 @@ These commands are part of the current usable surface area:
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
+- `analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --width 64 --height 64`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - `launch-app configs/3d_slicer_files.yaml`
 
@@ -222,14 +231,15 @@ Note:
 ## Latest Validation Snapshot
 
 Latest verified run snapshot from `2026-03-18`:
-- `.venv/bin/python -m pytest tests/test_app.py -q` -> `7 passed in 154.01s (0:02:34)`
-- `.venv/bin/python -m pytest tests/test_review.py -q` -> `6 passed in 238.11s (0:03:58)`
-- `.venv/bin/python -m pip install -e '.[ui]'` -> succeeded and installed `PySide6 6.10.2`
+- `.venv/bin/python -m pytest tests/test_rendering.py tests/test_physics_renderer.py tests/test_review.py tests/test_app.py tests/test_consistency.py -q` -> `23 passed in 795.07s (0:13:15)`
+- `.venv/bin/python -m pip install -e '.[dev,ui]'` -> succeeded and refreshed the editable install plus console scripts
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_calibration_all --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 128 --height 128` -> succeeded with `review_count: 16`, `flagged_count: 8`, `wall_present_count: 16`, `vessel_present_count: 15`, and broad-run wall contrast ranging from `0.0389` to `0.9648`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_calibration_default_wall --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 128 --height 128` -> succeeded with `review_count: 16`, `flagged_count: 8`, and `wall_contrast_vs_sector_min: 0.02`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_wall_optout_smoke --preset-id station_4r_node_b --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-wall-contrast off --width 64 --height 64` -> succeeded with `review_count: 1`, `flagged_count: 1`, and `wall_contrast_vs_sector_min: None` in the bundle thresholds
 - `.venv/bin/compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/_comparison_smoke` -> succeeded with `matched_entry_count: 16`, `before_flagged_count: 8`, `after_flagged_count: 4`, `resolved_flagged_count: 4`, and emitted `before_after_summary.{json,csv,md}`
 - `.venv/bin/compare-review-bundles reports/_review_calibration_all/review_summary.json reports/_review_calibration_default_wall/review_summary.json --output-dir reports/_review_calibration_default_wall` -> succeeded with `matched_entry_count: 16`, `before_flagged_count: 8`, `after_flagged_count: 8`, `resolved_flagged_count: 0`, and `regressed_flagged_count: 0`
+- `.venv/bin/analyze-render-consistency --help` -> succeeded and printed the consistency-analysis CLI usage
+- `.venv/bin/analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/_consistency_all --width 64 --height 64` -> succeeded with `analysis_count: 16`, emitted `consistency_summary.{json,md}` plus `consistency_entries.csv`, and identified `station_7_node_a / lms` as the most divergent current preset
 - `.venv/bin/launch-app --help` -> succeeded
 - `QT_QPA_PLATFORM=offscreen .venv/bin/python - <<'PY' ... launch_app('configs/3d_slicer_files.yaml', width=64, height=64, close_after_ms=300000, close_on_first_render=True) ... PY` -> succeeded with exit code `0` after the first completed browser render
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_smoke_wall_eval --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64` -> succeeded with `review_count: 3`, `flagged_count: 2`, and non-null wall eval stats in the bundle entries

@@ -19,9 +19,10 @@ Current implemented capabilities:
 - `render-all-presets` CLI
 - `review-presets` CLI for deterministic physics-aware review bundles with JSON/CSV/Markdown indexes and review sheets
 - `compare-review-bundles` CLI for before/after calibration summaries across review bundle runs
+- `analyze-render-consistency` CLI for cross-preset localizer/physics divergence summaries
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
-- first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
+- first-pass physics CP-EBUS renderer with artifact controls, debug maps, eval summaries, and first-class consistency metrics
 - current desktop preset browser with queued rendering, a structured teaching-console inspector, 2D EBUS, and 3D context panes
 - CI smoke workflow
 
@@ -32,8 +33,8 @@ Not implemented yet:
 
 Next active milestone:
 
-- desktop preset browser refinement, manual Qt validation, and workflow polish
-- review / calibration refinement on top of the current bundle workflow as reference feedback becomes available
+- bounded render-consistency calibration plus manual Qt validation and workflow polish
+- review / calibration refinement on top of the current bundle and consistency workflows as reference feedback becomes available
 
 ## Dataset
 
@@ -149,6 +150,12 @@ Compare a baseline and tuned review bundle to generate before/after calibration 
 compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized
 ```
 
+Run the cross-preset consistency sweep and emit JSON, CSV, and Markdown summaries:
+
+```bash
+analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/consistency --width 64 --height 64
+```
+
 Convenience targets:
 
 ```bash
@@ -174,5 +181,6 @@ Current browser surface:
 - airway / target / station / vessel overlay toggles
 - queued rendering with status updates
 - structured in-window inspector with Preset, Pose, Anatomy in Fan, Review / Eval, and Render Settings sections
+- occupancy, brightness, target-prominence, and normalization metrics surfaced directly in the inspector
 - live auto-flags and warnings sourced from current render metadata and review metrics
 - screenshot export for the active browser state

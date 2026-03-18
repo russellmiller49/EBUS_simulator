@@ -37,6 +37,9 @@ FLAGGED_BRANCH_SHIFT_MM = (-4.0, 0.0, 4.0)
 FLAGGED_ROLL_DELTA_DEG = (0.0,)
 FLAGGED_AXIS_SIGN_OVERRIDES = ()
 OPTIMIZATION_EPSILON = 1e-9
+CONSISTENCY_SIGNAL_THRESHOLD = 0.05
+CONSISTENCY_NEAR_FIELD_FRACTION = 0.20
+CONSISTENCY_TARGET_REGION_RADIUS_MM = 4.0
 _LOCAL_POSE_OPTIMIZATION_CACHE: dict[tuple[object, ...], LocalPoseOptimizationResult] = {}
 
 AIRWAY_LUMEN_COLOR = np.asarray([0.22, 0.92, 0.94], dtype=np.float32)
@@ -179,6 +182,7 @@ class RenderMetadata:
     show_full_airway: bool
     overlays_enabled: list[str]
     visible_overlay_names: list[str]
+    consistency_metrics: dict[str, object]
     preset_override_applied: bool
     preset_override_vessel_overlays: list[str]
     preset_override_cutaway_side: str | None
@@ -475,6 +479,159 @@ def compute_pose_review_metrics(
         "contact_delta_mm_from_voxel_baseline": float(contact_delta_mm_from_voxel_baseline),
         "contact_refinement_ambiguity": contact_refinement_ambiguity,
         "warnings": list(warnings),
+    }
+
+
+def _mask_fraction(mask: np.ndarray, reference_mask: np.ndarray) -> float:
+    denominator = int(np.count_nonzero(reference_mask))
+    if denominator <= 0:
+        return 0.0
+    return float(np.count_nonzero(np.asarray(mask, dtype=bool) & np.asarray(reference_mask, dtype=bool)) / denominator)
+
+
+def _masked_mean(values: np.ndarray, mask: np.ndarray) -> float | None:
+    masked = np.asarray(values, dtype=np.float32)[np.asarray(mask, dtype=bool)]
+    if masked.size == 0:
+        return None
+    return float(np.mean(masked))
+
+
+def _masked_percentile(values: np.ndarray, mask: np.ndarray, percentile: float) -> float | None:
+    masked = np.asarray(values, dtype=np.float32)[np.asarray(mask, dtype=bool)]
+    if masked.size == 0:
+        return None
+    return float(np.percentile(masked, percentile))
+
+
+def _build_target_region_mask(
+    *,
+    depth_grid_mm: np.ndarray,
+    lateral_grid_mm: np.ndarray,
+    sector_mask: np.ndarray,
+    target_depth_mm: float | None,
+    target_lateral_offset_mm: float | None,
+    radius_mm: float = CONSISTENCY_TARGET_REGION_RADIUS_MM,
+) -> np.ndarray:
+    if target_depth_mm is None or target_lateral_offset_mm is None:
+        return np.zeros_like(sector_mask, dtype=bool)
+    depth_delta = depth_grid_mm - float(target_depth_mm)
+    lateral_delta = lateral_grid_mm - float(target_lateral_offset_mm)
+    return np.asarray(
+        np.logical_and((depth_delta ** 2 + lateral_delta ** 2) <= float(radius_mm) ** 2, sector_mask),
+        dtype=bool,
+    )
+
+
+def compute_render_consistency_metrics(
+    *,
+    image_gray: np.ndarray,
+    sector_mask: np.ndarray,
+    depth_grid_mm: np.ndarray,
+    lateral_grid_mm: np.ndarray,
+    max_depth_mm: float,
+    sector_angle_deg: float,
+    target_depth_mm: float | None,
+    target_lateral_offset_mm: float | None,
+    target_region_mask: np.ndarray | None = None,
+    airway_wall_mask: np.ndarray | None = None,
+    vessel_mask: np.ndarray | None = None,
+    normalization_method: str,
+    normalization_reference_percentile: float | None = None,
+    normalization_reference_value: float | None = None,
+    normalization_aux_percentile: float | None = None,
+    normalization_aux_value: float | None = None,
+    normalization_lower_bound: float | None = None,
+    normalization_upper_bound: float | None = None,
+    compression_gain_factor: float | None = None,
+    signal_threshold: float = CONSISTENCY_SIGNAL_THRESHOLD,
+    near_field_fraction: float = CONSISTENCY_NEAR_FIELD_FRACTION,
+) -> dict[str, object]:
+    gray = np.asarray(image_gray, dtype=np.float32)
+    sector = np.asarray(sector_mask, dtype=bool)
+    target_mask = (
+        _build_target_region_mask(
+            depth_grid_mm=depth_grid_mm,
+            lateral_grid_mm=lateral_grid_mm,
+            sector_mask=sector,
+            target_depth_mm=target_depth_mm,
+            target_lateral_offset_mm=target_lateral_offset_mm,
+        )
+        if target_region_mask is None
+        else np.asarray(target_region_mask, dtype=bool) & sector
+    )
+    wall = np.zeros_like(sector, dtype=bool) if airway_wall_mask is None else np.asarray(airway_wall_mask, dtype=bool) & sector
+    vessel = np.zeros_like(sector, dtype=bool) if vessel_mask is None else np.asarray(vessel_mask, dtype=bool) & sector
+    anatomy = wall | vessel | target_mask
+    near_field_mask = sector & (np.asarray(depth_grid_mm, dtype=np.float32) <= (float(max_depth_mm) * float(near_field_fraction)))
+    signal_mask = sector & (gray > float(signal_threshold))
+
+    sector_values = gray[sector]
+    sector_mean = None if sector_values.size == 0 else float(np.mean(sector_values))
+    target_mean = _masked_mean(gray, target_mask)
+    wall_mean = _masked_mean(gray, wall)
+    vessel_mean = _masked_mean(gray, vessel)
+
+    target_in_sector = None
+    target_centerline_offset_fraction = None
+    target_sector_margin_mm = None
+    target_sector_margin_fraction = None
+    if target_depth_mm is not None and target_lateral_offset_mm is not None:
+        half_tan = float(np.tan(np.deg2rad(float(sector_angle_deg) / 2.0)))
+        allowed_lateral_mm = max(0.0, float(target_depth_mm) * half_tan)
+        target_in_sector = bool(
+            0.0 <= float(target_depth_mm) <= float(max_depth_mm)
+            and abs(float(target_lateral_offset_mm)) <= (allowed_lateral_mm + 1e-9)
+        )
+        target_sector_margin_mm = float(allowed_lateral_mm - abs(float(target_lateral_offset_mm)))
+        if allowed_lateral_mm > 1e-9:
+            target_centerline_offset_fraction = float(abs(float(target_lateral_offset_mm)) / allowed_lateral_mm)
+            target_sector_margin_fraction = float(target_sector_margin_mm / allowed_lateral_mm)
+
+    sector_p05 = None if sector_values.size == 0 else float(np.percentile(sector_values, 5.0))
+    sector_p50 = None if sector_values.size == 0 else float(np.percentile(sector_values, 50.0))
+    sector_p95 = None if sector_values.size == 0 else float(np.percentile(sector_values, 95.0))
+    sector_p99 = None if sector_values.size == 0 else float(np.percentile(sector_values, 99.0))
+    sector_std = None if sector_values.size == 0 else float(np.std(sector_values))
+
+    return {
+        "normalization_method": normalization_method,
+        "normalization_reference_percentile": normalization_reference_percentile,
+        "normalization_reference_value": normalization_reference_value,
+        "normalization_aux_percentile": normalization_aux_percentile,
+        "normalization_aux_value": normalization_aux_value,
+        "normalization_lower_bound": normalization_lower_bound,
+        "normalization_upper_bound": normalization_upper_bound,
+        "compression_gain_factor": compression_gain_factor,
+        "signal_threshold": float(signal_threshold),
+        "near_field_fraction": float(near_field_fraction),
+        "target_depth_mm": target_depth_mm,
+        "target_lateral_offset_mm": target_lateral_offset_mm,
+        "target_distance_from_sector_centerline_mm": (None if target_lateral_offset_mm is None else float(abs(target_lateral_offset_mm))),
+        "target_centerline_offset_fraction": target_centerline_offset_fraction,
+        "target_sector_margin_mm": target_sector_margin_mm,
+        "target_sector_margin_fraction": target_sector_margin_fraction,
+        "target_in_sector": target_in_sector,
+        "target_sector_coverage_fraction": _mask_fraction(target_mask, sector),
+        "airway_wall_occupancy_fraction": _mask_fraction(wall, sector),
+        "vessel_occupancy_fraction": _mask_fraction(vessel, sector),
+        "anatomy_occupancy_fraction": _mask_fraction(anatomy, sector),
+        "non_background_occupancy_fraction": _mask_fraction(signal_mask, sector),
+        "empty_sector_fraction": 1.0 - _mask_fraction(signal_mask, sector),
+        "near_field_wall_occupancy_fraction": _mask_fraction(wall, near_field_mask),
+        "near_field_brightness_mean": _masked_mean(gray, near_field_mask),
+        "near_field_brightness_p90": _masked_percentile(gray, near_field_mask, 90.0),
+        "sector_brightness_mean": sector_mean,
+        "sector_brightness_std": sector_std,
+        "sector_brightness_p05": sector_p05,
+        "sector_brightness_p50": sector_p50,
+        "sector_brightness_p95": sector_p95,
+        "sector_brightness_p99": sector_p99,
+        "target_region_mean_intensity": target_mean,
+        "target_region_contrast_vs_sector": (None if target_mean is None or sector_mean is None else float(target_mean - sector_mean)),
+        "wall_region_mean_intensity": wall_mean,
+        "wall_region_contrast_vs_sector": (None if wall_mean is None or sector_mean is None else float(wall_mean - sector_mean)),
+        "vessel_region_mean_intensity": vessel_mean,
+        "vessel_region_contrast_vs_sector": (None if vessel_mean is None or sector_mean is None else float(vessel_mean - sector_mean)),
     }
 
 

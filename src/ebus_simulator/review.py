@@ -27,6 +27,9 @@ REQUIRED_COMPARISON_CASES = {
     ("station_7_node_a", "rms"),
     ("station_4r_node_b", "default"),
 }
+TARGET_EDGE_OFFSET_FRACTION_WARN = 0.85
+NEAR_FIELD_WALL_OCCUPANCY_WARN = 0.15
+EMPTY_SECTOR_FRACTION_WARN = 0.78
 
 
 @dataclass(frozen=True)
@@ -98,6 +101,8 @@ def compute_render_review_metrics(context, *, preset_manifest, metadata, sector_
             "contact_to_mesh_mm": metadata.refined_contact_to_airway_distance_mm,
         }
     )
+    for key, value in dict(metadata.consistency_metrics).items():
+        metrics.setdefault(key, value)
     return metrics
 
 
@@ -200,15 +205,53 @@ def _flag_physics_eval_summary(
     return reasons
 
 
+def _flag_consistency_metrics(metrics: dict[str, object]) -> list[str]:
+    reasons: list[str] = []
+
+    target_offset_fraction = _optional_float(metrics, "target_centerline_offset_fraction")
+    if target_offset_fraction is not None and target_offset_fraction >= TARGET_EDGE_OFFSET_FRACTION_WARN:
+        reasons.append(
+            "target sits near sector edge "
+            f"({target_offset_fraction:.3f} of half-angle)"
+        )
+
+    near_field_wall_occupancy = _optional_float(metrics, "near_field_wall_occupancy_fraction")
+    target_coverage = _optional_float(metrics, "target_sector_coverage_fraction")
+    target_contrast = _optional_float(metrics, "target_region_contrast_vs_sector")
+    if (
+        near_field_wall_occupancy is not None
+        and near_field_wall_occupancy >= NEAR_FIELD_WALL_OCCUPANCY_WARN
+        and (target_coverage is None or target_coverage > 0.0)
+        and (target_contrast is None or target_contrast <= 0.02)
+    ):
+        reasons.append(
+            "near-field wall occupancy "
+            f"{near_field_wall_occupancy:.3f} may dominate the fan"
+        )
+
+    empty_sector_fraction = _optional_float(metrics, "empty_sector_fraction")
+    if empty_sector_fraction is not None and empty_sector_fraction >= EMPTY_SECTOR_FRACTION_WARN:
+        reasons.append(
+            "sector is mostly empty "
+            f"({empty_sector_fraction:.3f} empty)"
+        )
+
+    return reasons
+
+
 def _flag_review_metrics(
     metrics: dict[str, object],
     *,
     physics_eval_summary: dict[str, object] | None = None,
     thresholds: ReviewThresholds = DEFAULT_REVIEW_THRESHOLDS,
 ) -> list[str]:
-    return _flag_geometry_metrics(metrics, thresholds=thresholds) + _flag_physics_eval_summary(
-        physics_eval_summary,
-        thresholds=thresholds,
+    return (
+        _flag_geometry_metrics(metrics, thresholds=thresholds)
+        + _flag_consistency_metrics(metrics)
+        + _flag_physics_eval_summary(
+            physics_eval_summary,
+            thresholds=thresholds,
+        )
     )
 
 
@@ -383,9 +426,12 @@ def _render_review_entry(
     physics_eval_summary = dict(physics_diagnostics.get("eval_summary", {}))
     physics_artifact_settings = dict(physics_diagnostics.get("artifact_settings", {}))
     physics_debug_maps = dict(physics_diagnostics.get("debug_map_paths", {}))
+    localizer_consistency_metrics = dict(clean.metadata.consistency_metrics)
+    physics_consistency_metrics = dict(physics.metadata.consistency_metrics)
     geometry_flag_reasons = _flag_geometry_metrics(metrics, thresholds=review_thresholds)
+    consistency_flag_reasons = _flag_consistency_metrics(metrics)
     physics_flag_reasons = _flag_physics_eval_summary(physics_eval_summary, thresholds=review_thresholds)
-    flag_reasons = geometry_flag_reasons + physics_flag_reasons
+    flag_reasons = geometry_flag_reasons + consistency_flag_reasons + physics_flag_reasons
 
     eval_summary_payload = {
         "preset_id": preset_id,
@@ -393,6 +439,8 @@ def _render_review_entry(
         "engine": physics.metadata.engine,
         "engine_version": physics.metadata.engine_version,
         "artifact_settings": physics_artifact_settings,
+        "localizer_consistency_metrics": localizer_consistency_metrics,
+        "physics_consistency_metrics": physics_consistency_metrics,
         "eval_summary": physics_eval_summary,
     }
     eval_summary_path.write_text(json.dumps(eval_summary_payload, indent=2))
@@ -412,6 +460,8 @@ def _render_review_entry(
         "physics_debug_map_count": len(physics_debug_maps),
         "physics_artifact_settings": physics_artifact_settings,
         "physics_eval_summary": physics_eval_summary,
+        "localizer_consistency_metrics": localizer_consistency_metrics,
+        "physics_consistency_metrics": physics_consistency_metrics,
         "diagnostic_panel_png": str(diagnostic_path),
         "diagnostic_panel_json": diagnostic.metadata.metadata_path,
         "clean_simulated_png": str(clean_path),
@@ -419,6 +469,7 @@ def _render_review_entry(
         "flagged": bool(flag_reasons),
         "flag_reasons": flag_reasons,
         "geometry_flag_reasons": geometry_flag_reasons,
+        "consistency_flag_reasons": consistency_flag_reasons,
         "physics_flag_reasons": physics_flag_reasons,
         "metrics": metrics,
         "cutaway_side": clean.metadata.cutaway_side,
@@ -463,6 +514,7 @@ def _render_review_entry(
             review_entry_path=review_json_path,
             warnings=entry["warnings"],
             geometry_flag_reasons=geometry_flag_reasons,
+            consistency_flag_reasons=consistency_flag_reasons,
             physics_flag_reasons=physics_flag_reasons,
         )
     )
@@ -480,6 +532,7 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "flag_reasons",
                 "geometry_flag_reasons",
                 "physics_flag_reasons",
+                "consistency_flag_reasons",
                 "contact_to_mesh_mm",
                 "contact_to_centerline_mm",
                 "target_depth_mm",
@@ -487,6 +540,12 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "target_in_sector",
                 "target_in_forward_hemisphere",
                 "station_overlap_fraction_in_fan",
+                "target_centerline_offset_fraction",
+                "target_sector_coverage_fraction",
+                "near_field_wall_occupancy_fraction",
+                "non_background_occupancy_fraction",
+                "empty_sector_fraction",
+                "sector_brightness_mean",
                 "nUS_delta_deg_from_voxel_baseline",
                 "contact_delta_mm_from_voxel_baseline",
                 "contact_refinement_ambiguity",
@@ -517,6 +576,7 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "flagged": entry["flagged"],
                     "flag_reasons": " | ".join(entry["flag_reasons"]),
                     "geometry_flag_reasons": " | ".join(entry["geometry_flag_reasons"]),
+                    "consistency_flag_reasons": " | ".join(entry.get("consistency_flag_reasons", [])),
                     "physics_flag_reasons": " | ".join(entry["physics_flag_reasons"]),
                     "contact_to_mesh_mm": metrics["contact_to_mesh_mm"],
                     "contact_to_centerline_mm": metrics["contact_to_centerline_mm"],
@@ -525,6 +585,12 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "target_in_sector": metrics["target_in_sector"],
                     "target_in_forward_hemisphere": metrics["target_in_forward_hemisphere"],
                     "station_overlap_fraction_in_fan": metrics["station_overlap_fraction_in_fan"],
+                    "target_centerline_offset_fraction": metrics.get("target_centerline_offset_fraction"),
+                    "target_sector_coverage_fraction": metrics.get("target_sector_coverage_fraction"),
+                    "near_field_wall_occupancy_fraction": metrics.get("near_field_wall_occupancy_fraction"),
+                    "non_background_occupancy_fraction": metrics.get("non_background_occupancy_fraction"),
+                    "empty_sector_fraction": metrics.get("empty_sector_fraction"),
+                    "sector_brightness_mean": metrics.get("sector_brightness_mean"),
                     "nUS_delta_deg_from_voxel_baseline": metrics["nUS_delta_deg_from_voxel_baseline"],
                     "contact_delta_mm_from_voxel_baseline": metrics["contact_delta_mm_from_voxel_baseline"],
                     "contact_refinement_ambiguity": metrics["contact_refinement_ambiguity"],

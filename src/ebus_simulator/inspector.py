@@ -183,6 +183,11 @@ def _artifact_settings(sector_metadata: Mapping[str, object]) -> Mapping[str, ob
     return value if isinstance(value, Mapping) else {}
 
 
+def _consistency_metrics(sector_metadata: Mapping[str, object]) -> Mapping[str, object]:
+    value = sector_metadata.get("consistency_metrics")
+    return value if isinstance(value, Mapping) else {}
+
+
 def _region_pixel_count(summary: Mapping[str, object], key: str) -> int | None:
     region = summary.get(key)
     if not isinstance(region, Mapping):
@@ -342,11 +347,14 @@ def build_render_inspector_sections(
     screenshot_name_hint: str | None = None,
 ) -> list[InspectorSection]:
     metrics = review_metrics if isinstance(review_metrics, Mapping) else {}
+    consistency_metrics = _consistency_metrics(sector_metadata)
+    combined_metrics = dict(consistency_metrics)
+    combined_metrics.update(metrics)
     eval_summary = _eval_summary(sector_metadata)
     artifact_settings = _artifact_settings(sector_metadata)
     pose_comparison = _extract_mapping(sector_metadata, "pose_comparison")
     target_depth_mm, target_lateral_mm = compute_target_offsets_mm(sector_metadata)
-    target_in_sector = _coerce_bool(metrics.get("target_in_sector"))
+    target_in_sector = _coerce_bool(combined_metrics.get("target_in_sector"))
     if target_in_sector is None:
         target_in_sector = compute_target_in_sector(
             sector_metadata,
@@ -425,6 +433,31 @@ def build_render_inspector_sections(
         InspectorField("2D Visible Overlays", _format_list(_overlay_names(sector_metadata, "visible_overlay_names"))),
         InspectorField("3D Visible Overlays", _format_list(_overlay_names(context_metadata, "visible_overlay_names"))),
     ]
+    _field_if_value(
+        anatomy_fields,
+        "Target Coverage",
+        _format_optional_float(_coerce_float(combined_metrics.get("target_sector_coverage_fraction")), precision=4),
+    )
+    _field_if_value(
+        anatomy_fields,
+        "Target Centerline Offset",
+        _format_optional_float(_coerce_float(combined_metrics.get("target_centerline_offset_fraction")), precision=3),
+    )
+    _field_if_value(
+        anatomy_fields,
+        "Near-Field Wall Occupancy",
+        _format_optional_float(_coerce_float(combined_metrics.get("near_field_wall_occupancy_fraction")), precision=4),
+    )
+    _field_if_value(
+        anatomy_fields,
+        "Non-Background Occupancy",
+        _format_optional_float(_coerce_float(combined_metrics.get("non_background_occupancy_fraction")), precision=4),
+    )
+    _field_if_value(
+        anatomy_fields,
+        "Empty Sector",
+        _format_optional_float(_coerce_float(combined_metrics.get("empty_sector_fraction")), precision=4),
+    )
 
     review_fields: list[InspectorField] = []
     for label, key in (
@@ -442,18 +475,38 @@ def build_render_inspector_sections(
     _field_if_value(review_fields, "Eval Regions", eval_regions)
     _field_if_value(
         review_fields,
+        "Target Region Contrast",
+        _format_optional_float(_coerce_float(combined_metrics.get("target_region_contrast_vs_sector")), precision=4),
+    )
+    _field_if_value(
+        review_fields,
+        "Wall Region Contrast",
+        _format_optional_float(_coerce_float(combined_metrics.get("wall_region_contrast_vs_sector")), precision=4),
+    )
+    _field_if_value(
+        review_fields,
+        "Sector Brightness Mean",
+        _format_optional_float(_coerce_float(combined_metrics.get("sector_brightness_mean")), precision=4),
+    )
+    _field_if_value(
+        review_fields,
+        "Near-Field Brightness Mean",
+        _format_optional_float(_coerce_float(combined_metrics.get("near_field_brightness_mean")), precision=4),
+    )
+    _field_if_value(
+        review_fields,
         "nUS Delta vs Voxel Baseline",
-        _format_optional_float(_coerce_float(metrics.get("nUS_delta_deg_from_voxel_baseline")), precision=2, suffix=" deg"),
+        _format_optional_float(_coerce_float(combined_metrics.get("nUS_delta_deg_from_voxel_baseline")), precision=2, suffix=" deg"),
     )
     _field_if_value(
         review_fields,
         "Contact Delta vs Voxel Baseline",
-        _format_optional_float(_coerce_float(metrics.get("contact_delta_mm_from_voxel_baseline")), precision=2, suffix=" mm"),
+        _format_optional_float(_coerce_float(combined_metrics.get("contact_delta_mm_from_voxel_baseline")), precision=2, suffix=" mm"),
     )
     _field_if_value(
         review_fields,
         "Station Overlap in Fan",
-        _format_optional_float(_coerce_float(metrics.get("station_overlap_fraction_in_fan")), precision=4),
+        _format_optional_float(_coerce_float(combined_metrics.get("station_overlap_fraction_in_fan")), precision=4),
     )
     review_fields.append(InspectorField("Auto-Flags", _format_multiline_list([str(reason) for reason in flag_reasons or []])))
     review_fields.append(InspectorField("Warnings", _format_multiline_list([str(reason) for reason in warnings or []])))
@@ -466,6 +519,23 @@ def build_render_inspector_sections(
     ]
     _field_if_value(render_fields, "Cutaway", _cutaway_description(context_metadata))
     _field_if_value(render_fields, "Artifact Settings", _format_artifact_settings(artifact_settings))
+    _field_if_value(
+        render_fields,
+        "Normalization",
+        None if consistency_metrics.get("normalization_method") is None else str(consistency_metrics.get("normalization_method")),
+    )
+    normalization_reference_value = _coerce_float(consistency_metrics.get("normalization_reference_value"))
+    normalization_reference_percentile = _coerce_float(consistency_metrics.get("normalization_reference_percentile"))
+    if normalization_reference_value is not None:
+        if normalization_reference_percentile is None:
+            render_fields.append(InspectorField("Normalization Reference", f"{normalization_reference_value:.4f}"))
+        else:
+            render_fields.append(
+                InspectorField(
+                    "Normalization Reference",
+                    f"p{normalization_reference_percentile:.1f} = {normalization_reference_value:.4f}",
+                )
+            )
     _field_if_value(render_fields, "Export Filename Hint", screenshot_name_hint)
 
     return [

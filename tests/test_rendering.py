@@ -39,6 +39,9 @@ def test_clean_mode_disables_overlays_by_default(tmp_path):
     assert rendered.metadata.station_overlay_enabled is False
     assert rendered.metadata.vessel_overlay_names == []
     assert rendered.metadata.overlays_enabled == []
+    assert rendered.metadata.consistency_metrics["normalization_method"] == "ct_window_interface_blend"
+    assert rendered.metadata.consistency_metrics["non_background_occupancy_fraction"] >= 0.0
+    assert rendered.metadata.consistency_metrics["empty_sector_fraction"] >= 0.0
 
 
 def test_debug_mode_enables_expected_contour_overlays_and_thin_slab(tmp_path):

@@ -83,6 +83,20 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
             "branch_hint_applied": True,
         },
         "preset_override_notes": "Review SVC/azygous relationship.",
+        "consistency_metrics": {
+            "target_sector_coverage_fraction": 0.12,
+            "target_centerline_offset_fraction": 0.33,
+            "near_field_wall_occupancy_fraction": 0.22,
+            "non_background_occupancy_fraction": 0.64,
+            "empty_sector_fraction": 0.36,
+            "target_region_contrast_vs_sector": 0.11,
+            "wall_region_contrast_vs_sector": 0.17,
+            "sector_brightness_mean": 0.31,
+            "near_field_brightness_mean": 0.41,
+            "normalization_method": "log_percentile_99.5_blended_98.5",
+            "normalization_reference_percentile": 99.5,
+            "normalization_reference_value": 0.88,
+        },
         "engine_diagnostics": {
             "eval_summary": {
                 "sector": {"pixel_count": 25, "mean": 0.31},
@@ -133,7 +147,11 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
     assert "- Contact Refinement: Raw Mesh Projection Search" in summary
     assert "- Target Present: Yes (eval)" in summary
     assert "- Vessel Present: Yes (eval)" in summary
+    assert "- Target Coverage: 0.1200" in summary
+    assert "- Near-Field Wall Occupancy: 0.2200" in summary
     assert "- Target Contrast: 0.1200" in summary
+    assert "- Target Region Contrast: 0.1100" in summary
+    assert "- Normalization: log_percentile_99.5_blended_98.5" in summary
     assert "- nUS Delta vs Voxel Baseline: 3.25 deg" in summary
     assert "- 3D Context: Localizer / Debug (diagnostic_panel)" in summary
     assert "wall contrast 0.450 < 0.500" in summary
@@ -191,6 +209,7 @@ def test_preset_browser_session_renders_sector_and_context():
         assert rendered.summary_text
         assert "Render Settings" in rendered.summary_text
         assert "- Station: Station 4R" in rendered.summary_text
+        assert "- Normalization:" in rendered.summary_text
         assert rendered.inspector_sections
         assert rendered.screenshot_name_hint.endswith("_browser.png")
     finally:

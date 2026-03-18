@@ -48,6 +48,7 @@ def render_review_sheet(
     review_entry_path: Path,
     warnings: list[str],
     geometry_flag_reasons: list[str],
+    consistency_flag_reasons: list[str],
     physics_flag_reasons: list[str],
 ) -> str:
     lines = [
@@ -80,6 +81,18 @@ def render_review_sheet(
     )
     if geometry_flag_reasons:
         lines.extend(f"- {reason}" for reason in geometry_flag_reasons)
+    else:
+        lines.append("- none")
+
+    lines.extend(
+        [
+            "",
+            "### Consistency / Explainability",
+            "",
+        ]
+    )
+    if consistency_flag_reasons:
+        lines.extend(f"- {reason}" for reason in consistency_flag_reasons)
     else:
         lines.append("- none")
 

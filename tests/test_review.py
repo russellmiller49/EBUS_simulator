@@ -64,6 +64,27 @@ def test_flag_review_metrics_can_include_physics_eval_thresholds():
     assert any("wall region missing from physics eval summary" == reason for reason in flags)
 
 
+def test_flag_review_metrics_can_include_consistency_thresholds():
+    flags = _flag_review_metrics(
+        {
+            "nUS_delta_deg_from_voxel_baseline": 0.5,
+            "contact_delta_mm_from_voxel_baseline": 0.2,
+            "target_in_sector": True,
+            "station_overlap_fraction_in_fan": 0.02,
+            "contact_refinement_ambiguity": False,
+            "target_centerline_offset_fraction": 0.92,
+            "near_field_wall_occupancy_fraction": 0.21,
+            "target_sector_coverage_fraction": 0.03,
+            "target_region_contrast_vs_sector": 0.01,
+            "empty_sector_fraction": 0.82,
+        }
+    )
+
+    assert any("target sits near sector edge" in reason for reason in flags)
+    assert any("near-field wall occupancy" in reason for reason in flags)
+    assert any("sector is mostly empty" in reason for reason in flags)
+
+
 def test_default_wall_threshold_is_enabled_and_cli_can_disable_it():
     assert DEFAULT_REVIEW_THRESHOLDS.wall_contrast_vs_sector_min == 0.02
     assert _parse_optional_threshold("0.03") == 0.03
@@ -142,8 +163,11 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
     assert summary["thresholds"]["vessel_contrast_vs_sector_max"] == -0.01
     assert summary["thresholds"]["wall_contrast_vs_sector_min"] == 0.02
     assert all("geometry_flag_reasons" in entry for entry in summary["entries"])
+    assert all("consistency_flag_reasons" in entry for entry in summary["entries"])
     assert all("physics_flag_reasons" in entry for entry in summary["entries"])
     assert all("target_contrast_vs_sector" in entry["physics_eval_summary"] for entry in summary["entries"])
+    assert all("localizer_consistency_metrics" in entry for entry in summary["entries"])
+    assert all("physics_consistency_metrics" in entry for entry in summary["entries"])
     assert any(entry["physics_eval_summary"]["wall"]["pixel_count"] > 0 for entry in summary["entries"])
     assert index_payload["review_count"] == 3
     assert "| station_7_node_a | lms |" in index_markdown

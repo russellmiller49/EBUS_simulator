@@ -31,6 +31,7 @@ from ebus_simulator.rendering import (
     _annotate_legend_and_labels,
     _apply_contour_overlay,
     _build_sector_grid,
+    compute_render_consistency_metrics,
     _draw_cross_marker,
     _fan_target_row_col,
     _filter_mask_components,
@@ -51,6 +52,11 @@ from ebus_simulator.rendering import (
 
 PHYSICS_ENGINE_VERSION = "physics-v1"
 TARGET_FOCUS_SIGMA_MM = 4.5
+PHYSICS_LOG_COMPRESSION_GAIN_FACTOR = 6.0
+PHYSICS_NORMALIZATION_REFERENCE_PERCENTILE = 99.5
+PHYSICS_NORMALIZATION_AUX_PERCENTILE = 98.5
+PHYSICS_NORMALIZATION_SPIKE_RATIO = 1.22
+PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT = 0.45
 
 
 def _resolve_artifact_config(request: RenderRequest) -> PhysicsArtifactConfig:
@@ -74,6 +80,50 @@ def _resolve_artifact_config(request: RenderRequest) -> PhysicsArtifactConfig:
     )
 
 
+def _normalize_compressed_bmode(
+    compressed: np.ndarray,
+) -> tuple[np.ndarray, dict[str, float | str | None]]:
+    positive = np.asarray(compressed, dtype=np.float32)
+    positive = positive[positive > 0.0]
+
+    reference_percentile = float(PHYSICS_NORMALIZATION_REFERENCE_PERCENTILE)
+    aux_percentile = float(PHYSICS_NORMALIZATION_AUX_PERCENTILE)
+    reference_value = float(np.percentile(positive, reference_percentile)) if positive.size > 0 else 0.0
+    aux_value = float(np.percentile(positive, aux_percentile)) if positive.size > 0 else None
+
+    if reference_value <= 0.0:
+        scale = 1.0
+        method = "log_percentile_99.5"
+    else:
+        scale = float(reference_value)
+        method = "log_percentile_99.5"
+        if aux_value is not None and aux_value > 0.0:
+            spike_ratio = float(reference_value / aux_value)
+            if spike_ratio > PHYSICS_NORMALIZATION_SPIKE_RATIO:
+                scale = max(
+                    float(aux_value),
+                    float(
+                        ((1.0 - PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT) * reference_value)
+                        + (PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT * aux_value)
+                    ),
+                )
+                method = "log_percentile_99.5_blended_98.5"
+
+    return (
+        np.clip(np.asarray(compressed, dtype=np.float32) / float(scale), 0.0, 1.0).astype(np.float32),
+        {
+            "method": method,
+            "reference_percentile": reference_percentile,
+            "reference_value": float(reference_value),
+            "aux_percentile": aux_percentile,
+            "aux_value": (None if aux_value is None else float(aux_value)),
+            "lower_bound": 0.0,
+            "upper_bound": float(scale),
+            "compression_gain_factor": float(PHYSICS_LOG_COMPRESSION_GAIN_FACTOR),
+        },
+    )
+
+
 def _simulate_bmode_with_diagnostics(
     field: AcousticField,
     *,
@@ -82,7 +132,7 @@ def _simulate_bmode_with_diagnostics(
     attenuation_scale: float,
     seed: int | None,
     artifact_config: PhysicsArtifactConfig,
-) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+) -> tuple[np.ndarray, dict[str, np.ndarray], dict[str, float | str | None]]:
     if depth_step_mm <= 0.0:
         raise ValueError(f"depth_step_mm must be positive, got {depth_step_mm!r}.")
 
@@ -124,9 +174,8 @@ def _simulate_bmode_with_diagnostics(
     smoothed = ndimage.gaussian_filter(np.asarray(raw_with_artifacts, dtype=np.float32), sigma=(0.85, 0.45))
     smoothed *= np.linspace(0.92, 1.10, smoothed.shape[0], dtype=np.float32)[:, None]
 
-    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (6.0 * float(gain)))
-    percentile = float(np.percentile(compressed, 99.5)) if np.any(compressed > 0.0) else 0.0
-    scale = 1.0 if percentile <= 0.0 else percentile
+    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (PHYSICS_LOG_COMPRESSION_GAIN_FACTOR * float(gain)))
+    normalized, normalization_details = _normalize_compressed_bmode(compressed)
 
     diagnostics = {
         "boundary_map": boundary.astype(np.float32),
@@ -135,8 +184,9 @@ def _simulate_bmode_with_diagnostics(
         "reverberation_map": artifact_maps.reverberation_map.astype(np.float32),
         "speckle_map": artifact_maps.speckle_map.astype(np.float32),
         "precompression_map": smoothed.astype(np.float32),
+        "compressed_map": compressed.astype(np.float32),
     }
-    return np.clip(compressed / scale, 0.0, 1.0).astype(np.float32), diagnostics
+    return normalized, diagnostics, normalization_details
 
 
 def simulate_bmode_from_acoustic_field(
@@ -156,7 +206,7 @@ def simulate_bmode_from_acoustic_field(
         reverberation_strength=max(0.0, defaults.reverberation_strength if reverberation_strength is None else float(reverberation_strength)),
         shadow_strength=max(0.0, defaults.shadow_strength if shadow_strength is None else float(shadow_strength)),
     )
-    image, _ = _simulate_bmode_with_diagnostics(
+    image, _, _ = _simulate_bmode_with_diagnostics(
         field,
         depth_step_mm=depth_step_mm,
         gain=gain,
@@ -566,7 +616,7 @@ def render_physics_preset(
     )
     depth_step_mm = float(resolved_max_depth_mm / max(1, resolved_height - 1))
     artifact_config = _resolve_artifact_config(request)
-    polar_bmode, polar_diagnostics = _simulate_bmode_with_diagnostics(
+    polar_bmode, polar_diagnostics, normalization_details = _simulate_bmode_with_diagnostics(
         acoustic_field,
         depth_step_mm=depth_step_mm,
         gain=resolved_gain,
@@ -791,12 +841,65 @@ def render_physics_preset(
         wall_mask=eval_wall_mask,
         vessel_mask=eval_vessel_mask,
     )
+    target_offset = target_world - contact_world
+    target_depth_mm = float(np.dot(target_offset, probe_axis))
+    target_lateral_offset_mm = float(np.dot(target_offset, shaft_axis))
+    consistency_metrics = compute_render_consistency_metrics(
+        image_gray=display_bmode,
+        sector_mask=sector_mask,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        target_depth_mm=target_depth_mm,
+        target_lateral_offset_mm=target_lateral_offset_mm,
+        target_region_mask=eval_target_region_mask,
+        airway_wall_mask=eval_wall_mask,
+        vessel_mask=eval_vessel_mask,
+        normalization_method=str(normalization_details["method"]),
+        normalization_reference_percentile=(
+            None
+            if normalization_details["reference_percentile"] is None
+            else float(normalization_details["reference_percentile"])
+        ),
+        normalization_reference_value=(
+            None
+            if normalization_details["reference_value"] is None
+            else float(normalization_details["reference_value"])
+        ),
+        normalization_aux_percentile=(
+            None
+            if normalization_details["aux_percentile"] is None
+            else float(normalization_details["aux_percentile"])
+        ),
+        normalization_aux_value=(
+            None
+            if normalization_details["aux_value"] is None
+            else float(normalization_details["aux_value"])
+        ),
+        normalization_lower_bound=(
+            None
+            if normalization_details["lower_bound"] is None
+            else float(normalization_details["lower_bound"])
+        ),
+        normalization_upper_bound=(
+            None
+            if normalization_details["upper_bound"] is None
+            else float(normalization_details["upper_bound"])
+        ),
+        compression_gain_factor=(
+            None
+            if normalization_details["compression_gain_factor"] is None
+            else float(normalization_details["compression_gain_factor"])
+        ),
+    )
     engine_diagnostics = {
         "artifact_settings": {
             "speckle_strength": float(artifact_config.speckle_strength),
             "reverberation_strength": float(artifact_config.reverberation_strength),
             "shadow_strength": float(artifact_config.shadow_strength),
         },
+        "normalization": dict(normalization_details),
         "eval_summary": eval_summary,
         "debug_map_paths": debug_map_paths,
     }
@@ -957,6 +1060,7 @@ def render_physics_preset(
         show_full_airway=cutaway_config.show_full_airway,
         overlays_enabled=_overlay_summary(overlay_config),
         visible_overlay_names=[layer.key for layer in visible_layers],
+        consistency_metrics=consistency_metrics,
         preset_override_applied=(preset_overrides is not None),
         preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
         preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),

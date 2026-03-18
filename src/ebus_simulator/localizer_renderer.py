@@ -32,6 +32,7 @@ from ebus_simulator.rendering import (
     _apply_contour_overlay,
     _build_cp_context_snapshot,
     _build_sector_grid,
+    compute_render_consistency_metrics,
     _compose_cp_diagnostic_panel,
     _draw_cross_marker,
     _extract_local_mask_points,
@@ -354,9 +355,13 @@ def render_localizer_preset(
     _apply_contour_overlay(virtual_rgb, sector_mask, FAN_BOUNDARY_COLOR)
 
     visible_layers: list[OverlayLayer] = []
-    source_layer_masks: dict[str, np.ndarray] = {}
+    sampled_fan_masks: dict[str, np.ndarray] = {}
 
     def _sample_source_mask_to_fan(mask_path: Path) -> np.ndarray:
+        cache_key = str(mask_path)
+        cached = sampled_fan_masks.get(cache_key)
+        if cached is not None:
+            return cached
         mask_volume = _get_mask_volume(render_context, mask_path)
         source_mask, _, _, _ = _sample_contact_plane(
             data=np.asarray(mask_volume.data, dtype=np.float32),
@@ -383,11 +388,11 @@ def render_localizer_preset(
             order=0,
             cval=0.0,
         ) > 0.0
+        sampled_fan_masks[cache_key] = fan_mask
         return fan_mask
 
     def _add_source_mask_layer(mask_path: Path, label: str, color_rgb: np.ndarray, *, label_enabled: bool) -> None:
         fan_mask = _sample_source_mask_to_fan(mask_path)
-        source_layer_masks[label.lower().replace(" ", "_")] = fan_mask
         filtered_mask = _filter_mask_components(
             np.logical_and(fan_mask, sector_mask),
             min_area_px=overlay_config.min_contour_area_px,
@@ -407,6 +412,10 @@ def render_localizer_preset(
         )
 
     fan_lumen_mask = np.logical_and(_sample_source_mask_to_fan(render_context.manifest.airway_lumen_mask), sector_mask)
+    fan_wall_mask = np.logical_and(_sample_source_mask_to_fan(render_context.manifest.airway_solid_mask), sector_mask)
+    fan_vessel_mask = np.zeros_like(sector_mask, dtype=bool)
+    for mask_path in render_context.manifest.overlay_masks.values():
+        fan_vessel_mask |= np.logical_and(_sample_source_mask_to_fan(mask_path), sector_mask)
 
     if overlay_config.airway_lumen_enabled:
         _add_source_mask_layer(render_context.manifest.airway_lumen_mask, "Airway lumen", AIRWAY_LUMEN_COLOR, label_enabled=False)
@@ -422,6 +431,9 @@ def render_localizer_preset(
             label_enabled=True,
         )
 
+    target_offset = target_world - contact_world
+    target_depth_mm = float(np.dot(target_offset, probe_axis))
+    target_lateral_offset_mm = float(np.dot(target_offset, shaft_axis))
     target_pixel = _fan_target_row_col(
         contact_world=contact_world,
         target_world=target_world,
@@ -498,6 +510,22 @@ def render_localizer_preset(
     simulated_rgb[sector_mask] = np.repeat(simulated_gray[sector_mask, None], 3, axis=1)
     _apply_contour_overlay(simulated_rgb, sector_mask, FAN_BOUNDARY_COLOR * 0.9)
     simulated_view = np.asarray((simulated_rgb * 255.0).clip(0.0, 255.0), dtype=np.uint8)
+    consistency_metrics = compute_render_consistency_metrics(
+        image_gray=simulated_gray,
+        sector_mask=sector_mask,
+        depth_grid_mm=depth_grid,
+        lateral_grid_mm=lateral_grid,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        target_depth_mm=target_depth_mm,
+        target_lateral_offset_mm=target_lateral_offset_mm,
+        airway_wall_mask=fan_wall_mask,
+        vessel_mask=fan_vessel_mask,
+        normalization_method="ct_window_interface_blend",
+        normalization_lower_bound=0.0,
+        normalization_upper_bound=1.0,
+        compression_gain_factor=resolved_gain,
+    )
 
     localizer_x_min_mm = -10.0
     localizer_x_max_mm = max(20.0, resolved_reference_fov_mm - 10.0)
@@ -599,10 +627,9 @@ def render_localizer_preset(
         )
         _draw_cross_marker(localizer_rgb, row=row, column=column, color_rgb=CONTACT_MARKER_COLOR, radius=4)
     if overlay_config.target_enabled:
-        target_offset = target_world - contact_world
         row, column = _plane_point_to_pixel(
-            float(np.dot(target_offset, probe_axis)),
-            float(np.dot(target_offset, shaft_axis)),
+            target_depth_mm,
+            target_lateral_offset_mm,
             x_min_mm=localizer_x_min_mm,
             x_max_mm=localizer_x_max_mm,
             y_min_mm=localizer_y_min_mm,
@@ -794,6 +821,7 @@ def render_localizer_preset(
         show_full_airway=cutaway_display.show_full_airway,
         overlays_enabled=_overlay_summary(overlay_config),
         visible_overlay_names=list(dict.fromkeys(visible_overlay_names)),
+        consistency_metrics=consistency_metrics,
         preset_override_applied=(preset_overrides is not None),
         preset_override_vessel_overlays=([] if preset_overrides is None or preset_overrides.vessel_overlays is None else list(preset_overrides.vessel_overlays)),
         preset_override_cutaway_side=(None if preset_overrides is None else preset_overrides.cutaway_side),
