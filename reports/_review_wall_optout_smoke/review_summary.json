@@ -1,0 +1,216 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "output_dir": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke",
+  "review_count": 1,
+  "flagged_count": 1,
+  "preset_filter": [
+    "station_4r_node_b"
+  ],
+  "include_physics_debug_maps": false,
+  "physics_settings": {
+    "speckle_strength": 0.22,
+    "reverberation_strength": 0.28,
+    "shadow_strength": 0.47
+  },
+  "rubric_template": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/review_rubric_template.md",
+  "thresholds": {
+    "nUS_delta_deg_from_voxel_baseline": 10.0,
+    "contact_delta_mm_from_voxel_baseline": 1.5,
+    "station_overlap_fraction_in_fan": 0.003,
+    "target_contrast_vs_sector_min": 0.0,
+    "vessel_contrast_vs_sector_max": -0.01,
+    "wall_contrast_vs_sector_min": null
+  },
+  "entries": [
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "localizer_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_panel.png",
+      "localizer_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_panel.json",
+      "localizer_clean_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_clean.png",
+      "localizer_clean_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_clean.json",
+      "physics_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/physics.png",
+      "physics_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/physics.json",
+      "eval_summary_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/eval_summary.json",
+      "review_sheet_md": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/review_sheet.md",
+      "physics_debug_maps": {},
+      "physics_debug_map_count": 0,
+      "physics_artifact_settings": {
+        "speckle_strength": 0.22,
+        "reverberation_strength": 0.28,
+        "shadow_strength": 0.47
+      },
+      "physics_eval_summary": {
+        "sector": {
+          "pixel_count": 2049,
+          "mean": 0.05149766802787781,
+          "std": 0.05888793617486954,
+          "p05": 0.0033036028034985065,
+          "p50": 0.044973473995923996,
+          "p95": 0.1065509170293808
+        },
+        "target": {
+          "pixel_count": 285,
+          "mean": 0.0861397236585617,
+          "std": 0.018578974530100822,
+          "p05": 0.06681380420923233,
+          "p50": 0.07990026473999023,
+          "p95": 0.12765659391880035
+        },
+        "wall": {
+          "pixel_count": 3,
+          "mean": 0.9198676943778992,
+          "std": 0.0303513053804636,
+          "p05": 0.8895087838172913,
+          "p50": 0.9124563932418823,
+          "p95": 0.9554145336151123
+        },
+        "vessel": {
+          "pixel_count": 702,
+          "mean": 0.0078087071888148785,
+          "std": 0.010197893716394901,
+          "p05": 0.003115426516160369,
+          "p50": 0.004439765587449074,
+          "p95": 0.031716518104076385
+        },
+        "target_contrast_vs_sector": 0.0346420556306839,
+        "wall_contrast_vs_sector": 0.8683700263500214,
+        "vessel_contrast_vs_sector": -0.04368896083906293
+      },
+      "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_panel.png",
+      "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_panel.json",
+      "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_clean.png",
+      "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/localizer_clean.json",
+      "flagged": true,
+      "flag_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "geometry_flag_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "physics_flag_reasons": [],
+      "metrics": {
+        "contact_to_centerline_mm": 6.153406233839823,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 10.553114624171032,
+        "target_lateral_offset_mm": -0.28636387182133527,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.20644216691068815,
+        "nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+        "contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_4r_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0407480155624235
+      },
+      "cutaway_side": "right",
+      "cutaway_mode": "lateral",
+      "vessel_overlay_names": [
+        "superior_vena_cava",
+        "azygous",
+        "pulmonary_artery"
+      ],
+      "manifest_overrides": {
+        "applied": true,
+        "vessel_overlays": [
+          "superior_vena_cava",
+          "azygous",
+          "pulmonary_artery"
+        ],
+        "cutaway_side": null,
+        "roll_offset_deg": 0.0,
+        "branch_hint": "network:0",
+        "branch_shift_mm": -4.0,
+        "axis_sign_override": null,
+        "reference_fov_mm": null,
+        "notes": "Flagged stabilization pass: prefer the intended right paratracheal branch when mesh candidates are ambiguous.",
+        "raw_override_block": {
+          "vessel_overlays": [
+            "superior_vena_cava",
+            "azygous",
+            "pulmonary_artery"
+          ],
+          "cutaway_side": null,
+          "roll_offset_deg": null,
+          "branch_hint": "network:0",
+          "branch_shift_mm": -4.0,
+          "axis_sign_override": null,
+          "reference_fov_mm": null,
+          "notes": "Flagged stabilization pass: prefer the intended right paratracheal branch when mesh candidates are ambiguous."
+        }
+      },
+      "warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/review_entry.json",
+      "review_entry_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/presets/station_4r_node_b/default/review_entry.json"
+    }
+  ],
+  "comparison_bundles": [
+    {
+      "preset_id": "station_4r_node_b",
+      "approach": "default",
+      "required_comparison_case": true,
+      "auto_flagged": true,
+      "flag_reasons": [
+        "contact refinement remained ambiguous"
+      ],
+      "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/comparisons/station_4r_node_b_mesh_panel.png",
+      "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/comparisons/station_4r_node_b_mesh_panel.json",
+      "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/comparisons/station_4r_node_b_voxel_panel.png",
+      "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_wall_optout_smoke/comparisons/station_4r_node_b_voxel_panel.json",
+      "mesh_contact_world": [
+        -9.636363156573237,
+        -176.90970309686261,
+        1246.8590180116103
+      ],
+      "voxel_contact_world": [
+        -9.629247513122516,
+        -176.8703926906566,
+        1246.8670467322104
+      ],
+      "mesh_nUS_world": [
+        -0.1626692921437076,
+        -0.9453390033753615,
+        -0.28261788706793384
+      ],
+      "voxel_nUS_world": [
+        -0.22478226186348166,
+        -0.9387759720723368,
+        -0.26109884911882747
+      ],
+      "contact_delta_mm": 0.0407480155624235,
+      "nUS_delta_deg": 3.785751792561363,
+      "review_metrics": {
+        "contact_to_centerline_mm": 6.153406233839823,
+        "contact_centerline_source": "main",
+        "target_depth_mm": 10.553114624171032,
+        "target_lateral_offset_mm": -0.28636387182133527,
+        "target_in_sector": true,
+        "target_in_forward_hemisphere": true,
+        "station_overlap_fraction_in_fan": 0.20644216691068815,
+        "nUS_delta_deg_from_voxel_baseline": 3.78575179256146,
+        "contact_delta_mm_from_voxel_baseline": 0.0407480155624235,
+        "contact_refinement_ambiguity": true,
+        "warnings": [
+          "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+        ],
+        "preset_id": "station_4r_node_b",
+        "approach": "default",
+        "contact_to_mesh_mm": 0.0407480155624235
+      },
+      "mesh_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically."
+      ],
+      "voxel_warnings": [
+        "Voxel contact refinement was ambiguous; the best airway-wall candidate was chosen deterministically.",
+        "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_11l_node_a",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_11l_node_a_voxel_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_11l_node_a_voxel_panel.json",
+  "engine": "localizer",
+  "engine_version": "localizer-v1",
+  "seed": null,
+  "view_kind": "diagnostic_panel",
+  "image_size": [
+    256,
+    256
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    24.022476049454205,
+    -138.45159441355807,
+    1175.4093297887757
+  ],
+  "original_contact_world": [
+    28.850094766006293,
+    -144.1040912632297,
+    1182.1315844670362
+  ],
+  "voxel_refined_contact_world": [
+    24.022476049454205,
+    -138.45159441355807,
+    1175.4093297887757
+  ],
+  "refined_contact_world": [
+    24.022476049454205,
+    -138.45159441355807,
+    1175.4093297887757
+  ],
+  "tip_start_world": [
+    20.76502224655086,
+    -140.71071254768478,
+    1179.9132591818736
+  ],
+  "target_world": [
+    34.898386391024445,
+    -148.92565036362996,
+    1181.6709307147491
+  ],
+  "nearest_centerline_point": [
+    26.90923500061035,
+    -143.4440460205078,
+    1179.7337646484375
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      0.5207208290764209,
+      0.44465144551549196,
+      -0.7287900316050903
+    ],
+    "depth_axis": [
+      0.7010074884431248,
+      -0.7099308440118717,
+      0.06772516420987054
+    ],
+    "lateral_axis": [
+      -0.4872764300811473,
+      -0.5461531733145703,
+      -0.681379770734205
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      0.5429089671505575,
+      0.37651968902111743,
+      -0.7506548988496351
+    ],
+    "nC": [
+      0.7878940455660048,
+      0.19534089114693293,
+      -0.5840076276963824
+    ],
+    "nUS": [
+      0.812017949222593,
+      -0.4633407864984155,
+      0.35488331280487706
+    ],
+    "wall_normal": [
+      -0.7980780418461579,
+      0.47268241111367004,
+      -0.37368807493251577
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 1.799335950644362,
+  "original_contact_to_airway_distance_mm": 0.0,
+  "voxel_refined_contact_to_airway_distance_mm": 1.799335950644362,
+  "refined_contact_to_airway_distance_mm": 1.799335950644362,
+  "centerline_projection_distance_mm": 3.154700656771928,
+  "contact_refinement_method": "mesh_unavailable",
+  "pose_comparison": {
+    "markup_contact_world": [
+      28.850094766006293,
+      -144.1040912632297,
+      1182.1315844670362
+    ],
+    "voxel_refined_contact_world": [
+      24.022476049454205,
+      -138.45159441355807,
+      1175.4093297887757
+    ],
+    "mesh_refined_contact_world": [
+      24.022476049454205,
+      -138.45159441355807,
+      1175.4093297887757
+    ],
+    "voxel_to_mesh_contact_distance_mm": 0.0,
+    "voxel_contact_to_airway_distance_mm": 1.799335950644362,
+    "mesh_contact_to_airway_distance_mm": 1.799335950644362,
+    "voxel_refinement_method": "ct_threshold_wall_search",
+    "mesh_refinement_method": "mesh_unavailable",
+    "candidate_branch_graph_name": "network",
+    "candidate_branch_line_index": 6,
+    "branch_hint": "network:6",
+    "branch_hint_applied": true,
+    "branch_hint_match": true,
+    "voxel_wall_normal_world": [
+      -0.7980780418461579,
+      0.47268241111367004,
+      -0.37368807493251577
+    ],
+    "mesh_wall_normal_world": [
+      -0.7980780418461579,
+      0.47268241111367004,
+      -0.37368807493251577
+    ],
+    "voxel_nUS_world": [
+      0.812017949222593,
+      -0.4633407864984155,
+      0.35488331280487706
+    ],
+    "mesh_nUS_world": [
+      0.812017949222593,
+      -0.4633407864984155,
+      0.35488331280487706
+    ],
+    "nUS_angular_difference_deg": 0.0,
+    "final_nB_world": [
+      0.5429089671505575,
+      0.37651968902111743,
+      -0.7506548988496351
+    ],
+    "final_nUS_world": [
+      0.812017949222593,
+      -0.4633407864984155,
+      0.35488331280487706
+    ],
+    "final_nC_world": [
+      0.7878940455660048,
+      0.19534089114693293,
+      -0.5840076276963824
+    ],
+    "optimized_branch_shift_mm": null,
+    "optimized_roll_offset_deg": null,
+    "optimized_axis_sign_override": null,
+    "optimized_objective": null,
+    "warnings": [
+      "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+    ]
+  },
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "pulmonary_artery",
+    "pulmonary_venous_system",
+    "left_atrium"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "left",
+  "cutaway_side_source": "station_rule",
+  "cutaway_open_side": "left",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    24.022476049454205,
+    -138.45159441355807,
+    1175.4093297887757
+  ],
+  "cutaway_normal": [
+    0.21418847664580223,
+    0.8022145843516377,
+    0.5572926135574381
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "pulmonary_artery",
+    "pulmonary_venous_system",
+    "left_atrium",
+    "target",
+    "contact"
+  ],
+  "preset_override_applied": true,
+  "preset_override_vessel_overlays": [
+    "pulmonary_artery",
+    "pulmonary_venous_system",
+    "left_atrium"
+  ],
+  "preset_override_cutaway_side": null,
+  "preset_override_roll_offset_deg": 0.0,
+  "preset_override_branch_hint": "network:6",
+  "preset_override_branch_shift_mm": 4.0,
+  "preset_override_axis_sign_override": null,
+  "preset_override_reference_fov_mm": null,
+  "preset_override_notes": "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood.",
+  "warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ],
+  "engine_diagnostics": {}
+}

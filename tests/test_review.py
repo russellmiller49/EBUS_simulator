@@ -1,7 +1,10 @@
 from pathlib import Path
 import json
+from argparse import Namespace
 
+from ebus_simulator.review_cli import _build_review_thresholds, _parse_optional_threshold
 from ebus_simulator.review import (
+    DEFAULT_REVIEW_THRESHOLDS,
     ReviewThresholds,
     _flag_review_metrics,
     compare_review_bundle_files,
@@ -61,6 +64,36 @@ def test_flag_review_metrics_can_include_physics_eval_thresholds():
     assert any("wall region missing from physics eval summary" == reason for reason in flags)
 
 
+def test_default_wall_threshold_is_enabled_and_cli_can_disable_it():
+    assert DEFAULT_REVIEW_THRESHOLDS.wall_contrast_vs_sector_min == 0.02
+    assert _parse_optional_threshold("0.03") == 0.03
+    assert _parse_optional_threshold("off") is None
+    assert _parse_optional_threshold("disabled") is None
+
+    default_thresholds = _build_review_thresholds(
+        Namespace(
+            warn_nus_delta_deg=None,
+            warn_contact_delta_mm=None,
+            warn_station_overlap_fraction=None,
+            warn_min_target_contrast=None,
+            warn_max_vessel_contrast=None,
+        )
+    )
+    assert default_thresholds.wall_contrast_vs_sector_min == 0.02
+
+    disabled_thresholds = _build_review_thresholds(
+        Namespace(
+            warn_nus_delta_deg=None,
+            warn_contact_delta_mm=None,
+            warn_station_overlap_fraction=None,
+            warn_min_target_contrast=None,
+            warn_max_vessel_contrast=None,
+            warn_min_wall_contrast=None,
+        )
+    )
+    assert disabled_thresholds.wall_contrast_vs_sector_min is None
+
+
 def test_review_presets_generates_physics_aware_bundle(tmp_path):
     output_dir = tmp_path / "review_bundle"
     summary = review_presets(
@@ -107,6 +140,7 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
     )
     assert summary["thresholds"]["target_contrast_vs_sector_min"] == 0.0
     assert summary["thresholds"]["vessel_contrast_vs_sector_max"] == -0.01
+    assert summary["thresholds"]["wall_contrast_vs_sector_min"] == 0.02
     assert all("geometry_flag_reasons" in entry for entry in summary["entries"])
     assert all("physics_flag_reasons" in entry for entry in summary["entries"])
     assert all("target_contrast_vs_sector" in entry["physics_eval_summary"] for entry in summary["entries"])

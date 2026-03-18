@@ -36,7 +36,7 @@ class ReviewThresholds:
     station_overlap_fraction_in_fan: float = 0.003
     target_contrast_vs_sector_min: float = 0.0
     vessel_contrast_vs_sector_max: float = -0.01
-    wall_contrast_vs_sector_min: float | None = None
+    wall_contrast_vs_sector_min: float | None = 0.02
 
 
 DEFAULT_REVIEW_THRESHOLDS = ReviewThresholds()

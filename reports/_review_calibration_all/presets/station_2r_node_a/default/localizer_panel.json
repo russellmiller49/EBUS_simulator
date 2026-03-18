@@ -1,0 +1,250 @@
+{
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
+  "case_id": "3D_slicer_files",
+  "preset_id": "station_2r_node_a",
+  "approach": "default",
+  "mode": "debug",
+  "output_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/presets/station_2r_node_a/default/localizer_panel.png",
+  "metadata_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/presets/station_2r_node_a/default/localizer_panel.json",
+  "engine": "localizer",
+  "engine_version": "localizer-v1",
+  "seed": null,
+  "view_kind": "diagnostic_panel",
+  "image_size": [
+    256,
+    256
+  ],
+  "device_model": "bf_uc180f",
+  "device_label": "Olympus BF-UC180F-like",
+  "sector_angle_deg": 60.0,
+  "max_depth_mm": 40.0,
+  "roll_deg": 0.0,
+  "gain": 1.0,
+  "attenuation": 0.15,
+  "slice_thickness_mm": 1.5,
+  "slice_samples": 5,
+  "source_oblique_size_mm": 51.79,
+  "reference_fov_mm": 100.0,
+  "source_plane": "nUS_nB_with_lateral_thickness",
+  "display_plane": "nUS_nB_fan",
+  "reference_plane": "nUS_nB_with_lateral_thickness",
+  "refine_contact_enabled": true,
+  "diagnostic_panel_enabled": true,
+  "diagnostic_panel_layout": [
+    "virtual_ebus",
+    "simulated_ebus",
+    "wide_ct_localizer",
+    "context_3d"
+  ],
+  "virtual_ebus_enabled": true,
+  "simulated_ebus_enabled": true,
+  "contact_world": [
+    -9.39837405999224,
+    -176.23486067493909,
+    1282.9947772408584
+  ],
+  "original_contact_world": [
+    -8.438694891447685,
+    -175.06677891224422,
+    1281.0961872222829
+  ],
+  "voxel_refined_contact_world": [
+    -9.81383428768131,
+    -175.96255588041353,
+    1283.09863842399
+  ],
+  "refined_contact_world": [
+    -9.39837405999224,
+    -176.23486067493909,
+    1282.9947772408584
+  ],
+  "tip_start_world": [
+    -9.076027206561,
+    -177.93222709096776,
+    1288.740648781001
+  ],
+  "target_world": [
+    -13.647973590408863,
+    -171.57171722444872,
+    1282.8934773581566
+  ],
+  "nearest_centerline_point": [
+    -5.291911779639822,
+    -180.2619022363761,
+    1279.250471385198
+  ],
+  "pose_axes": {
+    "shaft_axis": [
+      -0.05736132461855567,
+      0.273496916602246,
+      -0.9601609839225237
+    ],
+    "depth_axis": [
+      -0.8045328369960296,
+      0.5567919145718581,
+      0.20666319958455284
+    ],
+    "lateral_axis": [
+      0.5911316203969508,
+      0.7843355152461661,
+      0.18809892846692802
+    ]
+  },
+  "device_axes": {
+    "nB": [
+      -0.0537244755718734,
+      0.28289440267144395,
+      -0.9576452566904377
+    ],
+    "nC": [
+      -0.3009235503404137,
+      0.48503281452070635,
+      -0.8210896331635437
+    ],
+    "nUS": [
+      -0.7322348170922364,
+      0.640895093889232,
+      0.23040323623293893
+    ],
+    "wall_normal": [
+      -0.731055762005371,
+      0.6352906954066201,
+      0.24892409519473901
+    ]
+  },
+  "target_in_default_forward_hemisphere": true,
+  "contact_to_airway_distance_mm": 0.007590374900418614,
+  "original_contact_to_airway_distance_mm": 0.0,
+  "voxel_refined_contact_to_airway_distance_mm": 0.0,
+  "refined_contact_to_airway_distance_mm": 0.007590374900418614,
+  "centerline_projection_distance_mm": 6.348087685040639,
+  "contact_refinement_method": "raw_mesh_projection_search",
+  "pose_comparison": {
+    "markup_contact_world": [
+      -8.438694891447685,
+      -175.06677891224422,
+      1281.0961872222829
+    ],
+    "voxel_refined_contact_world": [
+      -9.81383428768131,
+      -175.96255588041353,
+      1283.09863842399
+    ],
+    "mesh_refined_contact_world": [
+      -9.39837405999224,
+      -176.23486067493909,
+      1282.9947772408584
+    ],
+    "voxel_to_mesh_contact_distance_mm": 0.5074881745169543,
+    "voxel_contact_to_airway_distance_mm": 0.0,
+    "mesh_contact_to_airway_distance_mm": 0.007590374900418614,
+    "voxel_refinement_method": "ct_threshold_wall_search",
+    "mesh_refinement_method": "raw_mesh_projection_search",
+    "candidate_branch_graph_name": "network",
+    "candidate_branch_line_index": 0,
+    "branch_hint": "network:0",
+    "branch_hint_applied": true,
+    "branch_hint_match": true,
+    "voxel_wall_normal_world": [
+      -0.8141241086648753,
+      0.5130614547642465,
+      0.27197404163967126
+    ],
+    "mesh_wall_normal_world": [
+      -0.731055762005371,
+      0.6352906954066201,
+      0.24892409519473901
+    ],
+    "voxel_nUS_world": [
+      -0.8200726360198923,
+      0.534680653167051,
+      0.20395458018941515
+    ],
+    "mesh_nUS_world": [
+      -0.7322348170922364,
+      0.640895093889232,
+      0.23040323623293893
+    ],
+    "nUS_angular_difference_deg": 8.047749739414357,
+    "final_nB_world": [
+      -0.0537244755718734,
+      0.28289440267144395,
+      -0.9576452566904377
+    ],
+    "final_nUS_world": [
+      -0.7322348170922364,
+      0.640895093889232,
+      0.23040323623293893
+    ],
+    "final_nC_world": [
+      -0.3009235503404137,
+      0.48503281452070635,
+      -0.8210896331635437
+    ],
+    "optimized_branch_shift_mm": null,
+    "optimized_roll_offset_deg": null,
+    "optimized_axis_sign_override": null,
+    "optimized_objective": null,
+    "warnings": []
+  },
+  "airway_overlay_enabled": true,
+  "airway_lumen_overlay_enabled": true,
+  "airway_wall_overlay_enabled": true,
+  "target_overlay_enabled": true,
+  "contact_overlay_enabled": true,
+  "station_overlay_enabled": true,
+  "vessel_overlay_names": [
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery"
+  ],
+  "single_vessel_name": null,
+  "show_legend": true,
+  "label_overlays": true,
+  "show_frustum": true,
+  "cutaway_mode": "lateral",
+  "cutaway_side": "auto",
+  "cutaway_side_source": "visibility_auto",
+  "cutaway_open_side": "left",
+  "cutaway_depth_mm": 0.0,
+  "cutaway_origin_mode": "contact",
+  "cutaway_origin": [
+    -9.39837405999224,
+    -176.23486067493909,
+    1282.9947772408584
+  ],
+  "cutaway_normal": [
+    0.6789299325868806,
+    0.7135994924086475,
+    0.17271337838075665
+  ],
+  "cutaway_mesh_source": "smoothed",
+  "show_full_airway": false,
+  "overlays_enabled": [
+    "airway_lumen",
+    "airway_wall",
+    "station",
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery",
+    "target",
+    "contact"
+  ],
+  "preset_override_applied": true,
+  "preset_override_vessel_overlays": [
+    "superior_vena_cava",
+    "brachiocephalic_trunk",
+    "right_common_carotid_artery"
+  ],
+  "preset_override_cutaway_side": null,
+  "preset_override_roll_offset_deg": 0.0,
+  "preset_override_branch_hint": "network:0",
+  "preset_override_branch_shift_mm": 0.0,
+  "preset_override_axis_sign_override": null,
+  "preset_override_reference_fov_mm": null,
+  "preset_override_notes": "Flagged stabilization pass: keep refinement on the tracheal/right paratracheal branch neighborhood.",
+  "warnings": [
+    "Contact projects 6.35 mm away from the main centerline."
+  ],
+  "engine_diagnostics": {}
+}

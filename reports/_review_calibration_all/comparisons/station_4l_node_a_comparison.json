@@ -1,0 +1,55 @@
+{
+  "preset_id": "station_4l_node_a",
+  "approach": "default",
+  "required_comparison_case": false,
+  "auto_flagged": true,
+  "flag_reasons": [
+    "target contrast -0.001 < 0.000"
+  ],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_4l_node_a_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_4l_node_a_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_4l_node_a_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_all/comparisons/station_4l_node_a_voxel_panel.json",
+  "mesh_contact_world": [
+    -7.73685811154497,
+    -152.4257095686576,
+    1208.1670989091544
+  ],
+  "voxel_contact_world": [
+    -8.217138022514456,
+    -151.33060821584542,
+    1208.1496149720906
+  ],
+  "mesh_nUS_world": [
+    0.43188763799784374,
+    -0.9013022762938977,
+    0.03357491462509015
+  ],
+  "voxel_nUS_world": [
+    0.4002745641915898,
+    -0.9163607841406569,
+    0.007948996814276226
+  ],
+  "contact_delta_mm": 1.1959186652390599,
+  "nUS_delta_deg": 2.486351823137489,
+  "review_metrics": {
+    "contact_to_centerline_mm": 4.775534450817501,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 21.8859305327397,
+    "target_lateral_offset_mm": -4.343206007704424,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.46661784450140364,
+    "nUS_delta_deg_from_voxel_baseline": 2.486351823137489,
+    "contact_delta_mm_from_voxel_baseline": 1.1959186652390599,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_4l_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.1960611167152473
+  },
+  "mesh_warnings": [],
+  "voxel_warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

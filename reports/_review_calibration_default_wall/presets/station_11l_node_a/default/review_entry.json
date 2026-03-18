@@ -1,0 +1,125 @@
+{
+  "preset_id": "station_11l_node_a",
+  "approach": "default",
+  "localizer_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_panel.png",
+  "localizer_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_panel.json",
+  "localizer_clean_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_clean.png",
+  "localizer_clean_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_clean.json",
+  "physics_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/physics.png",
+  "physics_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/physics.json",
+  "eval_summary_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/eval_summary.json",
+  "review_sheet_md": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/review_sheet.md",
+  "physics_debug_maps": {},
+  "physics_debug_map_count": 0,
+  "physics_artifact_settings": {
+    "speckle_strength": 0.22,
+    "reverberation_strength": 0.28,
+    "shadow_strength": 0.47
+  },
+  "physics_eval_summary": {
+    "sector": {
+      "pixel_count": 8193,
+      "mean": 0.05861196294426918,
+      "std": 0.10878061503171921,
+      "p05": 0.0007107182173058391,
+      "p50": 0.023249542340636253,
+      "p95": 0.2331506460905075
+    },
+    "target": {
+      "pixel_count": 84,
+      "mean": 0.05935569480061531,
+      "std": 0.04677582159638405,
+      "p05": 0.0350823774933815,
+      "p50": 0.04651686176657677,
+      "p95": 0.12132120132446289
+    },
+    "wall": {
+      "pixel_count": 615,
+      "mean": 0.22405949234962463,
+      "std": 0.23501400649547577,
+      "p05": 0.00416966900229454,
+      "p50": 0.1872107833623886,
+      "p95": 0.7963204383850098
+    },
+    "vessel": {
+      "pixel_count": 475,
+      "mean": 0.023813923820853233,
+      "std": 0.07300147414207458,
+      "p05": 0.002258413704112172,
+      "p50": 0.008443874306976795,
+      "p95": 0.06908546388149261
+    },
+    "target_contrast_vs_sector": 0.0007437318563461304,
+    "wall_contrast_vs_sector": 0.16544752940535545,
+    "vessel_contrast_vs_sector": -0.03479803912341595
+  },
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/localizer_clean.json",
+  "flagged": true,
+  "flag_reasons": [
+    "nUS delta 19.67 deg > 10.0 deg",
+    "contact delta 3.39 mm > 1.5 mm"
+  ],
+  "geometry_flag_reasons": [
+    "nUS delta 19.67 deg > 10.0 deg",
+    "contact delta 3.39 mm > 1.5 mm"
+  ],
+  "physics_flag_reasons": [],
+  "metrics": {
+    "contact_to_centerline_mm": 2.5910454644563075,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 12.639232275728528,
+    "target_lateral_offset_mm": -3.2590520301301136,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.03515195898938118,
+    "nUS_delta_deg_from_voxel_baseline": 19.670885677307236,
+    "contact_delta_mm_from_voxel_baseline": 3.394448808830015,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_11l_node_a",
+    "approach": "default",
+    "contact_to_mesh_mm": 0.3856369592306546
+  },
+  "cutaway_side": "left",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "pulmonary_artery",
+    "pulmonary_venous_system",
+    "left_atrium"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "pulmonary_artery",
+      "pulmonary_venous_system",
+      "left_atrium"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": "network:6",
+    "branch_shift_mm": 4.0,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood.",
+    "raw_override_block": {
+      "vessel_overlays": [
+        "pulmonary_artery",
+        "pulmonary_venous_system",
+        "left_atrium"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": "network:6",
+      "branch_shift_mm": 4.0,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": "Flagged stabilization pass: keep refinement on the left hilar/interlobar branch neighborhood."
+    }
+  },
+  "warnings": [],
+  "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/review_entry.json",
+  "review_entry_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/_review_calibration_default_wall/presets/station_11l_node_a/default/review_entry.json"
+}

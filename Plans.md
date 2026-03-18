@@ -40,7 +40,7 @@ The main remaining gaps are:
 - the review workflow is now physics-aware, but calibration/tuning is still early and the reviewer loop is intentionally lightweight
 - the repo guidance still needs periodic synchronization as features land
 - rendering responsibilities are still somewhat concentrated in `rendering.py`
-- there is no desktop preset browser yet
+- the desktop preset browser exists as a first slice with queued rendering and summary text, but it still needs broader manual Qt validation and packaging polish
 
 These gaps define the active roadmap.
 
@@ -54,8 +54,8 @@ Preserve the existing geometry-first CP-EBUS scaffold and evolve it into a porta
 - calibration/review hooks
 - a local desktop UI for preset browsing and screenshot export
 
-The next active milestone is the **review / calibration refinement layer**.
-The bundling layer now exists; the next pass is to tune and use it before moving into the desktop app.
+The next active milestone is the **desktop preset browser refinement layer**.
+The review defaults are now stable enough to support the first app slice, so the next pass is UI hardening rather than more threshold churn.
 
 ---
 
@@ -185,6 +185,7 @@ Improve realism while keeping the renderer inspectable and tunable.
 ### Remaining work in Phase C
 - use the current bundle outputs to tune physics appearance and reviewer thresholds
 - make calibration passes easier to compare with deterministic before/after bundle summaries
+- keep the new default wall-contrast threshold under observation across broader runs before making vessel thresholds stricter
 - iterate on reviewer-facing summaries and rubric ergonomics as real feedback arrives
 - keep docs and smoke examples synchronized with the review workflow
 
@@ -195,6 +196,9 @@ Improve realism while keeping the renderer inspectable and tunable.
 ---
 
 ## Phase D — desktop preset browser
+### Status
+In progress.
+
 ### Goal
 Expose the simulator through a stable local desktop app for review and teaching.
 
@@ -208,6 +212,8 @@ Expose the simulator through a stable local desktop app for review and teaching.
 - overlay toggles
 - 2D EBUS pane
 - 3D context pane
+- queued background rendering
+- reviewer-facing metadata summary
 - screenshot export
 
 ### Files expected to add
@@ -219,6 +225,8 @@ Expose the simulator through a stable local desktop app for review and teaching.
 - the app launches locally from CLI
 - switching presets updates both 2D and 3D views
 - switching station 7 from `lms` to `rms` changes the approach correctly
+- control changes do not block the UI thread during longer renders
+- reviewer-facing pose/eval metadata is visible without opening sidecar JSON manually
 - screenshots export successfully
 
 ### Explicitly out of scope
@@ -291,7 +299,7 @@ Current commands expected to work from repo root:
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - `pytest -q`
 
-Future command to add:
+Current command expected to work:
 - `launch-app configs/3d_slicer_files.yaml`
 
 ---

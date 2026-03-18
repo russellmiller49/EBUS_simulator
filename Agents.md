@@ -32,10 +32,11 @@ What is already implemented and should be preserved unless there is a hard block
 - direct probe-centered CT/localizer rendering
 - clean/debug render modes, overlay controls, metadata sidecars, and diagnostic panels
 - batch rendering, cutaway/context views, and physics-aware preset review workflows with eval summaries and rubric sheets
+- conservative default wall-contrast review warning with an explicit CLI opt-out for calibration runs
+- first `launch-app` desktop preset-browser slice with queued rendering, reviewer summary text, 2D EBUS, 3D context, and screenshot export
 
 What is **not** implemented yet:
 - polished calibration/tuning workflow on top of the existing review bundle
-- PySide6 desktop UI
 - a polished review-first desktop workflow
 
 Do **not** reopen the scaffold / loader / validation / pose-generation phases from scratch. Reuse them.
@@ -274,7 +275,7 @@ These commands should already work from repo root or remain working as the repo 
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
-- later: `launch-app configs/3d_slicer_files.yaml`
+- `launch-app configs/3d_slicer_files.yaml`
 - `pytest -q`
 
 ---

@@ -1,0 +1,48 @@
+{
+  "preset_id": "station_10r_node_b",
+  "approach": "default",
+  "engine": "physics",
+  "engine_version": "physics-v1",
+  "artifact_settings": {
+    "speckle_strength": 0.22,
+    "reverberation_strength": 0.28,
+    "shadow_strength": 0.47
+  },
+  "eval_summary": {
+    "sector": {
+      "pixel_count": 8193,
+      "mean": 0.04651908949017525,
+      "std": 0.05595102161169052,
+      "p05": 0.004768859129399061,
+      "p50": 0.02972855605185032,
+      "p95": 0.11963959038257599
+    },
+    "target": {
+      "pixel_count": 569,
+      "mean": 0.08685046434402466,
+      "std": 0.012820419855415821,
+      "p05": 0.07330959290266037,
+      "p50": 0.08317609876394272,
+      "p95": 0.11263155192136765
+    },
+    "wall": {
+      "pixel_count": 5,
+      "mean": 0.9941644668579102,
+      "std": 0.011651668697595596,
+      "p05": 0.976681113243103,
+      "p50": 1.0,
+      "p95": 1.0
+    },
+    "vessel": {
+      "pixel_count": 1962,
+      "mean": 0.009105680510401726,
+      "std": 0.009443393908441067,
+      "p05": 0.003595700254663825,
+      "p50": 0.006455163937062025,
+      "p95": 0.029208220541477203
+    },
+    "target_contrast_vs_sector": 0.04033137485384941,
+    "wall_contrast_vs_sector": 0.9476453773677349,
+    "vessel_contrast_vs_sector": -0.03741340897977352
+  }
+}

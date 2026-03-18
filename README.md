@@ -20,18 +20,20 @@ Current implemented capabilities:
 - `review-presets` CLI for deterministic physics-aware review bundles with JSON/CSV/Markdown indexes and review sheets
 - `compare-review-bundles` CLI for before/after calibration summaries across review bundle runs
 - configurable geometry and physics auto-flag thresholds for review bundles
+- conservative default wall-contrast auto-flagging with CLI override support
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
+- desktop preset-browser slice with queued rendering, reviewer summary, 2D EBUS, and 3D context panes
 - CI smoke workflow
 
 Not implemented yet:
 
 - review / calibration workflow still needs tuning against real CP-EBUS reference material
-- desktop UI
+- a packaged Qt runtime setup and broader manual desktop validation
 
 Next active milestone:
 
-- review / calibration refinement on top of the current bundle workflow
-- desktop preset browser after review tuning is stable
+- desktop preset browser refinement and manual Qt validation
+- review / calibration refinement on top of the current bundle workflow as reference feedback becomes available
 
 ## Dataset
 
@@ -60,6 +62,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
+```
+
+To use the desktop app, install the UI extra:
+
+```bash
+python -m pip install -e '.[dev,ui]'
 ```
 
 ## Commands
@@ -129,6 +137,12 @@ Generate a filtered physics-aware review bundle with debug maps and tuned auto-f
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01
 ```
 
+Disable the default wall-contrast auto-flag threshold for a calibration run:
+
+```bash
+review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --warn-min-wall-contrast off
+```
+
 Compare a baseline and tuned review bundle to generate before/after calibration summaries:
 
 ```bash
@@ -145,4 +159,10 @@ make physics-smoke
 make review-smoke
 make ci-smoke
 make test
+```
+
+Launch the first desktop preset browser:
+
+```bash
+launch-app configs/3d_slicer_files.yaml
 ```
