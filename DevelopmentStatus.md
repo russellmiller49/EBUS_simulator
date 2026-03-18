@@ -47,6 +47,7 @@ It is not yet at the intended end state for:
 
 The active development focus is:
 - using the existing physics-aware review bundles to tune image appearance and reviewer thresholds
+- using the newer wall-aware eval summaries to make airway-wall review less sparse
 - refining the review/calibration loop before starting desktop UI work
 - keeping the renderer split intact rather than reopening scaffold or geometry phases
 
@@ -122,6 +123,7 @@ The repo can already generate structured physics-aware review bundles, but calib
 Current state:
 - localizer and physics renders are bundled per preset/approach
 - evaluation summaries are extracted into reviewer-facing JSON artifacts
+- airway-wall eval stats now fall back to a lumen-adjacent shell when direct wall samples are too sparse
 - physics debug maps can be bundled on request
 - deterministic JSON, CSV, and Markdown indexes are generated for batch review
 - geometry and physics auto-flag thresholds can now be tuned from the review CLI for calibration passes
@@ -148,7 +150,8 @@ Still missing:
 
 ### Near-term remaining work
 - continue tuning the physics renderer for better vessel, airway-wall, and node appearance
-- use the bundled review outputs to refine thresholds and reviewer ergonomics
+- use the bundled review outputs to refine thresholds and reviewer ergonomics, now that wall metrics are no longer mostly null
+- decide whether airway-wall contrast is stable enough to promote into a default review warning threshold
 - decide whether more render-state preparation should move out of `rendering.py`
 
 ### Major remaining milestone: desktop app
@@ -193,6 +196,7 @@ These commands are part of the current usable surface area:
 - `render-all-presets configs/3d_slicer_files.yaml --output-dir reports/renders/all_debug --mode debug`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review`
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps`
+- `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
 
 Note:
 - `make test` re-enters `bootstrap.sh`; if the environment is already provisioned, `.venv/bin/python -m pytest -q` is the most direct rerun path.
@@ -206,10 +210,21 @@ Latest verified run snapshot from `2026-03-17`:
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_smoke_wall_eval --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64` -> succeeded with `review_count: 3`, `flagged_count: 2`, and non-null wall eval stats in the bundle entries
 - `.venv/bin/python -m pytest -q` -> `35 passed in 538.15s (0:08:58)`
 
-The review smoke bundle produced:
-- deterministic review indexes under `reports/_review_smoke_next_steps/`
-- per-entry localizer, physics, `eval_summary.json`, `review_sheet.md`, and `debug_maps/`
+The review smoke bundle shape remains:
+- deterministic review indexes
+- per-entry localizer, physics, `eval_summary.json`, `review_sheet.md`, and optional `debug_maps/`
 - distinct station 7 `lms` and `rms` review folders
+- geometry and physics auto-flag reasons alongside non-null wall eval stats in the current smoke run
+
+---
+
+## Next Session Start Point
+
+If work resumes in a fresh session, the highest-value next step is:
+
+1. run a slightly broader `review-presets` calibration pass across more presets using the current threshold flags
+2. inspect whether vessel contrast and the new wall contrast remain stable enough to justify a default wall warning threshold
+3. keep desktop UI work deferred unless the review loop stops yielding obvious calibration fixes
 
 ---
 
