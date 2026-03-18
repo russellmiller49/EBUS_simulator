@@ -168,6 +168,8 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
     assert all("target_contrast_vs_sector" in entry["physics_eval_summary"] for entry in summary["entries"])
     assert all("localizer_consistency_metrics" in entry for entry in summary["entries"])
     assert all("physics_consistency_metrics" in entry for entry in summary["entries"])
+    assert all("consistency_bucket" in entry["physics_consistency_metrics"] for entry in summary["entries"])
+    assert all("support_logic_active" in entry["physics_consistency_metrics"] for entry in summary["entries"])
     assert any(entry["physics_eval_summary"]["wall"]["pixel_count"] > 0 for entry in summary["entries"])
     assert index_payload["review_count"] == 3
     assert "| station_7_node_a | lms |" in index_markdown

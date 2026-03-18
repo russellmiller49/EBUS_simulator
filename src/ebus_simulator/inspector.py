@@ -329,6 +329,31 @@ def _format_artifact_settings(settings: Mapping[str, object]) -> str | None:
     return ", ".join(parts) if parts else None
 
 
+def _format_support_settings(metrics: Mapping[str, object]) -> str | None:
+    active = _coerce_bool(metrics.get("support_logic_active"))
+    mode = metrics.get("support_logic_mode")
+    if active is None and mode is None:
+        return None
+    if active is False:
+        return "Inactive"
+    parts: list[str] = []
+    if mode is not None:
+        parts.append(_titleize(str(mode)))
+    for label, key in (
+        ("Floor", "support_floor_base"),
+        ("Floor Scale", "support_floor_scale"),
+        ("Anatomy", "support_anatomy_weight"),
+        ("Target", "support_target_scanline_weight"),
+    ):
+        value = _coerce_float(metrics.get(key))
+        if value is not None and value > 0.0:
+            parts.append(f"{label} {value:.3f}")
+    wall_factor = _coerce_float(metrics.get("support_wall_moderation_factor"))
+    if wall_factor is not None and wall_factor < 0.999:
+        parts.append(f"Wall {wall_factor:.2f}")
+    return ", ".join(parts) if parts else ("Active" if active else "Inactive")
+
+
 def _field_if_value(fields: list[InspectorField], label: str, value: str | None) -> None:
     if value is None:
         return
@@ -519,6 +544,12 @@ def build_render_inspector_sections(
     ]
     _field_if_value(render_fields, "Cutaway", _cutaway_description(context_metadata))
     _field_if_value(render_fields, "Artifact Settings", _format_artifact_settings(artifact_settings))
+    _field_if_value(
+        render_fields,
+        "Consistency Bucket",
+        None if consistency_metrics.get("consistency_bucket") is None else _titleize(str(consistency_metrics.get("consistency_bucket"))),
+    )
+    _field_if_value(render_fields, "Signal Support", _format_support_settings(consistency_metrics))
     _field_if_value(
         render_fields,
         "Normalization",

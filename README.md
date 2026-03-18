@@ -22,7 +22,7 @@ Current implemented capabilities:
 - `analyze-render-consistency` CLI for cross-preset localizer/physics divergence summaries
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
-- first-pass physics CP-EBUS renderer with artifact controls, debug maps, eval summaries, and first-class consistency metrics
+- first-pass physics CP-EBUS renderer with artifact controls, debug maps, eval summaries, first-class consistency metrics, and bounded sparse-case signal-support guardrails
 - current desktop preset browser with queued rendering, a structured teaching-console inspector, 2D EBUS, and 3D context panes
 - CI smoke workflow
 
@@ -182,5 +182,6 @@ Current browser surface:
 - queued rendering with status updates
 - structured in-window inspector with Preset, Pose, Anatomy in Fan, Review / Eval, and Render Settings sections
 - occupancy, brightness, target-prominence, and normalization metrics surfaced directly in the inspector
+- sparse-support bucket, activation mode, and support weights surfaced when the physics guardrails activate
 - live auto-flags and warnings sourced from current render metadata and review metrics
 - screenshot export for the active browser state

@@ -49,6 +49,7 @@ It is not yet at the intended end state for:
 The active development focus is:
 - hardening the desktop preset browser around responsiveness and reviewer ergonomics
 - reducing avoidable cross-preset render instability where the evidence supports a narrow fix
+- reducing the remaining physics sparsity gap on weak presets with metadata-visible, geometry-aware guardrails
 - manually validating the PySide6 browser against the checked-in dataset
 - keeping the current review defaults stable while the desktop workflow comes online
 - using first-class consistency metrics to separate anatomy-driven differences from normalization artifacts
@@ -89,10 +90,11 @@ The active development focus is:
 - ray-domain sector sampling derived from the current `DevicePose`
 - attenuation and log compression
 - guarded blended high-percentile normalization when the physics upper tail is spike-dominated
+- sparse-case target/anatomy support and wall-guardrail activation for very empty or wall-dominant sectors
 - tunable speckle, reverberation, and distal shadow controls
 - optional debug-map export for boundary, transmission, shadow, reverberation, speckle, target focus, precompression, and compressed signal maps
 - basic region-level evaluation summaries in metadata
-- first-class per-render consistency metrics covering target position, occupancy, brightness, and normalization stats
+- first-class per-render consistency metrics covering target position, occupancy, brightness, normalization stats, and sparse-support activation metadata
 - wall-eval fallback derived from the visible lumen shell when direct airway-wall samples are too sparse for review summaries
 
 ### Review and automation
@@ -114,6 +116,7 @@ The active development focus is:
 - queued background rendering so the UI no longer blocks during preset changes
 - structured inspector with preset, pose, anatomy-in-fan, review/eval, and render-setting sections
 - inspector surfacing for occupancy, target-prominence, brightness, and normalization metrics
+- inspector surfacing for consistency bucket and sparse-support activation details when they apply
 - live warning and auto-flag surfacing inside the inspector using current render metadata plus derived review metrics
 - screenshot export from the current browser state with state-aware default filenames
 
@@ -197,7 +200,7 @@ This is the largest remaining v1 deliverable.
 
 - The desktop app currently requires the optional `ui` dependency (`PySide6`) rather than the default bootstrap path.
 - The desktop UI now has queued rendering and a structured inspector, but it still needs broader manual interaction testing and packaged distribution setup.
-- The full `pytest -q` suite was not rerun after the latest render-consistency pass, so the current verified test evidence is the targeted rendering/review/physics/app/consistency subset plus the offscreen Qt smoke.
+- The full `pytest -q` suite was not rerun after the sparse-support pass, so the current verified test evidence is the targeted rendering/review/physics/app/consistency subset plus the offscreen Qt smoke and the all-presets consistency sweep.
 - The physics renderer is still an inspectable first-pass model, not a mature ultrasound simulation.
 - The physics path currently renders only the 2D sector view; it does not have a dedicated physics-specific 3D context panel.
 - The review bundle is implemented, but its rubric and eval summaries are still lightweight rather than expert-calibrated.
@@ -231,8 +234,11 @@ Note:
 ## Latest Validation Snapshot
 
 Latest verified run snapshot from `2026-03-18`:
-- `.venv/bin/python -m pytest tests/test_rendering.py tests/test_physics_renderer.py tests/test_review.py tests/test_app.py tests/test_consistency.py -q` -> `23 passed in 795.07s (0:13:15)`
+- `.venv/bin/python -m pytest tests/test_rendering.py tests/test_physics_renderer.py tests/test_review.py tests/test_app.py tests/test_consistency.py -q` -> `25 passed in 891.97s (0:14:51)`
 - `.venv/bin/python -m pip install -e '.[dev,ui]'` -> succeeded and refreshed the editable install plus console scripts
+- `.venv/bin/analyze-render-consistency configs/3d_slicer_files.yaml --output-dir reports/_consistency_signal_support_all --width 64 --height 64` -> succeeded with `analysis_count: 16`, `support_logic_activations: 2`, `sparse_sector_cases: 7`, and representative improvements on `station_7_node_a/lms` and `station_11ri_node_a/default`
+- `.venv/bin/python - <<'PY' ... compare_consistency_summaries(...) ... PY` -> matched `16` entries and reported `2` improvements each for empty-sector fraction, non-background occupancy, target contrast, and occupancy-gap trend
+- `QT_QPA_PLATFORM=offscreen .venv/bin/python - <<'PY' ... launch_app('configs/3d_slicer_files.yaml', width=64, height=64, close_after_ms=300000, close_on_first_render=True) ... PY` -> exited `0` with the current app launch path
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_calibration_all --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 128 --height 128` -> succeeded with `review_count: 16`, `flagged_count: 8`, `wall_present_count: 16`, `vessel_present_count: 15`, and broad-run wall contrast ranging from `0.0389` to `0.9648`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_calibration_default_wall --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 128 --height 128` -> succeeded with `review_count: 16`, `flagged_count: 8`, and `wall_contrast_vs_sector_min: 0.02`
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_wall_optout_smoke --preset-id station_4r_node_b --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-wall-contrast off --width 64 --height 64` -> succeeded with `review_count: 1`, `flagged_count: 1`, and `wall_contrast_vs_sector_min: None` in the bundle thresholds

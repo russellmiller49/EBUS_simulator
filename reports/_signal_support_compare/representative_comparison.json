@@ -1,0 +1,138 @@
+[
+  {
+    "preset_id": "station_11ri_node_a",
+    "approach": "default",
+    "before": {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "consistency_bucket": null,
+      "support_logic_active": null,
+      "support_logic_mode": null,
+      "empty_sector_fraction": 0.8809175207418253,
+      "non_background_occupancy_fraction": 0.11908247925817472,
+      "target_region_contrast_vs_sector": -0.009105173870921135,
+      "near_field_wall_occupancy_fraction": 0.21176470588235294,
+      "wall_contrast_vs_sector": 0.5202443636953831
+    },
+    "after": {
+      "preset_id": "station_11ri_node_a",
+      "approach": "default",
+      "consistency_bucket": "wall_dominant",
+      "pre_support_consistency_bucket": "wall_dominant",
+      "support_logic_active": true,
+      "support_logic_mode": "sparse_wall_guardrail",
+      "empty_sector_fraction": 0.8765251342118107,
+      "non_background_occupancy_fraction": 0.12347486578818936,
+      "target_region_contrast_vs_sector": 0.007214944809675217,
+      "near_field_wall_occupancy_fraction": 0.21176470588235294,
+      "wall_contrast_vs_sector": 0.4877812787890434
+    },
+    "delta_empty_sector_fraction": -0.004392386530014614,
+    "delta_non_background_occupancy_fraction": 0.004392386530014641,
+    "delta_target_region_contrast_vs_sector": 0.01632011868059635,
+    "before_occupancy_gap_vs_localizer": 0.6842362127867252,
+    "after_occupancy_gap_vs_localizer": 0.6798438262567106
+  },
+  {
+    "preset_id": "station_11rs_node_b",
+    "approach": "default",
+    "before": {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "consistency_bucket": null,
+      "support_logic_active": null,
+      "support_logic_mode": null,
+      "empty_sector_fraction": 0.8369936554416788,
+      "non_background_occupancy_fraction": 0.16300634455832114,
+      "target_region_contrast_vs_sector": -0.015499360859394073,
+      "near_field_wall_occupancy_fraction": 0.0,
+      "wall_contrast_vs_sector": 0.9060004018247128
+    },
+    "after": {
+      "preset_id": "station_11rs_node_b",
+      "approach": "default",
+      "consistency_bucket": "sparse_empty_dominant",
+      "pre_support_consistency_bucket": "sparse_empty_dominant",
+      "support_logic_active": false,
+      "support_logic_mode": "none",
+      "empty_sector_fraction": 0.8369936554416788,
+      "non_background_occupancy_fraction": 0.16300634455832114,
+      "target_region_contrast_vs_sector": -0.015499360859394073,
+      "near_field_wall_occupancy_fraction": 0.0,
+      "wall_contrast_vs_sector": 0.9060004018247128
+    },
+    "delta_empty_sector_fraction": 0.0,
+    "delta_non_background_occupancy_fraction": 0.0,
+    "delta_target_region_contrast_vs_sector": 0.0,
+    "before_occupancy_gap_vs_localizer": 0.7481698389458273,
+    "after_occupancy_gap_vs_localizer": 0.7481698389458273
+  },
+  {
+    "preset_id": "station_2l_node_a",
+    "approach": "default",
+    "before": {
+      "preset_id": "station_2l_node_a",
+      "approach": "default",
+      "consistency_bucket": null,
+      "support_logic_active": null,
+      "support_logic_mode": null,
+      "empty_sector_fraction": 0.7925817471937531,
+      "non_background_occupancy_fraction": 0.20741825280624696,
+      "target_region_contrast_vs_sector": 0.09631193801760674,
+      "near_field_wall_occupancy_fraction": 0.011764705882352941,
+      "wall_contrast_vs_sector": 0.9642067365348339
+    },
+    "after": {
+      "preset_id": "station_2l_node_a",
+      "approach": "default",
+      "consistency_bucket": "target_prominent",
+      "pre_support_consistency_bucket": "target_prominent",
+      "support_logic_active": false,
+      "support_logic_mode": "none",
+      "empty_sector_fraction": 0.7925817471937531,
+      "non_background_occupancy_fraction": 0.20741825280624696,
+      "target_region_contrast_vs_sector": 0.09631193801760674,
+      "near_field_wall_occupancy_fraction": 0.011764705882352941,
+      "wall_contrast_vs_sector": 0.9642067365348339
+    },
+    "delta_empty_sector_fraction": 0.0,
+    "delta_non_background_occupancy_fraction": 0.0,
+    "delta_target_region_contrast_vs_sector": 0.0,
+    "before_occupancy_gap_vs_localizer": 0.6466569058077111,
+    "after_occupancy_gap_vs_localizer": 0.6466569058077111
+  },
+  {
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "before": {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "consistency_bucket": null,
+      "support_logic_active": null,
+      "support_logic_mode": null,
+      "empty_sector_fraction": 0.9741337237676916,
+      "non_background_occupancy_fraction": 0.025866276232308444,
+      "target_region_contrast_vs_sector": -0.003139275126159191,
+      "near_field_wall_occupancy_fraction": 0.011764705882352941,
+      "wall_contrast_vs_sector": 0.06680159410461783
+    },
+    "after": {
+      "preset_id": "station_7_node_a",
+      "approach": "lms",
+      "consistency_bucket": "sparse_empty_dominant",
+      "pre_support_consistency_bucket": "sparse_empty_dominant",
+      "support_logic_active": true,
+      "support_logic_mode": "sparse_target_support",
+      "empty_sector_fraction": 0.9697413372376769,
+      "non_background_occupancy_fraction": 0.030258662762323085,
+      "target_region_contrast_vs_sector": 0.03928127512335777,
+      "near_field_wall_occupancy_fraction": 0.011764705882352941,
+      "wall_contrast_vs_sector": 0.07762698829174042
+    },
+    "delta_empty_sector_fraction": -0.004392386530014725,
+    "delta_non_background_occupancy_fraction": 0.004392386530014641,
+    "delta_target_region_contrast_vs_sector": 0.042420550249516964,
+    "before_occupancy_gap_vs_localizer": 0.9638848218643241,
+    "after_occupancy_gap_vs_localizer": 0.9594924353343095
+  }
+]

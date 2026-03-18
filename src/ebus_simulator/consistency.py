@@ -49,6 +49,19 @@ def _delta(left: Mapping[str, object], right: Mapping[str, object], key: str) ->
     return abs(left_value - right_value)
 
 
+def _entry_key(entry: Mapping[str, object]) -> tuple[str, str]:
+    return str(entry["preset_id"]), str(entry["approach"])
+
+
+def _occupancy_gap(localizer_metrics: Mapping[str, object], physics_metrics: Mapping[str, object]) -> float | None:
+    return _delta(localizer_metrics, physics_metrics, "non_background_occupancy_fraction")
+
+
+def _entry_metrics(entry: Mapping[str, object], key: str) -> Mapping[str, object]:
+    value = entry.get(key)
+    return value if isinstance(value, Mapping) else {}
+
+
 def _tail_ratio(metrics: Mapping[str, object]) -> float | None:
     reference_value = _metric(metrics, "normalization_reference_value")
     aux_value = _metric(metrics, "normalization_aux_value")
@@ -143,9 +156,13 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "physics_near_field_wall_occupancy_fraction",
                 "physics_empty_sector_fraction",
                 "physics_target_centerline_offset_fraction",
+                "physics_consistency_bucket",
+                "physics_support_logic_active",
+                "physics_support_logic_mode",
                 "physics_normalization_method",
                 "physics_normalization_reference_value",
                 "physics_normalization_aux_value",
+                "occupancy_gap",
                 "localizer_png",
                 "physics_png",
             ],
@@ -167,9 +184,13 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "physics_near_field_wall_occupancy_fraction": entry["physics_consistency_metrics"].get("near_field_wall_occupancy_fraction"),
                     "physics_empty_sector_fraction": entry["physics_consistency_metrics"].get("empty_sector_fraction"),
                     "physics_target_centerline_offset_fraction": entry["physics_consistency_metrics"].get("target_centerline_offset_fraction"),
+                    "physics_consistency_bucket": entry["physics_consistency_metrics"].get("consistency_bucket"),
+                    "physics_support_logic_active": entry["physics_consistency_metrics"].get("support_logic_active"),
+                    "physics_support_logic_mode": entry["physics_consistency_metrics"].get("support_logic_mode"),
                     "physics_normalization_method": entry["physics_consistency_metrics"].get("normalization_method"),
                     "physics_normalization_reference_value": entry["physics_consistency_metrics"].get("normalization_reference_value"),
                     "physics_normalization_aux_value": entry["physics_consistency_metrics"].get("normalization_aux_value"),
+                    "occupancy_gap": entry.get("occupancy_gap"),
                     "localizer_png": entry["localizer_png"],
                     "physics_png": entry["physics_png"],
                 }
@@ -213,13 +234,14 @@ def _write_summary_markdown(summary_path: Path, summary: dict[str, object]) -> N
             )
         lines.append("")
 
-    lines.extend(
+        lines.extend(
         [
             "## Heuristic Breakdown",
             "",
             f"- target_prominence_disagreements: {summary['heuristic_breakdown']['target_prominence_disagreements']}",
             f"- occupancy_disagreements: {summary['heuristic_breakdown']['occupancy_disagreements']}",
             f"- brightness_disagreements: {summary['heuristic_breakdown']['brightness_disagreements']}",
+            f"- support_logic_activations: {summary['heuristic_breakdown']['support_logic_activations']}",
             f"- edge_target_cases: {summary['heuristic_breakdown']['edge_target_cases']}",
             f"- wall_dominant_cases: {summary['heuristic_breakdown']['wall_dominant_cases']}",
             f"- sparse_sector_cases: {summary['heuristic_breakdown']['sparse_sector_cases']}",
@@ -362,6 +384,7 @@ def analyze_render_consistency(
                 "divergence_reasons": reasons,
                 "target_prominence_delta": _delta(localizer_metrics, physics_metrics, "target_region_contrast_vs_sector"),
                 "occupancy_delta": _delta(localizer_metrics, physics_metrics, "non_background_occupancy_fraction"),
+                "occupancy_gap": _occupancy_gap(localizer_metrics, physics_metrics),
                 "brightness_delta": _delta(localizer_metrics, physics_metrics, "sector_brightness_mean"),
                 "physics_tail_ratio": _tail_ratio(physics_metrics),
                 "physics_near_field_wall_occupancy_fraction": physics_metrics.get("near_field_wall_occupancy_fraction"),
@@ -408,6 +431,11 @@ def analyze_render_consistency(
                 for entry in entries
                 if entry["brightness_delta"] is not None and float(entry["brightness_delta"]) >= BRIGHTNESS_DELTA_WARN
             ),
+            "support_logic_activations": sum(
+                1
+                for entry in entries
+                if bool(entry["physics_consistency_metrics"].get("support_logic_active"))
+            ),
             "edge_target_cases": sum(
                 1
                 for entry in entries
@@ -443,3 +471,90 @@ def analyze_render_consistency(
     _write_summary_csv(summary_csv_path, entries)
     _write_summary_markdown(summary_md_path, summary)
     return summary
+
+
+def compare_consistency_summaries(
+    before_summary: Mapping[str, object],
+    after_summary: Mapping[str, object],
+) -> dict[str, object]:
+    before_entries = {
+        _entry_key(entry): entry
+        for entry in before_summary.get("entries", [])
+        if isinstance(entry, Mapping)
+    }
+    after_entries = {
+        _entry_key(entry): entry
+        for entry in after_summary.get("entries", [])
+        if isinstance(entry, Mapping)
+    }
+    matched_keys = sorted(set(before_entries) & set(after_entries))
+
+    rows: list[dict[str, object]] = []
+    for key in matched_keys:
+        before_entry = before_entries[key]
+        after_entry = after_entries[key]
+        before_localizer_metrics = _entry_metrics(before_entry, "localizer_consistency_metrics")
+        before_physics_metrics = _entry_metrics(before_entry, "physics_consistency_metrics")
+        after_localizer_metrics = _entry_metrics(after_entry, "localizer_consistency_metrics")
+        after_physics_metrics = _entry_metrics(after_entry, "physics_consistency_metrics")
+        rows.append(
+            {
+                "preset_id": key[0],
+                "approach": key[1],
+                "before_bucket": before_physics_metrics.get("consistency_bucket"),
+                "after_bucket": after_physics_metrics.get("consistency_bucket"),
+                "before_support_logic_active": before_physics_metrics.get("support_logic_active", False),
+                "after_support_logic_active": after_physics_metrics.get("support_logic_active", False),
+                "before_empty_sector_fraction": before_physics_metrics.get("empty_sector_fraction"),
+                "after_empty_sector_fraction": after_physics_metrics.get("empty_sector_fraction"),
+                "before_non_background_occupancy_fraction": before_physics_metrics.get("non_background_occupancy_fraction"),
+                "after_non_background_occupancy_fraction": after_physics_metrics.get("non_background_occupancy_fraction"),
+                "before_target_region_contrast_vs_sector": before_physics_metrics.get("target_region_contrast_vs_sector"),
+                "after_target_region_contrast_vs_sector": after_physics_metrics.get("target_region_contrast_vs_sector"),
+                "before_occupancy_gap": (
+                    before_entry.get("occupancy_gap")
+                    if before_entry.get("occupancy_gap") is not None
+                    else _occupancy_gap(before_localizer_metrics, before_physics_metrics)
+                ),
+                "after_occupancy_gap": (
+                    after_entry.get("occupancy_gap")
+                    if after_entry.get("occupancy_gap") is not None
+                    else _occupancy_gap(after_localizer_metrics, after_physics_metrics)
+                ),
+            }
+        )
+
+    return {
+        "before_case_id": before_summary.get("case_id"),
+        "after_case_id": after_summary.get("case_id"),
+        "matched_entry_count": len(rows),
+        "improved_empty_sector_count": sum(
+            1
+            for row in rows
+            if row["before_empty_sector_fraction"] is not None
+            and row["after_empty_sector_fraction"] is not None
+            and float(row["after_empty_sector_fraction"]) < float(row["before_empty_sector_fraction"])
+        ),
+        "improved_non_background_occupancy_count": sum(
+            1
+            for row in rows
+            if row["before_non_background_occupancy_fraction"] is not None
+            and row["after_non_background_occupancy_fraction"] is not None
+            and float(row["after_non_background_occupancy_fraction"]) > float(row["before_non_background_occupancy_fraction"])
+        ),
+        "improved_target_contrast_count": sum(
+            1
+            for row in rows
+            if row["before_target_region_contrast_vs_sector"] is not None
+            and row["after_target_region_contrast_vs_sector"] is not None
+            and float(row["after_target_region_contrast_vs_sector"]) > float(row["before_target_region_contrast_vs_sector"])
+        ),
+        "improved_occupancy_gap_count": sum(
+            1
+            for row in rows
+            if row["before_occupancy_gap"] is not None
+            and row["after_occupancy_gap"] is not None
+            and float(row["after_occupancy_gap"]) < float(row["before_occupancy_gap"])
+        ),
+        "rows": rows,
+    }

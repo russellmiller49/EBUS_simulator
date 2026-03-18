@@ -31,6 +31,7 @@ from ebus_simulator.rendering import (
     _annotate_legend_and_labels,
     _apply_contour_overlay,
     _build_sector_grid,
+    classify_render_consistency_bucket,
     compute_render_consistency_metrics,
     _draw_cross_marker,
     _fan_target_row_col,
@@ -57,6 +58,18 @@ PHYSICS_NORMALIZATION_REFERENCE_PERCENTILE = 99.5
 PHYSICS_NORMALIZATION_AUX_PERCENTILE = 98.5
 PHYSICS_NORMALIZATION_SPIKE_RATIO = 1.22
 PHYSICS_NORMALIZATION_AUX_BLEND_WEIGHT = 0.45
+PHYSICS_SPARSE_SIGNAL_THRESHOLD = 0.01
+PHYSICS_SPARSE_SUPPORT_EMPTY_FRACTION = 0.90
+PHYSICS_WALL_GUARDRAIL_EMPTY_FRACTION = 0.86
+PHYSICS_SPARSE_SUPPORT_FLOOR_BASE = 0.034
+PHYSICS_SPARSE_SUPPORT_FLOOR_SCALE = 0.028
+PHYSICS_SPARSE_SUPPORT_ANATOMY_WEIGHT = 0.014
+PHYSICS_SPARSE_SUPPORT_TARGET_WEIGHT = 0.018
+PHYSICS_WALL_GUARDRAIL_FLOOR_BASE = 0.032
+PHYSICS_WALL_GUARDRAIL_FLOOR_SCALE = 0.020
+PHYSICS_WALL_GUARDRAIL_ANATOMY_WEIGHT = 0.008
+PHYSICS_WALL_GUARDRAIL_TARGET_WEIGHT = 0.010
+PHYSICS_WALL_GUARDRAIL_MODERATION = 0.94
 
 
 def _resolve_artifact_config(request: RenderRequest) -> PhysicsArtifactConfig:
@@ -122,6 +135,151 @@ def _normalize_compressed_bmode(
             "compression_gain_factor": float(PHYSICS_LOG_COMPRESSION_GAIN_FACTOR),
         },
     )
+
+
+def _normalize_support_map(values: np.ndarray, *, sector_mask: np.ndarray, percentile: float = 99.0) -> np.ndarray:
+    image = np.asarray(values, dtype=np.float32)
+    mask = np.asarray(sector_mask, dtype=bool)
+    masked = image[mask]
+    if masked.size == 0:
+        return np.zeros_like(image, dtype=np.float32)
+    upper = float(np.percentile(masked, percentile))
+    if upper <= 1e-9:
+        return np.zeros_like(image, dtype=np.float32)
+    normalized = np.clip(image / upper, 0.0, 1.0)
+    normalized[~mask] = 0.0
+    return normalized.astype(np.float32)
+
+
+def _apply_sparse_signal_support(
+    display_bmode: np.ndarray,
+    *,
+    sector_mask: np.ndarray,
+    depth_grid_mm: np.ndarray,
+    max_depth_mm: float,
+    preliminary_metrics: dict[str, object],
+    target_mask: np.ndarray,
+    wall_mask: np.ndarray,
+    vessel_mask: np.ndarray,
+    diagnostics: dict[str, np.ndarray],
+) -> tuple[np.ndarray, dict[str, object], dict[str, np.ndarray]]:
+    bucket = str(preliminary_metrics.get("consistency_bucket", classify_render_consistency_bucket(preliminary_metrics)))
+    empty_sector_fraction = float(preliminary_metrics.get("empty_sector_fraction", 0.0) or 0.0)
+    target_coverage = float(preliminary_metrics.get("target_sector_coverage_fraction", 0.0) or 0.0)
+
+    support_mode = "none"
+    support_active = False
+    floor_base = 0.0
+    floor_scale = 0.0
+    anatomy_weight = 0.0
+    target_weight = 0.0
+    wall_moderation = 1.0
+
+    if bucket == "sparse_empty_dominant" and empty_sector_fraction >= PHYSICS_SPARSE_SUPPORT_EMPTY_FRACTION:
+        support_active = True
+        support_mode = "sparse_target_support" if target_coverage > 0.0 else "sparse_anatomy_support"
+        floor_base = PHYSICS_SPARSE_SUPPORT_FLOOR_BASE
+        floor_scale = PHYSICS_SPARSE_SUPPORT_FLOOR_SCALE
+        anatomy_weight = PHYSICS_SPARSE_SUPPORT_ANATOMY_WEIGHT
+        target_weight = PHYSICS_SPARSE_SUPPORT_TARGET_WEIGHT if target_coverage > 0.0 else 0.0
+    elif bucket == "wall_dominant" and empty_sector_fraction >= PHYSICS_WALL_GUARDRAIL_EMPTY_FRACTION:
+        support_active = True
+        support_mode = "sparse_wall_guardrail"
+        floor_base = PHYSICS_WALL_GUARDRAIL_FLOOR_BASE
+        floor_scale = PHYSICS_WALL_GUARDRAIL_FLOOR_SCALE
+        anatomy_weight = PHYSICS_WALL_GUARDRAIL_ANATOMY_WEIGHT
+        target_weight = PHYSICS_WALL_GUARDRAIL_TARGET_WEIGHT if target_coverage > 0.0 else 0.0
+        wall_moderation = PHYSICS_WALL_GUARDRAIL_MODERATION
+
+    support_debug = {
+        "support_map": np.zeros_like(display_bmode, dtype=np.float32),
+        "support_floor_map": np.zeros_like(display_bmode, dtype=np.float32),
+        "target_scanline_support_map": np.zeros_like(display_bmode, dtype=np.float32),
+    }
+    support_details = {
+        "pre_support_consistency_bucket": bucket,
+        "support_logic_active": support_active,
+        "support_logic_mode": support_mode,
+        "support_floor_base": float(floor_base),
+        "support_floor_scale": float(floor_scale),
+        "support_anatomy_weight": float(anatomy_weight),
+        "support_target_scanline_weight": float(target_weight),
+        "support_wall_moderation_factor": float(wall_moderation),
+        "support_candidate_fraction": 0.0,
+        "pre_support_empty_sector_fraction": empty_sector_fraction,
+        "pre_support_non_background_occupancy_fraction": float(preliminary_metrics.get("non_background_occupancy_fraction", 0.0) or 0.0),
+    }
+    if not support_active:
+        return np.asarray(display_bmode, dtype=np.float32), support_details, support_debug
+
+    boundary_map = _normalize_support_map(diagnostics.get("boundary_map", np.zeros_like(display_bmode, dtype=np.float32)), sector_mask=sector_mask)
+    transmission_map = _normalize_support_map(diagnostics.get("transmission_map", np.zeros_like(display_bmode, dtype=np.float32)), sector_mask=sector_mask)
+    target_focus_map = _normalize_support_map(diagnostics.get("target_focus_map", np.zeros_like(display_bmode, dtype=np.float32)), sector_mask=sector_mask)
+    compressed_map = np.asarray(diagnostics.get("compressed_map", np.zeros_like(display_bmode, dtype=np.float32)), dtype=np.float32)
+
+    target_core = ndimage.gaussian_filter(np.asarray(target_mask, dtype=np.float32), sigma=(2.4, 1.2))
+    target_columns = np.max(target_core, axis=0, keepdims=True)
+    target_scanline_map = np.clip(
+        (0.65 * target_focus_map) + (0.35 * np.broadcast_to(target_columns, target_core.shape)),
+        0.0,
+        1.0,
+    ).astype(np.float32)
+    anatomy_support_map = np.clip(
+        (0.52 * boundary_map)
+        + (0.28 * np.asarray(wall_mask, dtype=np.float32))
+        + (0.18 * np.asarray(vessel_mask, dtype=np.float32))
+        + (0.36 * target_focus_map),
+        0.0,
+        1.0,
+    ).astype(np.float32)
+    transmission_support = np.sqrt(np.clip(transmission_map, 0.0, 1.0)).astype(np.float32)
+    sampled_anatomy_mask = np.asarray(
+        sector_mask
+        & (
+            (compressed_map > (PHYSICS_SPARSE_SIGNAL_THRESHOLD * 1.8))
+            | np.asarray(wall_mask, dtype=bool)
+            | np.asarray(vessel_mask, dtype=bool)
+            | np.asarray(target_mask, dtype=bool)
+            | (boundary_map > 0.18)
+        ),
+        dtype=bool,
+    )
+    sampled_anatomy_mask &= anatomy_support_map > 0.22
+    support_details["support_candidate_fraction"] = float(
+        np.count_nonzero(sampled_anatomy_mask) / max(1, np.count_nonzero(np.asarray(sector_mask, dtype=bool)))
+    )
+
+    support_floor_map = np.clip(
+        float(floor_base) + (float(floor_scale) * anatomy_support_map * transmission_support),
+        0.0,
+        1.0,
+    ).astype(np.float32)
+    support_lift_map = (
+        float(anatomy_weight) * anatomy_support_map * transmission_support
+    ).astype(np.float32)
+    if target_weight > 0.0:
+        support_lift_map += (float(target_weight) * target_scanline_map).astype(np.float32)
+
+    updated = np.asarray(display_bmode, dtype=np.float32).copy()
+    low_signal_mask = sampled_anatomy_mask & (updated < 0.08)
+    updated[low_signal_mask] = np.maximum(updated[low_signal_mask], support_floor_map[low_signal_mask])
+    lift_gate = np.clip((0.14 - updated) / 0.14, 0.0, 1.0).astype(np.float32)
+    gated_lift_map = support_lift_map * lift_gate
+    updated[sampled_anatomy_mask] = np.clip(
+        updated[sampled_anatomy_mask] + gated_lift_map[sampled_anatomy_mask],
+        0.0,
+        1.0,
+    )
+
+    if wall_moderation < 1.0:
+        near_field_mask = np.asarray(depth_grid_mm, dtype=np.float32) <= (float(max_depth_mm) * 0.20)
+        wall_guardrail_mask = np.asarray(sector_mask, dtype=bool) & near_field_mask & np.asarray(wall_mask, dtype=bool) & (updated > 0.14)
+        updated[wall_guardrail_mask] *= float(wall_moderation)
+
+    support_debug["support_map"] = gated_lift_map.astype(np.float32)
+    support_debug["support_floor_map"] = np.where(sampled_anatomy_mask, support_floor_map, 0.0).astype(np.float32)
+    support_debug["target_scanline_support_map"] = target_scanline_map.astype(np.float32)
+    return np.clip(updated, 0.0, 1.0).astype(np.float32), support_details, support_debug
 
 
 def _simulate_bmode_with_diagnostics(
@@ -722,6 +880,70 @@ def render_physics_preset(
         min_area_px=overlay_config.min_contour_area_px,
         min_length_px=overlay_config.min_contour_length_px,
     )
+    target_offset = target_world - contact_world
+    target_depth_mm = float(np.dot(target_offset, probe_axis))
+    target_lateral_offset_mm = float(np.dot(target_offset, shaft_axis))
+    preliminary_consistency_metrics = compute_render_consistency_metrics(
+        image_gray=display_bmode,
+        sector_mask=sector_mask,
+        depth_grid_mm=display_depth_grid_mm,
+        lateral_grid_mm=display_lateral_grid_mm,
+        max_depth_mm=resolved_max_depth_mm,
+        sector_angle_deg=resolved_sector_angle_deg,
+        target_depth_mm=target_depth_mm,
+        target_lateral_offset_mm=target_lateral_offset_mm,
+        target_region_mask=eval_target_region_mask,
+        airway_wall_mask=eval_wall_mask,
+        vessel_mask=eval_vessel_mask,
+        normalization_method=str(normalization_details["method"]),
+        normalization_reference_percentile=(
+            None
+            if normalization_details["reference_percentile"] is None
+            else float(normalization_details["reference_percentile"])
+        ),
+        normalization_reference_value=(
+            None
+            if normalization_details["reference_value"] is None
+            else float(normalization_details["reference_value"])
+        ),
+        normalization_aux_percentile=(
+            None
+            if normalization_details["aux_percentile"] is None
+            else float(normalization_details["aux_percentile"])
+        ),
+        normalization_aux_value=(
+            None
+            if normalization_details["aux_value"] is None
+            else float(normalization_details["aux_value"])
+        ),
+        normalization_lower_bound=(
+            None
+            if normalization_details["lower_bound"] is None
+            else float(normalization_details["lower_bound"])
+        ),
+        normalization_upper_bound=(
+            None
+            if normalization_details["upper_bound"] is None
+            else float(normalization_details["upper_bound"])
+        ),
+        compression_gain_factor=(
+            None
+            if normalization_details["compression_gain_factor"] is None
+            else float(normalization_details["compression_gain_factor"])
+        ),
+    )
+    display_bmode, support_details, support_debug_maps = _apply_sparse_signal_support(
+        display_bmode,
+        sector_mask=sector_mask,
+        depth_grid_mm=display_depth_grid_mm,
+        max_depth_mm=resolved_max_depth_mm,
+        preliminary_metrics=preliminary_consistency_metrics,
+        target_mask=eval_target_region_mask,
+        wall_mask=eval_wall_mask,
+        vessel_mask=eval_vessel_mask,
+        diagnostics=display_diagnostics,
+    )
+    display_diagnostics.update(support_debug_maps)
 
     image_rgb = np.zeros((resolved_height, resolved_width, 3), dtype=np.float32)
     image_rgb[sector_mask] = np.repeat(display_bmode[sector_mask, None], 3, axis=1)
@@ -841,9 +1063,6 @@ def render_physics_preset(
         wall_mask=eval_wall_mask,
         vessel_mask=eval_vessel_mask,
     )
-    target_offset = target_world - contact_world
-    target_depth_mm = float(np.dot(target_offset, probe_axis))
-    target_lateral_offset_mm = float(np.dot(target_offset, shaft_axis))
     consistency_metrics = compute_render_consistency_metrics(
         image_gray=display_bmode,
         sector_mask=sector_mask,
@@ -893,6 +1112,7 @@ def render_physics_preset(
             else float(normalization_details["compression_gain_factor"])
         ),
     )
+    consistency_metrics.update(support_details)
     engine_diagnostics = {
         "artifact_settings": {
             "speckle_strength": float(artifact_config.speckle_strength),
@@ -900,6 +1120,7 @@ def render_physics_preset(
             "shadow_strength": float(artifact_config.shadow_strength),
         },
         "normalization": dict(normalization_details),
+        "support_logic": dict(support_details),
         "eval_summary": eval_summary,
         "debug_map_paths": debug_map_paths,
     }

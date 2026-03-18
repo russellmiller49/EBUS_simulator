@@ -84,6 +84,7 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
         },
         "preset_override_notes": "Review SVC/azygous relationship.",
         "consistency_metrics": {
+            "consistency_bucket": "sparse_empty_dominant",
             "target_sector_coverage_fraction": 0.12,
             "target_centerline_offset_fraction": 0.33,
             "near_field_wall_occupancy_fraction": 0.22,
@@ -96,6 +97,12 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
             "normalization_method": "log_percentile_99.5_blended_98.5",
             "normalization_reference_percentile": 99.5,
             "normalization_reference_value": 0.88,
+            "support_logic_active": True,
+            "support_logic_mode": "sparse_target_support",
+            "support_floor_base": 0.034,
+            "support_floor_scale": 0.028,
+            "support_anatomy_weight": 0.014,
+            "support_target_scanline_weight": 0.018,
         },
         "engine_diagnostics": {
             "eval_summary": {
@@ -151,6 +158,8 @@ def test_build_render_summary_text_reports_eval_and_sidecars():
     assert "- Near-Field Wall Occupancy: 0.2200" in summary
     assert "- Target Contrast: 0.1200" in summary
     assert "- Target Region Contrast: 0.1100" in summary
+    assert "- Consistency Bucket: Sparse Empty Dominant" in summary
+    assert "- Signal Support: Sparse Target Support, Floor 0.034, Floor Scale 0.028, Anatomy 0.014, Target 0.018" in summary
     assert "- Normalization: log_percentile_99.5_blended_98.5" in summary
     assert "- nUS Delta vs Voxel Baseline: 3.25 deg" in summary
     assert "- 3D Context: Localizer / Debug (diagnostic_panel)" in summary

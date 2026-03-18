@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 import json
 import math
 from pathlib import Path
+from typing import Mapping
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -40,6 +41,13 @@ OPTIMIZATION_EPSILON = 1e-9
 CONSISTENCY_SIGNAL_THRESHOLD = 0.05
 CONSISTENCY_NEAR_FIELD_FRACTION = 0.20
 CONSISTENCY_TARGET_REGION_RADIUS_MM = 4.0
+CONSISTENCY_TARGET_PROMINENT_MIN_CONTRAST = 0.08
+CONSISTENCY_TARGET_PROMINENT_MIN_COVERAGE = 0.02
+CONSISTENCY_WALL_DOMINANT_MIN_NEAR_FIELD_OCCUPANCY = 0.16
+CONSISTENCY_WALL_DOMINANT_MIN_CONTRAST = 0.35
+CONSISTENCY_WALL_DOMINANT_MAX_TARGET_CONTRAST = 0.04
+CONSISTENCY_SPARSE_EMPTY_FRACTION = 0.82
+CONSISTENCY_SPARSE_NON_BACKGROUND_MAX = 0.18
 _LOCAL_POSE_OPTIMIZATION_CACHE: dict[tuple[object, ...], LocalPoseOptimizationResult] = {}
 
 AIRWAY_LUMEN_COLOR = np.asarray([0.22, 0.92, 0.94], dtype=np.float32)
@@ -522,6 +530,52 @@ def _build_target_region_mask(
     )
 
 
+def _metric_float(metrics: Mapping[str, object], key: str) -> float | None:
+    value = metrics.get(key)
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def classify_render_consistency_bucket(metrics: Mapping[str, object]) -> str:
+    target_contrast = _metric_float(metrics, "target_region_contrast_vs_sector")
+    target_coverage = _metric_float(metrics, "target_sector_coverage_fraction")
+    near_field_wall_occupancy = _metric_float(metrics, "near_field_wall_occupancy_fraction")
+    wall_contrast = _metric_float(metrics, "wall_region_contrast_vs_sector")
+    empty_sector_fraction = _metric_float(metrics, "empty_sector_fraction")
+    non_background_occupancy = _metric_float(metrics, "non_background_occupancy_fraction")
+
+    if (
+        target_contrast is not None
+        and target_coverage is not None
+        and target_contrast >= CONSISTENCY_TARGET_PROMINENT_MIN_CONTRAST
+        and target_coverage >= CONSISTENCY_TARGET_PROMINENT_MIN_COVERAGE
+    ):
+        return "target_prominent"
+
+    if (
+        near_field_wall_occupancy is not None
+        and wall_contrast is not None
+        and near_field_wall_occupancy >= CONSISTENCY_WALL_DOMINANT_MIN_NEAR_FIELD_OCCUPANCY
+        and wall_contrast >= CONSISTENCY_WALL_DOMINANT_MIN_CONTRAST
+        and (target_contrast is None or target_contrast <= CONSISTENCY_WALL_DOMINANT_MAX_TARGET_CONTRAST)
+    ):
+        return "wall_dominant"
+
+    if (
+        empty_sector_fraction is not None
+        and non_background_occupancy is not None
+        and empty_sector_fraction >= CONSISTENCY_SPARSE_EMPTY_FRACTION
+        and non_background_occupancy <= CONSISTENCY_SPARSE_NON_BACKGROUND_MAX
+    ):
+        return "sparse_empty_dominant"
+
+    return "mixed_occupancy"
+
+
 def compute_render_consistency_metrics(
     *,
     image_gray: np.ndarray,
@@ -593,7 +647,7 @@ def compute_render_consistency_metrics(
     sector_p99 = None if sector_values.size == 0 else float(np.percentile(sector_values, 99.0))
     sector_std = None if sector_values.size == 0 else float(np.std(sector_values))
 
-    return {
+    metrics = {
         "normalization_method": normalization_method,
         "normalization_reference_percentile": normalization_reference_percentile,
         "normalization_reference_value": normalization_reference_value,
@@ -633,6 +687,8 @@ def compute_render_consistency_metrics(
         "vessel_region_mean_intensity": vessel_mean,
         "vessel_region_contrast_vs_sector": (None if vessel_mean is None or sector_mean is None else float(vessel_mean - sector_mean)),
     }
+    metrics["consistency_bucket"] = classify_render_consistency_bucket(metrics)
+    return metrics
 
 
 def _window_ct(values_hu: np.ndarray, *, gain: float, attenuation: float, depths_mm: np.ndarray, max_depth_mm: float) -> np.ndarray:
