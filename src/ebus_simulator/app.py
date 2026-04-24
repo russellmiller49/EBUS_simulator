@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import atexit
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Empty, SimpleQueue
 import re
@@ -14,6 +14,12 @@ import numpy as np
 from PIL import Image
 
 from ebus_simulator.rendering import build_render_context, render_metadata_to_dict, render_preset
+from ebus_simulator.video_reference import (
+    ReferenceLibrary,
+    build_reference_library,
+    station_reference_keyframes,
+    station_reference_status,
+)
 
 
 if TYPE_CHECKING:
@@ -59,6 +65,9 @@ class PresetBrowserRender:
     context_metadata_path: str
     summary_text: str
     warnings: list[str]
+    reference_rgb: np.ndarray | None = None
+    reference_status: str = "not_requested"
+    reference_keyframes: list[dict[str, object]] = field(default_factory=list)
 
 
 def collect_preset_browser_options(context: RenderContext) -> list[PresetBrowserOption]:
@@ -77,12 +86,27 @@ def extract_context_tile(panel_rgb: np.ndarray) -> np.ndarray:
     return np.array(image[height // 2 :, width // 2 :, :], copy=True)
 
 
-def build_screenshot_strip(sector_rgb: np.ndarray, context_rgb: np.ndarray) -> np.ndarray:
+def _fit_image_to_height(image_rgb: np.ndarray, height: int) -> np.ndarray:
+    image = Image.fromarray(np.asarray(image_rgb, dtype=np.uint8))
+    if image.height == height:
+        return np.asarray(image, dtype=np.uint8)
+    width = max(1, int(round(image.width * (height / max(1, image.height)))))
+    return np.asarray(image.resize((width, height), Image.Resampling.LANCZOS), dtype=np.uint8)
+
+
+def build_screenshot_strip(
+    sector_rgb: np.ndarray,
+    context_rgb: np.ndarray,
+    reference_rgb: np.ndarray | None = None,
+) -> np.ndarray:
     sector = np.asarray(sector_rgb, dtype=np.uint8)
     context = np.asarray(context_rgb, dtype=np.uint8)
     if sector.shape[0] != context.shape[0]:
         raise ValueError("sector_rgb and context_rgb must have the same height.")
-    return np.concatenate((sector, context), axis=1)
+    panels = [sector, context]
+    if reference_rgb is not None:
+        panels.append(_fit_image_to_height(reference_rgb, sector.shape[0]))
+    return np.concatenate(panels, axis=1)
 
 
 @dataclass(slots=True)
@@ -245,12 +269,22 @@ class PresetBrowserSession:
         *,
         width: int = DEFAULT_APP_TILE_SIZE,
         height: int = DEFAULT_APP_TILE_SIZE,
+        reference_config: str | Path | None = None,
     ) -> None:
         self.context = build_render_context(manifest_path)
         self.width = int(width)
         self.height = int(height)
         self._temp_dir = tempfile.TemporaryDirectory(prefix="ebus_preset_browser_")
         self._temp_root = Path(self._temp_dir.name)
+        self.reference_library: ReferenceLibrary | None = (
+            None
+            if reference_config is None
+            else build_reference_library(
+                reference_config,
+                output_dir=self._temp_root / "reference_library",
+                frame_size_px=max(self.width, self.height),
+            )
+        )
         self.preset_options = collect_preset_browser_options(self.context)
         if not self.preset_options:
             raise ValueError("The manifest does not define any presets.")
@@ -368,6 +402,25 @@ class PresetBrowserSession:
         sector_metadata = render_metadata_to_dict(sector.metadata)
         context_metadata = render_metadata_to_dict(context_panel.metadata)
         warnings = list(dict.fromkeys(sector.metadata.warnings + context_panel.metadata.warnings))
+        preset_manifest = next(preset for preset in self.context.manifest.presets if preset.id == state.preset_id)
+        reference_keyframes = (
+            []
+            if self.reference_library is None
+            else station_reference_keyframes(self.reference_library, preset_manifest.station, max_items=4)
+        )
+        reference_status = (
+            "not_requested"
+            if self.reference_library is None
+            else station_reference_status(self.reference_library, preset_manifest.station)
+        )
+        reference_rgb = None
+        if reference_keyframes:
+            reference_path = Path(str(reference_keyframes[0]["image_path"]))
+            if reference_path.exists():
+                reference_rgb = np.asarray(Image.open(reference_path).convert("RGB"), dtype=np.uint8)
+        summary_text = build_render_summary_text(sector_metadata, context_metadata)
+        if reference_status != "not_requested":
+            summary_text += f"\nReference: {reference_status}, {len(reference_keyframes)} keyframe(s)"
         return PresetBrowserRender(
             preset_id=state.preset_id,
             approach=state.approach,
@@ -375,11 +428,14 @@ class PresetBrowserSession:
             state=state,
             sector_rgb=np.array(sector.image_rgb, copy=True),
             context_rgb=extract_context_tile(context_panel.image_rgb),
+            reference_rgb=reference_rgb,
             sector_metadata=sector_metadata,
             context_metadata=context_metadata,
+            reference_status=reference_status,
+            reference_keyframes=reference_keyframes,
             sector_metadata_path=sector.metadata.metadata_path,
             context_metadata_path=context_panel.metadata.metadata_path,
-            summary_text=build_render_summary_text(sector_metadata, context_metadata),
+            summary_text=summary_text,
             warnings=warnings,
         )
 
@@ -391,6 +447,7 @@ def launch_app(
     height: int = DEFAULT_APP_TILE_SIZE,
     close_after_ms: int | None = None,
     close_on_first_render: bool = False,
+    reference_config: str | Path | None = None,
 ) -> int:
     try:
         from PySide6.QtCore import Qt, QTimer
@@ -407,6 +464,7 @@ def launch_app(
             QMainWindow,
             QPlainTextEdit,
             QPushButton,
+            QSpinBox,
             QSplitter,
             QVBoxLayout,
             QWidget,
@@ -417,7 +475,7 @@ def launch_app(
             "`python -m pip install -e '.[ui]'` or `python -m pip install PySide6`."
         ) from exc
 
-    session = PresetBrowserSession(manifest_path, width=width, height=height)
+    session = PresetBrowserSession(manifest_path, width=width, height=height, reference_config=reference_config)
     atexit.register(session.close)
 
     def _to_pixmap(image_rgb: np.ndarray) -> QPixmap:
@@ -432,6 +490,7 @@ def launch_app(
             self._current_render: PresetBrowserRender | None = None
             self._sector_source_pixmap: QPixmap | None = None
             self._context_source_pixmap: QPixmap | None = None
+            self._reference_source_pixmap: QPixmap | None = None
             self._render_timer = QTimer(self)
             self._render_timer.setSingleShot(True)
             self._render_timer.setInterval(150)
@@ -532,6 +591,26 @@ def launch_app(
             self.vessels_checkbox.setChecked(default_state.overlay_vessels)
             controls_layout.addWidget(self.vessels_checkbox)
 
+            self.reference_annotation_checkbox = QCheckBox("Reference Annotation Overlay", controls)
+            self.reference_annotation_checkbox.setChecked(False)
+            self.reference_annotation_checkbox.setEnabled(False)
+            controls_layout.addWidget(self.reference_annotation_checkbox)
+
+            rating_form = QFormLayout()
+            self.rating_spins: list[QSpinBox] = []
+            for label in (
+                "Airway Wall",
+                "Vessel / Lumen",
+                "Node Conspicuity",
+                "Overall CP-EBUS",
+            ):
+                spin = QSpinBox(controls)
+                spin.setRange(0, 5)
+                spin.setSpecialValueText("unrated")
+                rating_form.addRow(label, spin)
+                self.rating_spins.append(spin)
+            controls_layout.addLayout(rating_form)
+
             button_row = QHBoxLayout()
             self.refresh_button = QPushButton("Refresh", controls)
             self.screenshot_button = QPushButton("Export Screenshot", controls)
@@ -564,8 +643,10 @@ def launch_app(
             image_splitter = QSplitter(Qt.Orientation.Horizontal, root)
             image_splitter.addWidget(self._build_image_panel("2D EBUS"))
             image_splitter.addWidget(self._build_image_panel("3D Context"))
+            image_splitter.addWidget(self._build_image_panel("Reference"))
             image_splitter.setStretchFactor(0, 1)
             image_splitter.setStretchFactor(1, 1)
+            image_splitter.setStretchFactor(2, 1)
             root_layout.addWidget(image_splitter, stretch=1)
 
             self._populate_approaches(default_state.preset_id, selected_approach=default_state.approach)
@@ -587,8 +668,10 @@ def launch_app(
             layout.addWidget(image_label, stretch=1)
             if title == "2D EBUS":
                 self.sector_label = image_label
-            else:
+            elif title == "3D Context":
                 self.context_label = image_label
+            else:
+                self.reference_label = image_label
             return panel
 
         def _connect_signals(self) -> None:
@@ -690,11 +773,13 @@ def launch_app(
         def _refresh_panel_pixmaps(self) -> None:
             self._set_panel_pixmap(self.sector_label, self._sector_source_pixmap)
             self._set_panel_pixmap(self.context_label, self._context_source_pixmap)
+            self._set_panel_pixmap(self.reference_label, self._reference_source_pixmap)
 
         def _apply_render(self, rendered: PresetBrowserRender) -> None:
             self._current_render = rendered
             self._sector_source_pixmap = _to_pixmap(rendered.sector_rgb)
             self._context_source_pixmap = _to_pixmap(rendered.context_rgb)
+            self._reference_source_pixmap = None if rendered.reference_rgb is None else _to_pixmap(rendered.reference_rgb)
             self._refresh_panel_pixmaps()
             self.summary_box.setPlainText(rendered.summary_text)
             warnings_text = "\n".join(rendered.warnings) if rendered.warnings else "No render warnings."
@@ -743,7 +828,11 @@ def launch_app(
             )
             if not output_path:
                 return
-            screenshot = build_screenshot_strip(self._current_render.sector_rgb, self._current_render.context_rgb)
+            screenshot = build_screenshot_strip(
+                self._current_render.sector_rgb,
+                self._current_render.context_rgb,
+                self._current_render.reference_rgb,
+            )
             Image.fromarray(screenshot).save(output_path)
             self.status_label.setText(f"Screenshot exported to {output_path}")
 
@@ -770,10 +859,11 @@ def launch_app(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Launch the desktop linear EBUS preset browser.")
     parser.add_argument("manifest", help="Path to the case manifest YAML file.")
+    parser.add_argument("--reference-config", help="Optional station reference-video YAML config.")
     args = parser.parse_args()
 
     try:
-        return int(launch_app(args.manifest))
+        return int(launch_app(args.manifest, reference_config=args.reference_config))
     except RuntimeError as exc:
         print(str(exc))
         return 1

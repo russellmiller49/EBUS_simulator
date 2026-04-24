@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 
 from ebus_simulator.acoustic_properties import AcousticField
+from ebus_simulator.physics_profiles import resolve_physics_appearance_profile
 from ebus_simulator.physics_renderer import PHYSICS_ENGINE_VERSION, simulate_bmode_from_acoustic_field
 from ebus_simulator.rendering import render_preset
 
@@ -99,3 +100,52 @@ def test_render_preset_supports_physics_engine(tmp_path):
     assert "boundary_map" in debug_map_paths
     assert all(Path(path).exists() for path in debug_map_paths.values())
     assert np.any(image > 0)
+
+
+def test_physics_profile_path_is_reproducible(tmp_path):
+    profile_path = tmp_path / "profile.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "physics_appearance_profile:",
+                "  name: test_profile",
+                "  sector_floor: 0.04",
+                "  log_gain: 6.5",
+            ]
+        )
+    )
+    profile = resolve_physics_appearance_profile(profile_path)
+
+    output_a = tmp_path / "a.png"
+    output_b = tmp_path / "b.png"
+    render_a = render_preset(
+        MANIFEST_PATH,
+        "station_4r_node_b",
+        output_path=output_a,
+        engine="physics",
+        width=64,
+        height=64,
+        mode="clean",
+        virtual_ebus=False,
+        simulated_ebus=True,
+        seed=17,
+        physics_profile=profile_path,
+    )
+    render_b = render_preset(
+        MANIFEST_PATH,
+        "station_4r_node_b",
+        output_path=output_b,
+        engine="physics",
+        width=64,
+        height=64,
+        mode="clean",
+        virtual_ebus=False,
+        simulated_ebus=True,
+        seed=17,
+        physics_profile=profile_path,
+    )
+
+    assert profile.name == "test_profile"
+    assert render_a.metadata.engine_diagnostics["appearance_profile"]["name"] == "test_profile"
+    assert np.array_equal(np.asarray(Image.open(output_a)), np.asarray(Image.open(output_b)))
+    assert render_b.metadata.engine_diagnostics["appearance_profile"]["sector_floor"] == 0.04

@@ -13,6 +13,11 @@ from ebus_simulator.artifacts import PhysicsArtifactConfig, apply_physics_artifa
 from ebus_simulator.device import build_device_pose
 from ebus_simulator.eval import summarize_bmode_regions
 from ebus_simulator.manifest import resolve_preset_overrides
+from ebus_simulator.physics_profiles import (
+    PhysicsAppearanceProfile,
+    physics_profile_to_dict,
+    resolve_physics_appearance_profile,
+)
 from ebus_simulator.render_engines import RenderEngine, RenderRequest, RenderResult
 from ebus_simulator.rendering import (
     AIRWAY_LUMEN_COLOR,
@@ -82,6 +87,7 @@ def _simulate_bmode_with_diagnostics(
     attenuation_scale: float,
     seed: int | None,
     artifact_config: PhysicsArtifactConfig,
+    appearance_profile: PhysicsAppearanceProfile,
 ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     if depth_step_mm <= 0.0:
         raise ValueError(f"depth_step_mm must be positive, got {depth_step_mm!r}.")
@@ -96,21 +102,33 @@ def _simulate_bmode_with_diagnostics(
     target_focus = np.asarray(field.target_focus, dtype=np.float32)
 
     boundary = np.abs(np.diff(impedance, axis=0, prepend=impedance[[0], :]))
-    boundary = np.maximum(boundary, np.asarray(field.airway_wall_mask, dtype=np.float32) * 0.18)
+    wall_mask_float = np.asarray(field.airway_wall_mask, dtype=np.float32)
+    boundary = np.maximum(boundary, wall_mask_float * float(appearance_profile.wall_boundary_boost))
     air_interface_map = boundary * np.maximum(lumen, np.pad(lumen[1:, :], ((0, 1), (0, 0)), mode="constant"))
 
     boundary_texture = (0.95 + (0.35 * rng.random(boundary.shape))).astype(np.float32)
-    scatter_component = scatter * 0.72
-    boundary_component = boundary * boundary_texture
+    non_lumen = (1.0 - np.clip(lumen, 0.0, 1.0)).astype(np.float32)
+    scatter_component = np.maximum(
+        scatter * float(appearance_profile.scatter_weight),
+        float(appearance_profile.tissue_floor) * non_lumen,
+    )
+    boundary_component = boundary * boundary_texture * float(appearance_profile.boundary_weight)
 
     depth_step_cm = float(depth_step_mm) / 10.0
     cumulative_attenuation = np.cumsum(attenuation * float(attenuation_scale), axis=0) * depth_step_cm
     transmission = np.exp(-cumulative_attenuation).astype(np.float32)
-    vessel_suppression = (1.0 - (0.18 * vessel)).astype(np.float32)
+    vessel_suppression = np.clip(
+        1.0 - (float(appearance_profile.vessel_suppression) * vessel),
+        0.0,
+        1.0,
+    ).astype(np.float32)
 
-    base_signal = ((0.65 * scatter_component) + (1.45 * boundary_component)) * transmission * vessel_suppression
+    base_signal = (scatter_component + boundary_component) * transmission * vessel_suppression
     if np.any(target_focus > 0.0):
-        base_signal *= (1.0 - (0.12 * target_focus))
+        base_signal *= (1.0 - (float(appearance_profile.target_darkening_strength) * target_focus))
+        focus_edge = np.abs(np.diff(target_focus, axis=0, prepend=target_focus[[0], :]))
+        focus_edge += np.abs(np.diff(target_focus, axis=1, prepend=target_focus[:, [0]]))
+        base_signal += float(appearance_profile.target_rim_strength) * focus_edge * transmission
 
     raw_with_artifacts, artifact_maps = apply_physics_artifacts(
         base_signal,
@@ -121,12 +139,32 @@ def _simulate_bmode_with_diagnostics(
         config=artifact_config,
         rng=rng,
     )
-    smoothed = ndimage.gaussian_filter(np.asarray(raw_with_artifacts, dtype=np.float32), sigma=(0.85, 0.45))
-    smoothed *= np.linspace(0.92, 1.10, smoothed.shape[0], dtype=np.float32)[:, None]
+    smoothed = ndimage.gaussian_filter(
+        np.asarray(raw_with_artifacts, dtype=np.float32),
+        sigma=(float(appearance_profile.post_blur_depth_sigma), float(appearance_profile.post_blur_lateral_sigma)),
+    )
+    smoothed *= np.linspace(
+        float(appearance_profile.tgc_start),
+        float(appearance_profile.tgc_end),
+        smoothed.shape[0],
+        dtype=np.float32,
+    )[:, None]
 
-    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (6.0 * float(gain)))
-    percentile = float(np.percentile(compressed, 99.5)) if np.any(compressed > 0.0) else 0.0
+    compressed = np.log1p(np.clip(smoothed, 0.0, None) * (float(appearance_profile.log_gain) * float(gain)))
+    percentile = (
+        float(np.percentile(compressed, float(appearance_profile.compression_percentile)))
+        if np.any(compressed > 0.0)
+        else 0.0
+    )
     scale = 1.0 if percentile <= 0.0 else percentile
+    normalized = np.clip(compressed / scale, 0.0, 1.0).astype(np.float32)
+    normalized = np.power(normalized, float(appearance_profile.output_gamma)).astype(np.float32)
+    if appearance_profile.sector_floor > 0.0:
+        normalized = np.where(
+            normalized > 0.0,
+            float(appearance_profile.sector_floor) + ((1.0 - float(appearance_profile.sector_floor)) * normalized),
+            0.0,
+        ).astype(np.float32)
 
     diagnostics = {
         "boundary_map": boundary.astype(np.float32),
@@ -136,7 +174,7 @@ def _simulate_bmode_with_diagnostics(
         "speckle_map": artifact_maps.speckle_map.astype(np.float32),
         "precompression_map": smoothed.astype(np.float32),
     }
-    return np.clip(compressed / scale, 0.0, 1.0).astype(np.float32), diagnostics
+    return normalized, diagnostics
 
 
 def simulate_bmode_from_acoustic_field(
@@ -151,6 +189,7 @@ def simulate_bmode_from_acoustic_field(
     shadow_strength: float | None = None,
 ) -> np.ndarray:
     defaults = PhysicsArtifactConfig()
+    appearance_profile = resolve_physics_appearance_profile(None)
     artifact_config = PhysicsArtifactConfig(
         speckle_strength=max(0.0, defaults.speckle_strength if speckle_strength is None else float(speckle_strength)),
         reverberation_strength=max(0.0, defaults.reverberation_strength if reverberation_strength is None else float(reverberation_strength)),
@@ -163,6 +202,7 @@ def simulate_bmode_from_acoustic_field(
         attenuation_scale=attenuation_scale,
         seed=seed,
         artifact_config=artifact_config,
+        appearance_profile=appearance_profile,
     )
     return image
 
@@ -566,6 +606,7 @@ def render_physics_preset(
     )
     depth_step_mm = float(resolved_max_depth_mm / max(1, resolved_height - 1))
     artifact_config = _resolve_artifact_config(request)
+    appearance_profile = resolve_physics_appearance_profile(request.physics_profile)
     polar_bmode, polar_diagnostics = _simulate_bmode_with_diagnostics(
         acoustic_field,
         depth_step_mm=depth_step_mm,
@@ -573,6 +614,7 @@ def render_physics_preset(
         attenuation_scale=(1.0 + (resolved_attenuation * 2.0)),
         seed=request.seed,
         artifact_config=artifact_config,
+        appearance_profile=appearance_profile,
     )
     polar_diagnostics["target_focus_map"] = target_focus.astype(np.float32)
 
@@ -797,6 +839,7 @@ def render_physics_preset(
             "reverberation_strength": float(artifact_config.reverberation_strength),
             "shadow_strength": float(artifact_config.shadow_strength),
         },
+        "appearance_profile": physics_profile_to_dict(appearance_profile),
         "eval_summary": eval_summary,
         "debug_map_paths": debug_map_paths,
     }

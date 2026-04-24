@@ -1,0 +1,53 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "required_comparison_case": true,
+  "auto_flagged": false,
+  "flag_reasons": [],
+  "mesh_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/comparisons/station_7_node_a_lms_mesh_panel.png",
+  "mesh_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/comparisons/station_7_node_a_lms_mesh_panel.json",
+  "voxel_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/comparisons/station_7_node_a_lms_voxel_panel.png",
+  "voxel_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/comparisons/station_7_node_a_lms_voxel_panel.json",
+  "mesh_contact_world": [
+    -31.724918025766197,
+    -156.27486896900623,
+    1210.728067582357
+  ],
+  "voxel_contact_world": [
+    -32.159987641970176,
+    -156.16674784705285,
+    1210.51473317694
+  ],
+  "mesh_nUS_world": [
+    0.4986583767984052,
+    0.34120764078109644,
+    -0.7968168981148542
+  ],
+  "voxel_nUS_world": [
+    0.4971256158305955,
+    0.3004664679807346,
+    -0.813993872031131
+  ],
+  "contact_delta_mm": 0.496474890091123,
+  "nUS_delta_deg": 2.535013071491338,
+  "review_metrics": {
+    "contact_to_centerline_mm": 4.628096082081661,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 20.35744414729004,
+    "target_lateral_offset_mm": -8.064392405751857,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.731082748986152,
+    "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+    "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "contact_to_mesh_mm": 0.010870763241346887
+  },
+  "mesh_warnings": [],
+  "voxel_warnings": [
+    "Raw airway mesh was unavailable; the voxel-derived contact and wall normal were retained."
+  ]
+}

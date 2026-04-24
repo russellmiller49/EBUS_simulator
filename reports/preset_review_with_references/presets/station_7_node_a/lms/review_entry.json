@@ -1,0 +1,193 @@
+{
+  "preset_id": "station_7_node_a",
+  "approach": "lms",
+  "localizer_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_panel.png",
+  "localizer_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_panel.json",
+  "localizer_clean_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_clean.png",
+  "localizer_clean_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_clean.json",
+  "physics_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/physics.png",
+  "physics_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/physics.json",
+  "eval_summary_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/eval_summary.json",
+  "review_sheet_md": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/review_sheet.md",
+  "physics_debug_maps": {},
+  "physics_debug_map_count": 0,
+  "physics_artifact_settings": {
+    "speckle_strength": 0.18,
+    "reverberation_strength": 0.3,
+    "shadow_strength": 0.42
+  },
+  "physics_appearance_profile": {
+    "name": "review_realistic_v1",
+    "tissue_floor": 0.028,
+    "scatter_weight": 0.9,
+    "boundary_weight": 1.7,
+    "wall_boundary_boost": 0.26,
+    "vessel_suppression": 0.38,
+    "target_darkening_strength": 0.16,
+    "target_rim_strength": 0.07,
+    "tgc_start": 1.0,
+    "tgc_end": 1.42,
+    "log_gain": 7.5,
+    "compression_percentile": 99.0,
+    "output_gamma": 0.82,
+    "sector_floor": 0.035,
+    "post_blur_depth_sigma": 0.75,
+    "post_blur_lateral_sigma": 0.38
+  },
+  "physics_eval_summary": {
+    "sector": {
+      "pixel_count": 73729,
+      "mean": 0.09670502692461014,
+      "std": 0.06647466123104095,
+      "p05": 0.035005122423172,
+      "p50": 0.09024962782859802,
+      "p95": 0.1912044882774353
+    },
+    "target": {
+      "pixel_count": 2929,
+      "mean": 0.11298339813947678,
+      "std": 0.00862987618893385,
+      "p05": 0.10276933014392853,
+      "p50": 0.11109020560979843,
+      "p95": 0.12780532240867615
+    },
+    "wall": {
+      "pixel_count": 1099,
+      "mean": 0.38059428334236145,
+      "std": 0.23249830305576324,
+      "p05": 0.14481422305107117,
+      "p50": 0.30032768845558167,
+      "p95": 0.867845892906189
+    },
+    "vessel": {
+      "pixel_count": 774,
+      "mean": 0.0445241704583168,
+      "std": 0.007744911592453718,
+      "p05": 0.04061324894428253,
+      "p50": 0.041206665337085724,
+      "p95": 0.06442077457904816
+    },
+    "target_contrast_vs_sector": 0.016278371214866638,
+    "wall_contrast_vs_sector": 0.2838892564177513,
+    "vessel_contrast_vs_sector": -0.052180856466293335
+  },
+  "reference_status": "white_light_only",
+  "reference_station": "7",
+  "reference_keyframes": [
+    {
+      "id": "station_7_white_light_kf00",
+      "video_id": "station_7_white_light",
+      "stations": [
+        "7"
+      ],
+      "kind": "white_light",
+      "source_video_path": "/Users/russellmiller/Documents/EBUS_video/Station_7_while_light.mp4",
+      "image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/reference_library/keyframes/station_7_white_light_kf00.png",
+      "time_seconds": 0.8180000399999999,
+      "frame_index": 0,
+      "width": 720,
+      "height": 405,
+      "extraction_method": "ffmpeg",
+      "warnings": [],
+      "relative_path": "../../../reference_library/keyframes/station_7_white_light_kf00.png"
+    },
+    {
+      "id": "station_7_white_light_kf01",
+      "video_id": "station_7_white_light",
+      "stations": [
+        "7"
+      ],
+      "kind": "white_light",
+      "source_video_path": "/Users/russellmiller/Documents/EBUS_video/Station_7_while_light.mp4",
+      "image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/reference_library/keyframes/station_7_white_light_kf01.png",
+      "time_seconds": 3.4083334999999995,
+      "frame_index": 1,
+      "width": 720,
+      "height": 405,
+      "extraction_method": "ffmpeg",
+      "warnings": [],
+      "relative_path": "../../../reference_library/keyframes/station_7_white_light_kf01.png"
+    },
+    {
+      "id": "station_7_white_light_kf02",
+      "video_id": "station_7_white_light",
+      "stations": [
+        "7"
+      ],
+      "kind": "white_light",
+      "source_video_path": "/Users/russellmiller/Documents/EBUS_video/Station_7_while_light.mp4",
+      "image_path": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/reference_library/keyframes/station_7_white_light_kf02.png",
+      "time_seconds": 5.9986669599999995,
+      "frame_index": 2,
+      "width": 720,
+      "height": 405,
+      "extraction_method": "ffmpeg",
+      "warnings": [],
+      "relative_path": "../../../reference_library/keyframes/station_7_white_light_kf02.png"
+    }
+  ],
+  "reference_library_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/reference_library/reference_library.json",
+  "diagnostic_panel_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_panel.png",
+  "diagnostic_panel_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_panel.json",
+  "clean_simulated_png": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_clean.png",
+  "clean_simulated_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/localizer_clean.json",
+  "flagged": false,
+  "flag_reasons": [],
+  "geometry_flag_reasons": [],
+  "physics_flag_reasons": [],
+  "metrics": {
+    "contact_to_centerline_mm": 4.628096082081661,
+    "contact_centerline_source": "main",
+    "target_depth_mm": 20.35744414729004,
+    "target_lateral_offset_mm": -8.064392405751857,
+    "target_in_sector": true,
+    "target_in_forward_hemisphere": true,
+    "station_overlap_fraction_in_fan": 0.731082748986152,
+    "nUS_delta_deg_from_voxel_baseline": 2.535013071491338,
+    "contact_delta_mm_from_voxel_baseline": 0.496474890091123,
+    "contact_refinement_ambiguity": false,
+    "warnings": [],
+    "preset_id": "station_7_node_a",
+    "approach": "lms",
+    "contact_to_mesh_mm": 0.010870763241346887
+  },
+  "cutaway_side": "left",
+  "cutaway_mode": "lateral",
+  "vessel_overlay_names": [
+    "left_atrium",
+    "pulmonary_artery",
+    "aorta"
+  ],
+  "manifest_overrides": {
+    "applied": true,
+    "vessel_overlays": [
+      "left_atrium",
+      "pulmonary_artery",
+      "aorta"
+    ],
+    "cutaway_side": null,
+    "roll_offset_deg": 0.0,
+    "branch_hint": "network:1",
+    "branch_shift_mm": 8.0,
+    "axis_sign_override": null,
+    "reference_fov_mm": null,
+    "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization.",
+    "raw_override_block": {
+      "vessel_overlays": [
+        "left_atrium",
+        "pulmonary_artery",
+        "aorta"
+      ],
+      "cutaway_side": null,
+      "roll_offset_deg": null,
+      "branch_hint": "network:1",
+      "branch_shift_mm": 8.0,
+      "axis_sign_override": null,
+      "reference_fov_mm": null,
+      "notes": "Flagged stabilization pass: keep the LMS approach on the left-mainstem branch during local optimization."
+    }
+  },
+  "warnings": [],
+  "review_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/review_entry.json",
+  "review_entry_json": "/Users/russellmiller/Projects/EBUS_simulator/reports/preset_review_with_references/presets/station_7_node_a/lms/review_entry.json"
+}

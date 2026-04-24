@@ -1,5 +1,5 @@
 {
-  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3D_slicer_files.yaml",
+  "manifest_path": "/Users/russellmiller/Projects/EBUS_simulator/configs/3d_slicer_files.yaml",
   "case_id": "3D_slicer_files",
   "dataset_root": "/Users/russellmiller/Projects/EBUS_simulator/3D_slicer_files",
   "internal_world_frame": "LPS",

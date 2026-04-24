@@ -71,6 +71,9 @@ def main() -> int:
     parser.add_argument("--physics-speckle-strength", type=float, help="Optional physics speckle strength override for review renders.")
     parser.add_argument("--physics-reverberation-strength", type=float, help="Optional physics reverberation strength override for review renders.")
     parser.add_argument("--physics-shadow-strength", type=float, help="Optional physics distal shadow strength override for review renders.")
+    parser.add_argument("--physics-profile", help="Physics appearance profile name or YAML/JSON path. Default: review_realistic_v1.")
+    parser.add_argument("--reference-config", help="Optional station reference-video YAML config.")
+    parser.add_argument("--include-reference", action="store_true", help="Build and include station reference keyframes in review sheets.")
     parser.add_argument("--warn-nus-delta-deg", type=float, help="Override the nUS delta auto-flag threshold in degrees.")
     parser.add_argument("--warn-contact-delta-mm", type=float, help="Override the contact delta auto-flag threshold in millimeters.")
     parser.add_argument("--warn-station-overlap-fraction", type=float, help="Override the minimum station overlap auto-flag threshold.")
@@ -111,6 +114,9 @@ def main() -> int:
         physics_speckle_strength=args.physics_speckle_strength,
         physics_reverberation_strength=args.physics_reverberation_strength,
         physics_shadow_strength=args.physics_shadow_strength,
+        physics_profile=args.physics_profile,
+        reference_config=args.reference_config,
+        include_reference=args.include_reference,
         review_thresholds=review_thresholds,
     )
 
@@ -119,6 +125,9 @@ def main() -> int:
     print(f"review_count: {summary['review_count']}")
     print(f"flagged_count: {summary['flagged_count']}")
     print(f"physics_debug_maps: {summary['include_physics_debug_maps']}")
+    print(f"include_reference: {summary['include_reference']}")
+    if summary["reference_library_json"] is not None:
+        print(f"reference_library_json: {summary['reference_library_json']}")
     print(f"summary_json: {summary['output_dir']}/review_summary.json")
     print(f"summary_csv: {summary['output_dir']}/review_summary.csv")
     print(f"index_json: {summary['output_dir']}/review_index.json")

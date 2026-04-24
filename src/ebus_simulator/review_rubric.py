@@ -49,6 +49,8 @@ def render_review_sheet(
     warnings: list[str],
     geometry_flag_reasons: list[str],
     physics_flag_reasons: list[str],
+    reference_status: str = "not_requested",
+    reference_keyframes: list[dict[str, object]] | None = None,
 ) -> str:
     lines = [
         f"# Review Sheet: {preset_id} / {approach}",
@@ -61,9 +63,26 @@ def render_review_sheet(
         f"- eval summary: [{eval_summary_path.name}]({eval_summary_path.name})",
         f"- review entry: [{review_entry_path.name}]({review_entry_path.name})",
         "",
-        "## Warnings",
+        "## Reference Material",
         "",
+        f"- status: {reference_status}",
     ]
+    if reference_keyframes:
+        for keyframe in reference_keyframes:
+            label = keyframe.get("id", "reference")
+            relative_path = keyframe.get("relative_path", keyframe.get("image_path", ""))
+            kind = keyframe.get("kind", "reference")
+            lines.append(f"- {kind}: [{label}]({relative_path})")
+    else:
+        lines.append("- none")
+
+    lines.extend(
+        [
+            "",
+            "## Warnings",
+            "",
+        ]
+    )
     if warnings:
         lines.extend(f"- {warning}" for warning in warnings)
     else:

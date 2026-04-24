@@ -68,6 +68,7 @@ def main() -> int:
     parser.add_argument("--speckle-strength", type=float, help="Optional physics speckle strength override.")
     parser.add_argument("--reverberation-strength", type=float, help="Optional physics reverberation strength override.")
     parser.add_argument("--shadow-strength", type=float, help="Optional physics distal shadow strength override.")
+    parser.add_argument("--physics-profile", help="Physics appearance profile name or YAML/JSON path. Default: review_realistic_v1.")
     args = parser.parse_args()
 
     rendered = render_preset(
@@ -115,6 +116,7 @@ def main() -> int:
         speckle_strength=args.speckle_strength,
         reverberation_strength=args.reverberation_strength,
         shadow_strength=args.shadow_strength,
+        physics_profile=args.physics_profile,
     )
 
     print(f"preset_id: {rendered.metadata.preset_id}")

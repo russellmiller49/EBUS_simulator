@@ -21,8 +21,13 @@ Current implemented capabilities:
 - `compare-review-bundles` CLI for before/after calibration summaries across review bundle runs
 - configurable geometry and physics auto-flag thresholds for review bundles
 - conservative default wall-contrast auto-flagging with CLI override support
+- station/style reference-video library builder with de-identified keyframe export
+- CVAT COCO annotation import helpers and reference-image metrics
+- reference-aware review bundle sheets and indexes
+- configurable physics appearance profiles for review-realistic calibration passes
 - first-pass physics CP-EBUS renderer with artifact controls, debug maps, and eval summaries
-- current desktop preset browser with queued rendering, reviewer summary, 2D EBUS, and 3D context panes
+- current desktop preset browser with queued rendering, reviewer summary, 2D EBUS, 3D context, and optional reference panes
+- local browser anatomy-correlation simulator with guided centerline navigation, 3D airway/probe/fan context, and synchronized labeled EBUS sector
 - CI smoke workflow
 
 Not implemented yet:
@@ -68,6 +73,13 @@ To use the desktop app, install the UI extra:
 
 ```bash
 python -m pip install -e '.[dev,ui]'
+```
+
+To use the local web app, install the web extra and frontend dependencies:
+
+```bash
+python -m pip install -e '.[dev,web]'
+cd web && npm install
 ```
 
 ## Commands
@@ -131,6 +143,21 @@ Generate a batch review bundle:
 review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review
 ```
 
+Build a de-identified reference keyframe library from the local station videos:
+
+```bash
+build-reference-library configs/video_references.yaml --output-dir reports/reference_library
+```
+
+If `EBUS_VIDEO_ROOT` is not set, the reference config defaults to `/Users/russellmiller/Documents/EBUS_video`.
+When `ffmpeg` is unavailable, macOS Quick Look thumbnails are used as a one-keyframe-per-video fallback.
+
+Generate a reference-aware review bundle:
+
+```bash
+review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --include-reference --reference-config configs/video_references.yaml
+```
+
 Generate a filtered physics-aware review bundle with debug maps and tuned auto-flag thresholds:
 
 ```bash
@@ -167,6 +194,37 @@ Launch the current desktop preset browser:
 launch-app configs/3d_slicer_files.yaml
 ```
 
+Launch it with the reference pane enabled:
+
+```bash
+launch-app configs/3d_slicer_files.yaml --reference-config configs/video_references.yaml
+```
+
+Export the browser-friendly anatomy-correlation case:
+
+```bash
+export-web-case configs/3d_slicer_files.yaml --output-dir reports/web_case
+```
+
+Build and launch the local web simulator:
+
+```bash
+cd web && npm run build
+launch-web-app configs/3d_slicer_files.yaml --web-case reports/web_case
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765
+```
+
+Run the browser workflow checks while `launch-web-app` is running:
+
+```bash
+cd web && npm run test:browser
+```
+
 Current browser surface:
 - preset and approach selectors
 - localizer / physics engine toggle
@@ -174,4 +232,17 @@ Current browser surface:
 - airway / target / station / vessel overlay toggles
 - queued rendering with status updates
 - reviewer-facing summary panel sourced from render metadata
+- optional station reference keyframe pane
+- quick rubric rating fields for manual review
 - screenshot export for the active browser state
+
+Current local web surface:
+- guided centerline advance/retract and roll controls
+- station snap selector backed by curated contact/target presets
+- translucent airway mesh, vessel/station point-cloud masks, lymph-node markers, scope shaft, contact point, and fan
+- synchronized labeled EBUS sector for airway wall plus station/vessel structures intersected by the current sampled mask volume
+- longitudinal CP-EBUS sector convention: image right is cephalic and image left is caudal
+- sector labels are generated through the FastAPI `/api/sector-volume` endpoint, which samples the current 3D fan slab through station and vessel NIfTI masks; point-cloud hits are now only a browser fallback while that response is loading
+- visible mask structures are sliced through a cached per-mask triangle surface when available, so the 2D sector can draw plane/triangle contour paths instead of only fitted ellipses
+- anatomy layer toggles and linked label/list hover highlighting
+- browser smoke tests through Playwright

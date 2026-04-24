@@ -26,6 +26,8 @@ The current state is:
 - the original renderer is now an explicit `localizer` / QA renderer
 - a first `physics` renderer exists and can render repo presets
 - the physics renderer now supports tunable artifacts, debug-map export, and basic evaluation summaries
+- a reference-video workflow now exists for building de-identified station keyframes from the local MP4 set
+- review bundles can include station reference keyframes, reference status, and reference links
 - CI smoke coverage exists for validation, pose generation, and localizer rendering
 - the current desktop preset browser now exists behind the optional `ui` dependency, with queued rendering and reviewer-facing summary text
 
@@ -35,6 +37,7 @@ In practical terms, the repo is already useful for:
 - exporting localizer review renders
 - exporting early physics-style CP-EBUS renders for inspection
 - generating structured review bundles with localizer, physics, eval-summary, and rubric outputs
+- generating a reference keyframe library from `/Users/russellmiller/Documents/EBUS_video`
 
 It is not yet at the intended end state for:
 - polished desktop review workflow
@@ -97,6 +100,9 @@ The active development focus is:
 - per-entry review sheets and a shared rubric template
 - configurable geometry and physics auto-flag thresholds for review bundles
 - default wall-contrast auto-flagging set to a conservative floor, with CLI support to disable it for experiments
+- `build-reference-library` CLI for station/style reference keyframes
+- CVAT COCO annotation import and reference metrics helpers for light annotation workflows
+- `review-presets --include-reference --reference-config ...` for reference-aware sheets and indexes
 - CI smoke workflow for validation, pose generation, and localizer rendering
 - repo-root smoke targets such as `make render-smoke`, `make physics-smoke`, and `make ci-smoke`
 
@@ -108,6 +114,19 @@ The active development focus is:
 - queued background rendering so the UI no longer blocks during preset changes
 - reviewer-facing summary panel with pose, overlay, eval, and sidecar metadata
 - screenshot export from the current browser state with state-aware default filenames
+- optional reference keyframe pane plus quick manual rating controls
+
+### Local web anatomy-correlation app
+- `export-web-case` CLI writes browser-friendly airway mesh, centerline, preset, vessel, and station assets
+- `launch-web-app` CLI serves the exported case plus the built Vite frontend through FastAPI
+- guided centerline navigation is parameterized by line index, centerline distance, and roll
+- station snaps reuse the curated contact/target presets, including distinct station 7 `lms` and `rms` approaches
+- Three.js external anatomy pane shows translucent airway, vessel/station point clouds, lymph-node markers, scope, contact point, and fan
+- synchronized labeled sector pane now derives station/vessel labels from the `/api/sector-volume` mask sampler rather than only preset-associated overlays or browser point clouds
+- CP-EBUS sector convention is longitudinal, with the right side mapped to cephalic and the left side mapped to caudal
+- sector labels are gated by fan depth, fan width, and out-of-plane slab sampling through the NIfTI masks to avoid showing vessels that the external fan does not intersect
+- visible masks now use cached per-mask triangle surfaces and plane/triangle intersection contours in the 2D sector, with the sampled fan-grid contour retained as a fallback
+- Playwright browser checks cover app load, station selector updates, layer toggles, hover highlighting, and nonblank canvas sizing
 
 ---
 
@@ -141,7 +160,7 @@ Current state:
 - geometry and physics auto-flag thresholds can now be tuned from the review CLI for calibration passes, including opting out of the default wall threshold
 
 Still missing:
-- direct incorporation of real CP-EBUS reference imagery into the review loop
+- deeper calibration of physics profiles against annotated reference imagery
 - more mature reviewer thresholds and scoring conventions
 - calibration iteration informed by expert feedback rather than synthetic-only inspection
 
@@ -212,6 +231,10 @@ These commands are part of the current usable surface area:
 - `review-presets configs/3d_slicer_files.yaml --output-dir reports/preset_review --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64`
 - `compare-review-bundles reports/preset_review_20260316/review_summary.json reports/preset_review_stabilized/review_summary.json --output-dir reports/preset_review_stabilized`
 - `launch-app configs/3d_slicer_files.yaml`
+- `export-web-case configs/3d_slicer_files.yaml --output-dir reports/web_case`
+- `launch-web-app configs/3d_slicer_files.yaml --web-case reports/web_case`
+- `cd web && npm run build`
+- `cd web && npm run test:browser`
 
 Note:
 - `make test` re-enters `bootstrap.sh`; if the environment is already provisioned, `.venv/bin/python -m pytest -q` is the most direct rerun path.
@@ -232,6 +255,10 @@ Latest verified run snapshot from `2026-03-18`:
 - `.venv/bin/launch-app --help` -> succeeded
 - `QT_QPA_PLATFORM=offscreen .venv/bin/python - <<'PY' ... launch_app('configs/3d_slicer_files.yaml', width=64, height=64, close_after_ms=300000, close_on_first_render=True) ... PY` -> succeeded with exit code `0` after the first completed browser render
 - `.venv/bin/review-presets configs/3d_slicer_files.yaml --output-dir reports/_review_smoke_wall_eval --preset-id station_4r_node_b --preset-id station_7_node_a --physics-debug-maps --physics-speckle-strength 0.22 --physics-reverberation-strength 0.28 --physics-shadow-strength 0.47 --warn-min-target-contrast 0.00 --warn-max-vessel-contrast -0.01 --width 64 --height 64` -> succeeded with `review_count: 3`, `flagged_count: 2`, and non-null wall eval stats in the bundle entries
+- `2026-04-24`: `.venv/bin/python -m pytest -q` -> `54 passed in 548.17s (0:09:08)`
+- `2026-04-24`: `.venv/bin/export-web-case configs/3d_slicer_files.yaml --output-dir reports/web_case` -> succeeded with `presets: 16`, `airway_vertices: 14038`, `airway_triangles: 28072`, `vessel_assets: 11`, and `station_assets: 9`
+- `2026-04-24`: `cd web && npm run build` -> succeeded
+- `2026-04-24`: `cd web && npm run test:browser` -> `2 passed`
 
 The review smoke bundle shape remains:
 - deterministic review indexes

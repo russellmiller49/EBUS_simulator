@@ -71,6 +71,7 @@ class RenderRequest:
     speckle_strength: float | None = None
     reverberation_strength: float | None = None
     shadow_strength: float | None = None
+    physics_profile: str | Path | None = None
 
 
 @dataclass(slots=True)

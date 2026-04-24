@@ -23,6 +23,11 @@ dev = [
 ui = [
   "PySide6>=6.8",
 ]
+web = [
+  "fastapi>=0.115",
+  "scikit-image>=0.26",
+  "uvicorn[standard]>=0.32",
+]
 
 [project.scripts]
 validate-case = "ebus_simulator.cli:main"
@@ -32,6 +37,10 @@ render-all-presets = "ebus_simulator.render_all_cli:main"
 review-presets = "ebus_simulator.review_cli:main"
 compare-review-bundles = "ebus_simulator.review_compare_cli:main"
 launch-app = "ebus_simulator.app:main"
+build-reference-library = "ebus_simulator.reference_cli:main"
+summarize-reference-annotations = "ebus_simulator.annotation_cli:main"
+export-web-case = "ebus_simulator.web_case_export:main"
+launch-web-app = "ebus_simulator.web_app:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

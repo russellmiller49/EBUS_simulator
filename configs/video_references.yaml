@@ -1,0 +1,104 @@
+reference_version: 1
+root: "${EBUS_VIDEO_ROOT}"
+
+defaults:
+  ebus_keyframes: 5
+  white_light_keyframes: 3
+  frame_size_px: 720
+
+videos:
+  - id: "station_2l_ebus"
+    station: "2l"
+    kind: "ebus"
+    path: "Station_2L_EBUS.mp4"
+    preset_ids: ["station_2l_node_a"]
+
+  - id: "station_2r_ebus"
+    station: "2r"
+    kind: "ebus"
+    path: "Station_2R_EBUS.mp4"
+    preset_ids: ["station_2r_node_a"]
+
+  - id: "station_4l_ebus"
+    station: "4l"
+    kind: "ebus"
+    path: "Station_4L_EBUS.mp4"
+    preset_ids: ["station_4l_node_a", "station_4l_node_b", "station_4l_node_c"]
+
+  - id: "station_4l_alt_ebus"
+    station: "4l"
+    kind: "ebus"
+    path: "Station_4L(2)_EBUS.mp4"
+    preset_ids: ["station_4l_node_a", "station_4l_node_b", "station_4l_node_c"]
+
+  - id: "station_4r_ebus"
+    station: "4r"
+    kind: "ebus"
+    path: "Station_4R_EBUS.mp4"
+    preset_ids: ["station_4r_node_a", "station_4r_node_b", "station_4r_node_c"]
+
+  - id: "station_11l_ebus"
+    station: "11l"
+    kind: "ebus"
+    path: "Station_11L_EBUS.mp4"
+    preset_ids: ["station_11l_node_a"]
+
+  - id: "station_11l_alt_ebus"
+    station: "11l"
+    kind: "ebus"
+    path: "Station_11L(2)_EBUS.mp4"
+    preset_ids: ["station_11l_node_a"]
+
+  - id: "station_11ri_ebus"
+    station: "11ri"
+    kind: "ebus"
+    path: "Station_11Ri_EBUS.mp4"
+    preset_ids: ["station_11ri_node_a"]
+
+  - id: "station_11rs_ebus"
+    station: "11rs"
+    kind: "ebus"
+    path: "Station_11Rs_EBUS.mp4"
+    preset_ids: ["station_11rs_node_a", "station_11rs_node_b"]
+
+  - id: "station_4r_10r_white_light"
+    stations: ["4r", "10r"]
+    kind: "white_light"
+    path: "4R10R_white_light.mp4"
+    preset_ids: ["station_4r_node_a", "station_4r_node_b", "station_4r_node_c", "station_10r_node_a", "station_10r_node_b"]
+    deidentify_regions: []
+
+  - id: "station_7_white_light"
+    station: "7"
+    kind: "white_light"
+    path: "Station_7_while_light.mp4"
+    preset_ids: ["station_7_node_a"]
+    deidentify_regions: []
+
+  - id: "station_11l_white_light"
+    station: "11l"
+    kind: "white_light"
+    path: "Station_11L_white_light.mp4"
+    preset_ids: ["station_11l_node_a"]
+    deidentify_regions: []
+
+  - id: "station_4l_10l_white_light"
+    stations: ["4l", "10l"]
+    kind: "white_light"
+    path: "Station_4L10LWhite_light.mp4"
+    preset_ids: ["station_4l_node_a", "station_4l_node_b", "station_4l_node_c"]
+    deidentify_regions: []
+
+  - id: "station_11rs_white_light"
+    station: "11rs"
+    kind: "white_light"
+    path: "Station_11Rs_White_light.mp4"
+    preset_ids: ["station_11rs_node_a", "station_11rs_node_b"]
+    deidentify_regions: []
+
+  - id: "station_11ri_white_light"
+    station: "11ri"
+    kind: "white_light"
+    path: "Station_11Ri_White_light.mp4"
+    preset_ids: ["station_11ri_node_a"]
+    deidentify_regions: []

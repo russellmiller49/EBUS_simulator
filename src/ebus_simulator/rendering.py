@@ -1991,6 +1991,7 @@ def _render_preset_localizer(
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
+    physics_profile: str | Path | None = None,
     seed: int | None = None,
     context: RenderContext | None = None,
 ) -> RenderedPreset:
@@ -2042,6 +2043,7 @@ def _render_preset_localizer(
         speckle_strength=speckle_strength,
         reverberation_strength=reverberation_strength,
         shadow_strength=shadow_strength,
+        physics_profile=physics_profile,
     )
     return render_localizer_preset(request, context=context).rendered_preset
 
@@ -2110,6 +2112,7 @@ def render_preset(
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
+    physics_profile: str | Path | None = None,
     context: RenderContext | None = None,
 ) -> RenderedPreset:
     request = RenderRequest(
@@ -2158,6 +2161,7 @@ def render_preset(
         speckle_strength=speckle_strength,
         reverberation_strength=reverberation_strength,
         shadow_strength=shadow_strength,
+        physics_profile=physics_profile,
     )
     return dispatch_render_request(request, context=context).rendered_preset
 
@@ -2183,6 +2187,7 @@ def render_all_presets(
     speckle_strength: float | None = None,
     reverberation_strength: float | None = None,
     shadow_strength: float | None = None,
+    physics_profile: str | Path | None = None,
 ) -> BatchRenderIndex:
     context = build_render_context(manifest_path, roll_deg=roll_deg)
     output_dir = Path(output_dir).expanduser().resolve()
@@ -2217,6 +2222,7 @@ def render_all_presets(
                 speckle_strength=speckle_strength,
                 reverberation_strength=reverberation_strength,
                 shadow_strength=shadow_strength,
+                physics_profile=physics_profile,
                 context=context,
             )
             metadata = rendered.metadata

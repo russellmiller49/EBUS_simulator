@@ -3,6 +3,7 @@ from __future__ import annotations
 from csv import DictWriter
 from dataclasses import asdict, dataclass, replace
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +17,12 @@ from ebus_simulator.rendering import (
     build_render_context,
     compute_pose_review_metrics,
     render_preset,
+)
+from ebus_simulator.video_reference import (
+    ReferenceLibrary,
+    build_reference_library,
+    station_reference_keyframes,
+    station_reference_status,
 )
 
 
@@ -204,6 +211,32 @@ def _flag_review_metrics(
     )
 
 
+def _reference_payload_for_station(
+    reference_library: ReferenceLibrary | None,
+    *,
+    station: str,
+    sheet_dir: Path,
+) -> dict[str, object]:
+    if reference_library is None:
+        return {
+            "status": "not_requested",
+            "station": station,
+            "keyframes": [],
+        }
+    keyframes: list[dict[str, object]] = []
+    for keyframe in station_reference_keyframes(reference_library, station, max_items=4):
+        enriched = dict(keyframe)
+        image_path = Path(str(keyframe["image_path"])).expanduser().resolve()
+        enriched["relative_path"] = os.path.relpath(image_path, sheet_dir)
+        keyframes.append(enriched)
+    return {
+        "status": station_reference_status(reference_library, station),
+        "station": station,
+        "keyframes": keyframes,
+        "library_json": str(Path(reference_library.output_dir) / "reference_library.json"),
+    }
+
+
 def _render_review_entry(
     context,
     *,
@@ -228,6 +261,8 @@ def _render_review_entry(
     physics_speckle_strength: float | None,
     physics_reverberation_strength: float | None,
     physics_shadow_strength: float | None,
+    physics_profile: str | Path | None,
+    reference_library: ReferenceLibrary | None,
     review_thresholds: ReviewThresholds,
 ) -> dict[str, object]:
     entry_dir = output_dir / "presets" / preset_id / approach
@@ -352,10 +387,16 @@ def _render_review_entry(
         speckle_strength=physics_speckle_strength,
         reverberation_strength=physics_reverberation_strength,
         shadow_strength=physics_shadow_strength,
+        physics_profile=physics_profile,
         context=context,
     )
 
     preset_manifest = _resolve_preset_manifest(context.manifest, preset_id)
+    reference_payload = _reference_payload_for_station(
+        reference_library,
+        station=preset_manifest.station,
+        sheet_dir=entry_dir,
+    )
     metrics = _compute_review_metrics(context, preset_manifest=preset_manifest, clean_rendered=clean)
     preset_overrides = resolve_preset_overrides(preset_manifest, approach=approach)
     physics_diagnostics = dict(physics.metadata.engine_diagnostics)
@@ -390,7 +431,12 @@ def _render_review_entry(
         "physics_debug_maps": physics_debug_maps,
         "physics_debug_map_count": len(physics_debug_maps),
         "physics_artifact_settings": physics_artifact_settings,
+        "physics_appearance_profile": dict(physics_diagnostics.get("appearance_profile", {})),
         "physics_eval_summary": physics_eval_summary,
+        "reference_status": reference_payload["status"],
+        "reference_station": reference_payload["station"],
+        "reference_keyframes": reference_payload["keyframes"],
+        "reference_library_json": reference_payload.get("library_json"),
         "diagnostic_panel_png": str(diagnostic_path),
         "diagnostic_panel_json": diagnostic.metadata.metadata_path,
         "clean_simulated_png": str(clean_path),
@@ -443,6 +489,8 @@ def _render_review_entry(
             warnings=entry["warnings"],
             geometry_flag_reasons=geometry_flag_reasons,
             physics_flag_reasons=physics_flag_reasons,
+            reference_status=str(reference_payload["status"]),
+            reference_keyframes=list(reference_payload["keyframes"]),
         )
     )
     return entry
@@ -472,6 +520,8 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                 "target_contrast_vs_sector",
                 "wall_contrast_vs_sector",
                 "vessel_contrast_vs_sector",
+                "reference_status",
+                "reference_keyframe_count",
                 "localizer_panel_png",
                 "localizer_clean_png",
                 "physics_png",
@@ -510,6 +560,8 @@ def _write_summary_csv(summary_path: Path, entries: list[dict[str, object]]) -> 
                     "target_contrast_vs_sector": entry["physics_eval_summary"].get("target_contrast_vs_sector"),
                     "wall_contrast_vs_sector": entry["physics_eval_summary"].get("wall_contrast_vs_sector"),
                     "vessel_contrast_vs_sector": entry["physics_eval_summary"].get("vessel_contrast_vs_sector"),
+                    "reference_status": entry.get("reference_status"),
+                    "reference_keyframe_count": len(entry.get("reference_keyframes", [])),
                     "localizer_panel_png": entry["localizer_panel_png"],
                     "localizer_clean_png": entry["localizer_clean_png"],
                     "physics_png": entry["physics_png"],
@@ -530,15 +582,16 @@ def _write_summary_markdown(summary_path: Path, output_dir: Path, entries: list[
     lines = [
         "# Review Index",
         "",
-        "| Preset | Approach | Flagged | Localizer | Physics | Eval Summary | Review Sheet |",
-        "|---|---|---|---|---|---|---|",
+        "| Preset | Approach | Flagged | Reference | Localizer | Physics | Eval Summary | Review Sheet |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for entry in entries:
         lines.append(
-            "| {preset} | {approach} | {flagged} | [panel]({localizer}) | [physics]({physics}) | [eval]({eval}) | [sheet]({sheet}) |".format(
+            "| {preset} | {approach} | {flagged} | {reference} | [panel]({localizer}) | [physics]({physics}) | [eval]({eval}) | [sheet]({sheet}) |".format(
                 preset=entry["preset_id"],
                 approach=entry["approach"],
                 flagged=("yes" if entry["flagged"] else "no"),
+                reference=entry.get("reference_status", "not_requested"),
                 localizer=_relative_to_output(entry["localizer_panel_png"], output_dir),
                 physics=_relative_to_output(entry["physics_png"], output_dir),
                 eval=_relative_to_output(entry["eval_summary_json"], output_dir),
@@ -1002,6 +1055,9 @@ def review_presets(
     physics_speckle_strength: float | None = None,
     physics_reverberation_strength: float | None = None,
     physics_shadow_strength: float | None = None,
+    physics_profile: str | Path | None = None,
+    reference_config: str | Path | None = None,
+    include_reference: bool = False,
     review_thresholds: ReviewThresholds | None = None,
 ) -> dict[str, object]:
     resolved_thresholds = DEFAULT_REVIEW_THRESHOLDS if review_thresholds is None else review_thresholds
@@ -1010,6 +1066,21 @@ def review_presets(
     output_dir = Path(output_dir).expanduser().resolve()
     (output_dir / "presets").mkdir(parents=True, exist_ok=True)
     (output_dir / "comparisons").mkdir(parents=True, exist_ok=True)
+    resolved_reference_config = (
+        None
+        if not include_reference
+        else Path(reference_config).expanduser().resolve()
+        if reference_config is not None
+        else Path(context.manifest.manifest_path).parent / "video_references.yaml"
+    )
+    reference_library = (
+        None
+        if resolved_reference_config is None
+        else build_reference_library(
+            resolved_reference_config,
+            output_dir=output_dir / "reference_library",
+        )
+    )
 
     entries: list[dict[str, object]] = []
     for preset_id, approach in _iter_selected_presets(context, preset_ids):
@@ -1037,6 +1108,8 @@ def review_presets(
                 physics_speckle_strength=physics_speckle_strength,
                 physics_reverberation_strength=physics_reverberation_strength,
                 physics_shadow_strength=physics_shadow_strength,
+                physics_profile=physics_profile,
+                reference_library=reference_library,
                 review_thresholds=resolved_thresholds,
             )
         )
@@ -1092,6 +1165,14 @@ def review_presets(
             "speckle_strength": physics_speckle_strength,
             "reverberation_strength": physics_reverberation_strength,
             "shadow_strength": physics_shadow_strength,
+            "profile": physics_profile,
+        },
+        "include_reference": bool(include_reference),
+        "reference_config": None if resolved_reference_config is None else str(resolved_reference_config),
+        "reference_library_json": None if reference_library is None else str(Path(reference_library.output_dir) / "reference_library.json"),
+        "reference_status_counts": {
+            status: sum(1 for entry in entries if entry.get("reference_status") == status)
+            for status in sorted({str(entry.get("reference_status")) for entry in entries})
         },
         "rubric_template": str(rubric_path),
         "thresholds": {

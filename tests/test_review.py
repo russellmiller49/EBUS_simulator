@@ -2,6 +2,8 @@ from pathlib import Path
 import json
 from argparse import Namespace
 
+from PIL import Image
+
 from ebus_simulator.review_cli import _build_review_thresholds, _parse_optional_threshold
 from ebus_simulator.review import (
     DEFAULT_REVIEW_THRESHOLDS,
@@ -148,6 +150,51 @@ def test_review_presets_generates_physics_aware_bundle(tmp_path):
     assert index_payload["review_count"] == 3
     assert "| station_7_node_a | lms |" in index_markdown
     assert "| station_7_node_a | rms |" in index_markdown
+
+
+def test_review_presets_can_include_reference_assets(tmp_path):
+    reference_image = Image.new("RGB", (96, 64), (90, 90, 90))
+    reference_image_path = tmp_path / "station_4r_reference.png"
+    reference_image.save(reference_image_path)
+    reference_config = tmp_path / "video_references.yaml"
+    reference_config.write_text(
+        "\n".join(
+            [
+                "reference_version: 1",
+                f"root: {tmp_path.as_posix()}",
+                "defaults:",
+                "  ebus_keyframes: 1",
+                "  frame_size_px: 64",
+                "videos:",
+                "  - id: station_4r_reference",
+                "    station: 4r",
+                "    kind: ebus",
+                f"    path: {reference_image_path.name}",
+                "    preset_ids: [station_4r_node_b]",
+            ]
+        )
+    )
+
+    output_dir = tmp_path / "reference_review_bundle"
+    summary = review_presets(
+        MANIFEST_PATH,
+        output_dir=output_dir,
+        width=64,
+        height=64,
+        preset_ids=["station_4r_node_b"],
+        include_reference=True,
+        reference_config=reference_config,
+    )
+
+    entry = summary["entries"][0]
+    sheet = Path(entry["review_sheet_md"]).read_text()
+
+    assert summary["include_reference"] is True
+    assert Path(summary["reference_library_json"]).exists()
+    assert entry["reference_status"] == "ebus_reference"
+    assert len(entry["reference_keyframes"]) == 1
+    assert "## Reference Material" in sheet
+    assert "station_4r_reference_kf00" in sheet
 
 
 def test_compare_review_summaries_tracks_flag_transitions_and_contrasts():
