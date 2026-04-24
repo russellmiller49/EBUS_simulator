@@ -174,6 +174,7 @@ type VolumeSectorState = {
 type LayerState = {
   airway: boolean;
   vessels: boolean;
+  heart: boolean;
   nodes: boolean;
   stations: boolean;
   context: boolean;
@@ -184,6 +185,7 @@ type LayerState = {
 const DEFAULT_LAYERS: LayerState = {
   airway: true,
   vessels: true,
+  heart: true,
   nodes: true,
   stations: true,
   context: false,
@@ -269,6 +271,13 @@ function cleanModelLayer(structureId: string): keyof LayerState {
     return "stations";
   }
   if (
+    structureId.includes("atrium") ||
+    structureId.includes("ventricle") ||
+    structureId.includes("appendage")
+  ) {
+    return "heart";
+  }
+  if (
     structureId.includes("artery") ||
     structureId.includes("vein") ||
     structureId.includes("venous") ||
@@ -318,6 +327,7 @@ function cleanModelOpacity(layer: keyof LayerState, highlighted: boolean, teachi
     const teachingOpacityByLayer: Partial<Record<keyof LayerState, number>> = {
       airway: 0.1,
       vessels: 0.12,
+      heart: 0.22,
       stations: 0.08,
       context: 0.04
     };
@@ -327,11 +337,15 @@ function cleanModelOpacity(layer: keyof LayerState, highlighted: boolean, teachi
     if (layer === "airway") {
       return 0.22;
     }
+    if (layer === "heart") {
+      return 0.62;
+    }
     return layer === "context" ? 0.42 : 0.74;
   }
   const opacityByLayer: Partial<Record<keyof LayerState, number>> = {
     airway: 0.16,
     vessels: 0.58,
+    heart: 0.48,
     stations: 0.36,
     context: 0.16
   };

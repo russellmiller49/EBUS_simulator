@@ -7,6 +7,9 @@ test("loads the case and renders the synchronized panes", async ({ page }) => {
   await expect(canvas).toBeVisible();
   await expect(page.getByRole("img", { name: "Synchronized labeled EBUS sector" })).toBeVisible();
   await expect(page.locator(".sector-pane")).toHaveAttribute("data-sector-source", "volume_masks", { timeout: 20_000 });
+  await expect(page.locator(".layer-toggles label").filter({ hasText: "teaching" }).locator("input")).toBeChecked();
+  await expect(page.locator(".layer-toggles label").filter({ hasText: "heart" }).locator("input")).toBeChecked();
+  await expect(page.locator(".layer-toggles label").filter({ hasText: "context" }).locator("input")).not.toBeChecked();
 
   await expect.poll(async () => (await canvas.boundingBox())?.width ?? 0).toBeGreaterThan(300);
   await expect.poll(async () => (await canvas.boundingBox())?.height ?? 0).toBeGreaterThan(300);
