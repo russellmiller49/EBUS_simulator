@@ -130,6 +130,14 @@ def test_interpolated_occupancy_returns_closed_sphere_contour():
     contour = max(intersection.contours_mm, key=len)
     assert math.dist(contour[0], contour[-1]) <= 1.5
     assert intersection.aspect_ratio < 1.45
+    assert intersection.raster_mask is not None
+    assert intersection.raster_mask["width"] == 96
+    assert intersection.raster_mask["height"] == 96
+    alpha = intersection.raster_mask["alpha"]
+    assert len(alpha) == 96 * 96
+    assert min(alpha) >= 0
+    assert max(alpha) <= 255
+    assert max(alpha) > 0
 
 
 def test_offset_sphere_slice_reports_smaller_or_no_contour_outside_slab():
@@ -140,6 +148,7 @@ def test_offset_sphere_slice_reports_smaller_or_no_contour_outside_slab():
 
     assert central is not None
     assert grazing is not None
+    assert grazing.raster_mask is not None
     assert grazing.major_axis_mm < central.major_axis_mm
     assert outside is None
 
@@ -186,6 +195,9 @@ def test_volume_sector_intersections_are_deterministic_for_station_snap():
         "contours_mm",
         "contour_count",
         "contour_source",
+        "contour_closed",
+        "has_closed_contour",
+        "raster_mask",
         "depth_extent_mm",
         "lateral_extent_mm",
         "major_axis_mm",
@@ -194,6 +206,8 @@ def test_volume_sector_intersections_are_deterministic_for_station_snap():
     } <= labels[0].keys()
     assert labels[0]["source"] == "volume_mask"
     assert labels[0]["hit_base_sample_count"] > 0
+    assert labels[0]["raster_mask"]["width"] == 40
+    assert labels[0]["raster_mask"]["height"] == 40
 
 
 def test_free_navigation_does_not_report_vessels_outside_current_fan_volume():

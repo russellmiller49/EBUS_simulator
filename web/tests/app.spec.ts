@@ -1,4 +1,33 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function coloredSectorPixelCounts(page: Page) {
+  return page.locator(".sector-raster-canvas").evaluate((canvas) => {
+    const raster = canvas as HTMLCanvasElement;
+    const context = raster.getContext("2d");
+    if (!context) {
+      return { blue: 0, red: 0, green: 0 };
+    }
+    const { data } = context.getImageData(0, 0, raster.width, raster.height);
+    let blue = 0;
+    let red = 0;
+    let green = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      if (b > r + 24 && b > g + 8) {
+        blue += 1;
+      }
+      if (r > b + 24 && r > g + 8) {
+        red += 1;
+      }
+      if (g > r + 18 && g > b + 10) {
+        green += 1;
+      }
+    }
+    return { blue, red, green };
+  });
+}
 
 test("loads the case and renders the synchronized panes", async ({ page }) => {
   await page.goto("/");
@@ -51,6 +80,7 @@ test("free navigation hides labels for structures outside the current fan slab",
   });
 
   await expect(page.locator(".status-strip")).toContainText("20 mm");
+  await expect(page.locator(".sector-pane")).toHaveAttribute("data-sector-source", "volume_masks", { timeout: 60_000 });
   await expect(page.locator(".sector-pane")).not.toContainText("Pulmonary Artery");
   await expect(page.locator(".sector-pane")).not.toContainText("Azygous");
 });
@@ -93,6 +123,7 @@ test("sector image right side follows the cephalic shaft direction", async ({ pa
 });
 
 test("volume-shaped vessel cuts render as elongated long-axis structures", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
   await page.waitForSelector(".scene-canvas canvas");
 
@@ -108,8 +139,50 @@ test("volume-shaped vessel cuts render as elongated long-axis structures", async
 
   const svc = page.locator('[data-structure-id="superior_vena_cava"]');
   await expect(svc).toBeVisible();
+  await expect.poll(async () => Number(await svc.getAttribute("data-contour-count")), { timeout: 60_000 }).toBeGreaterThan(0);
   await expect.poll(async () => Number(await svc.getAttribute("data-shape-aspect"))).toBeGreaterThan(2.2);
-  await expect.poll(async () => Number(await svc.getAttribute("data-contour-count"))).toBeGreaterThan(0);
-  await expect(svc.locator('[data-vessel-fill="body"]').first()).toHaveAttribute("fill", "#2276c9");
-  await expect.poll(async () => Number(await svc.locator('[data-vessel-fill="body"]').first().getAttribute("fill-opacity"))).toBeGreaterThan(0.45);
+  await expect(page.locator('[data-raster-mask-layer="clean-sector"]')).toBeVisible();
+  await expect(page.locator(".structure-row").filter({ hasText: "Superior Vena Cava" }).locator(".swatch")).toHaveCSS(
+    "background-color",
+    "rgb(34, 118, 201)"
+  );
+  await expect(svc.locator("path").first()).toHaveAttribute("fill", "none");
+  await expect.poll(async () => await page.locator(".sector-svg line").count()).toBeLessThan(8);
+  const coloredPixelCounts = await coloredSectorPixelCounts(page);
+  expect(coloredPixelCounts.blue).toBeGreaterThan(100);
+  expect(coloredPixelCounts.red).toBeGreaterThan(100);
+});
+
+test("sector keeps the last clean raster while volume masks refresh during scope motion", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto("/");
+  await page.waitForSelector(".scene-canvas canvas");
+
+  await page.getByLabel("Station snap").selectOption("station_10r_node_a::default");
+  await expect(page.locator(".sector-pane")).toHaveAttribute("data-sector-source", "volume_masks", { timeout: 60_000 });
+  await expect.poll(async () => {
+    const counts = await coloredSectorPixelCounts(page);
+    return counts.blue + counts.red + counts.green;
+  }).toBeGreaterThan(100);
+
+  await page.route("**/api/sector-volume?**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+
+  const advance = page.locator("label").filter({ hasText: "Advance / retract" }).locator("input");
+  await advance.evaluate((element) => {
+    const input = element as HTMLInputElement;
+    const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    valueSetter?.call(input, "112");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await expect(page.locator(".sector-pane")).toHaveAttribute("data-sector-source", "volume_masks_refreshing", { timeout: 5_000 });
+  await expect.poll(async () => {
+    const counts = await coloredSectorPixelCounts(page);
+    return counts.blue + counts.red + counts.green;
+  }).toBeGreaterThan(100);
+  await expect(page.locator('[data-raster-mask-layer="clean-sector"]')).toBeVisible();
 });

@@ -143,6 +143,15 @@ type ProbePose = {
   lateralAxis: THREE.Vector3;
 };
 
+type SectorRasterMask = {
+  width: number;
+  height: number;
+  alpha: number[];
+  source?: string;
+  depth_samples?: number;
+  lateral_samples?: number;
+};
+
 type SectorItem = {
   id: string;
   label: string;
@@ -160,6 +169,9 @@ type SectorItem = {
   contoursMm?: Vec2[][];
   contourCount?: number;
   contourSource?: string;
+  contourClosed?: boolean[];
+  hasClosedContour?: boolean;
+  rasterMask?: SectorRasterMask | null;
 };
 
 type VolumeSectorLabel = {
@@ -180,6 +192,9 @@ type VolumeSectorLabel = {
   contours_mm?: Vec2[][];
   contour_count?: number;
   contour_source?: string;
+  contour_closed?: boolean[];
+  has_closed_contour?: boolean;
+  raster_mask?: SectorRasterMask | null;
 };
 
 type VolumeSectorResponse = {
@@ -192,6 +207,7 @@ type VolumeSectorResponse = {
 type VolumeSectorState = {
   status: "idle" | "loading" | "ready" | "error";
   queryKey: string;
+  readyQueryKey: string;
   labels: VolumeSectorLabel[];
 };
 
@@ -221,6 +237,7 @@ const SECTOR_VOLUME_DEPTH_SAMPLES = 160;
 const SECTOR_VOLUME_LATERAL_SAMPLES = 160;
 const SECTOR_VOLUME_SLAB_SAMPLES = 5;
 const SECTOR_VOLUME_SLAB_HALF_THICKNESS_MM = 2.5;
+const SECTOR_VOLUME_REQUEST_DELAY_MS = 35;
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const WEB_CEPHALIC_AXIS = new THREE.Vector3(0, 1, 0);
 const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
@@ -652,6 +669,18 @@ function volumeSectorQueryKey(selectedPreset: WebPreset, lineIndex: number, sMm:
   ].join("|");
 }
 
+function volumeSectorQueryGroup(queryKey: string) {
+  return queryKey.split("|").slice(0, 2).join("|");
+}
+
+function canReuseVolumeSectorLabels(volumeSector: VolumeSectorState, nextQueryKey: string) {
+  return (
+    volumeSector.labels.length > 0 &&
+    volumeSector.readyQueryKey.length > 0 &&
+    volumeSectorQueryGroup(volumeSector.readyQueryKey) === volumeSectorQueryGroup(nextQueryKey)
+  );
+}
+
 function volumeLabelToSectorItem(label: VolumeSectorLabel): SectorItem {
   return {
     id: label.id,
@@ -669,7 +698,10 @@ function volumeLabelToSectorItem(label: VolumeSectorLabel): SectorItem {
     aspectRatio: label.aspect_ratio,
     contoursMm: label.contours_mm,
     contourCount: label.contour_count,
-    contourSource: label.contour_source
+    contourSource: label.contour_source,
+    contourClosed: label.contour_closed,
+    hasClosedContour: label.has_closed_contour,
+    rasterMask: label.raster_mask
   };
 }
 
@@ -1060,6 +1092,7 @@ function SectorView({
   activeStructure: string | null;
   setActiveStructure: (value: string | null) => void;
 }) {
+  const rasterCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const maxDepth = caseData.render_defaults.max_depth_mm;
   const halfTan = Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
   const visibleItems = items.filter((item) => item.visible || item.kind === "airway" || item.kind === "contact");
@@ -1250,7 +1283,7 @@ function SectorView({
 
   function contourStrokeColor(item: SectorItem, active: boolean) {
     if (active) {
-      return "#ffffff";
+      return item.kind === "node" ? "#dcffd0" : "#d7f3ff";
     }
     if (item.kind === "node") {
       return "#9cf0a2";
@@ -1273,6 +1306,186 @@ function SectorView({
     return order[a.kind] - order[b.kind] || a.depthMm - b.depthMm || a.label.localeCompare(b.label);
   });
 
+  function hexToRgb(color: string) {
+    const normalized = color.trim().replace(/^#/, "");
+    const expanded = normalized.length === 3
+      ? normalized.split("").map((digit) => `${digit}${digit}`).join("")
+      : normalized;
+    const parsed = Number.parseInt(expanded, 16);
+    if (!Number.isFinite(parsed) || expanded.length !== 6) {
+      return { r: 147, g: 197, b: 111 };
+    }
+    return {
+      r: (parsed >> 16) & 255,
+      g: (parsed >> 8) & 255,
+      b: parsed & 255
+    };
+  }
+
+  function drawFanClip(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    const sx = width / 100;
+    const sy = height / 100;
+    ctx.beginPath();
+    ctx.moveTo(50 * sx, 7 * sy);
+    ctx.lineTo(10 * sx, 92 * sy);
+    ctx.quadraticCurveTo(50 * sx, 99 * sy, 90 * sx, 92 * sy);
+    ctx.closePath();
+  }
+
+  function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.fillStyle = "#020303";
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    drawFanClip(ctx, width, height);
+    ctx.clip();
+
+    const gradient = ctx.createLinearGradient(0, 7 * height / 100, 0, 94 * height / 100);
+    gradient.addColorStop(0, "#303635");
+    gradient.addColorStop(0.3, "#202526");
+    gradient.addColorStop(0.72, "#111617");
+    gradient.addColorStop(1, "#090b0c");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    const noise = document.createElement("canvas");
+    noise.width = 180;
+    noise.height = 180;
+    const noiseCtx = noise.getContext("2d");
+    if (noiseCtx) {
+      const image = noiseCtx.createImageData(noise.width, noise.height);
+      for (let y = 0; y < noise.height; y += 1) {
+        for (let x = 0; x < noise.width; x += 1) {
+          const index = (y * noise.width + x) * 4;
+          const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+          const value = 34 + Math.floor((seed - Math.floor(seed)) * 52);
+          image.data[index] = value;
+          image.data[index + 1] = value;
+          image.data[index + 2] = value;
+          image.data[index + 3] = 42;
+        }
+      }
+      noiseCtx.putImageData(image, 0, 0);
+      ctx.globalAlpha = 0.38;
+      ctx.drawImage(noise, 0, 0, width, height);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  function drawRasterMask(
+    ctx: CanvasRenderingContext2D,
+    item: SectorItem,
+    rasterMask: SectorRasterMask,
+    width: number,
+    height: number
+  ) {
+    const { r, g, b } = hexToRgb(item.color);
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = rasterMask.width;
+    maskCanvas.height = rasterMask.height;
+    const maskCtx = maskCanvas.getContext("2d");
+    if (!maskCtx) {
+      return;
+    }
+
+    const opacity = item.kind === "vessel" ? 0.82 : 0.48;
+    const image = maskCtx.createImageData(rasterMask.width, rasterMask.height);
+    for (let index = 0; index < rasterMask.alpha.length && index < rasterMask.width * rasterMask.height; index += 1) {
+      const alpha = clamp(Number(rasterMask.alpha[index]) || 0, 0, 255);
+      const offset = index * 4;
+      image.data[offset] = r;
+      image.data[offset + 1] = g;
+      image.data[offset + 2] = b;
+      image.data[offset + 3] = Math.round(alpha * opacity);
+    }
+    maskCtx.putImageData(image, 0, 0);
+
+    const top = 8 * height / 100;
+    const fanHeight = 82 * height / 100;
+    const rowHeight = Math.max(1, fanHeight / Math.max(rasterMask.height - 1, 1) + 1.25);
+    const warpedCanvas = document.createElement("canvas");
+    warpedCanvas.width = Math.ceil(width);
+    warpedCanvas.height = Math.ceil(height);
+    const warpedCtx = warpedCanvas.getContext("2d");
+    if (!warpedCtx) {
+      return;
+    }
+
+    warpedCtx.save();
+    drawFanClip(warpedCtx, width, height);
+    warpedCtx.clip();
+    warpedCtx.imageSmoothingEnabled = true;
+    warpedCtx.imageSmoothingQuality = "high";
+    for (let row = 0; row < rasterMask.height; row += 1) {
+      const depthRatio = rasterMask.height <= 1 ? 0 : row / (rasterMask.height - 1);
+      const y = top + depthRatio * fanHeight - rowHeight / 2;
+      const halfWidth = depthRatio * 39 * width / 100;
+      const rowWidth = halfWidth * 2;
+      if (rowWidth < 0.5) {
+        continue;
+      }
+      warpedCtx.drawImage(maskCanvas, 0, row, rasterMask.width, 1, width / 2 - halfWidth, y, rowWidth, rowHeight);
+    }
+    warpedCtx.restore();
+
+    ctx.save();
+    drawFanClip(ctx, width, height);
+    ctx.clip();
+    ctx.filter = item.kind === "vessel" ? "blur(1.15px)" : "blur(0.8px)";
+    ctx.drawImage(warpedCanvas, 0, 0, width, height);
+    ctx.filter = "none";
+    ctx.restore();
+  }
+
+  useEffect(() => {
+    const canvas = rasterCanvasRef.current;
+    const parent = canvas?.parentElement;
+    if (!canvas || !parent) {
+      return;
+    }
+
+    const draw = () => {
+      const bounds = canvas.getBoundingClientRect();
+      const width = Math.max(1, bounds.width);
+      const height = Math.max(1, bounds.height);
+      const pixelRatio = window.devicePixelRatio || 1;
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        return;
+      }
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#020303";
+      ctx.fillRect(0, 0, width, height);
+      const viewSize = Math.min(width, height);
+      const viewOffsetX = (width - viewSize) / 2;
+      const viewOffsetY = (height - viewSize) / 2;
+      ctx.save();
+      ctx.translate(viewOffsetX, viewOffsetY);
+      drawSectorTexture(ctx, viewSize, viewSize);
+      const rasterItems = [...visibleItems]
+        .filter((item) => (item.kind === "node" || item.kind === "vessel") && item.rasterMask?.alpha?.length)
+        .sort((a, b) => {
+          const order = { vessel: 0, node: 1 };
+          return order[a.kind as "node" | "vessel"] - order[b.kind as "node" | "vessel"] || a.depthMm - b.depthMm;
+        });
+      for (const item of rasterItems) {
+        if (item.rasterMask) {
+          drawRasterMask(ctx, item, item.rasterMask, viewSize, viewSize);
+        }
+      }
+      ctx.restore();
+    };
+
+    draw();
+    const observer = new ResizeObserver(draw);
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [activeStructure, visibleItems, maxDepth]);
+
   return (
     <section className="sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
       <div className="pane-header">
@@ -1282,35 +1495,23 @@ function SectorView({
         </div>
         <span className="approach-chip">{selectedPreset.approach}</span>
       </div>
+      <div className="sector-viewport">
+      <canvas
+        ref={rasterCanvasRef}
+        className="sector-raster-canvas"
+        data-raster-mask-layer="clean-sector"
+        aria-hidden="true"
+      />
       <svg className="sector-svg" viewBox="0 0 100 100" role="img" aria-label="Synchronized labeled EBUS sector">
         <defs>
-          <radialGradient id="sectorNoise" cx="50%" cy="20%" r="86%">
-            <stop offset="0%" stopColor="#2f3435" />
-            <stop offset="58%" stopColor="#171b1d" />
-            <stop offset="100%" stopColor="#080a0b" />
-          </radialGradient>
           <clipPath id="fanClip">
             <path d="M50 7 L10 92 Q50 99 90 92 Z" />
           </clipPath>
         </defs>
-        <rect width="100" height="100" fill="#050607" />
-        <path d="M50 7 L10 92 Q50 99 90 92 Z" fill="url(#sectorNoise)" stroke="#c6d1d5" strokeWidth="0.55" />
+        <rect width="100" height="100" fill="transparent" />
+        <path d="M50 7 L10 92 Q50 99 90 92 Z" fill="none" stroke="#d5dde0" strokeOpacity="0.76" strokeWidth="0.55" />
         <g clipPath="url(#fanClip)">
-          <path d="M14 14 C27 22, 72 22, 86 14" stroke="#e7e4dd" strokeOpacity="0.56" strokeWidth="1.8" fill="none" />
-          <path d="M10 53 C28 45, 72 45, 90 53" stroke="#3a4143" strokeWidth="0.5" fill="none" />
-          <path d="M14 72 C34 64, 66 64, 86 72" stroke="#2b3132" strokeWidth="0.5" fill="none" />
-          {Array.from({ length: 44 }).map((_, index) => (
-            <line
-              key={index}
-              x1={10 + ((index * 37) % 80)}
-              y1={16 + ((index * 19) % 70)}
-              x2={12 + ((index * 41) % 80)}
-              y2={16 + ((index * 23) % 70)}
-              stroke="#a7aca9"
-              strokeOpacity={0.09 + (index % 4) * 0.025}
-              strokeWidth="0.35"
-            />
-          ))}
+          <path d="M14 14 C27 22, 72 22, 86 14" stroke="#e7e4dd" strokeOpacity="0.22" strokeWidth="1.25" fill="none" />
         </g>
         <g clipPath="url(#fanClip)">
         {renderItems.map((item) => {
@@ -1328,18 +1529,21 @@ function SectorView({
             return <circle key={item.id} cx="50" cy="8" r="1.6" fill={item.color} />;
           }
           const shape = itemShape(item);
+          const hasRasterMask = Boolean(item.rasterMask?.alpha?.length);
           const contourPaths = (item.contoursMm ?? [])
-            .map((contour) => {
+            .map((contour, index) => {
               const smoothIterations = item.kind === "vessel" ? 5 : 1;
+              const closed = item.contourClosed?.[index] ?? isClosedContour(contour);
               return {
                 fill: contourPath(contour, {
-                  forceClosed: item.kind === "node" || item.kind === "vessel",
+                  forceClosed: false,
                   smoothIterations
                 }),
                 stroke: contourPath(contour, {
-                  forceClosed: item.kind === "node",
+                  forceClosed: false,
                   smoothIterations
-                })
+                }),
+                closed
               };
             })
             .filter((contour) => contour.fill.path.length > 0);
@@ -1359,37 +1563,15 @@ function SectorView({
               {contourPaths.length > 0 ? (
                 contourPaths.map((contour, index) => {
                   const contourKey = `${item.id}-contour-${index}`;
-                  if (item.kind === "vessel" && contour.fill.closed) {
-                    return (
-                      <g key={contourKey} data-vessel-cut-plane="filled">
-                        <path
-                          data-vessel-fill="body"
-                          d={contour.fill.path}
-                          fill={item.color}
-                          fillOpacity={active ? 0.62 : 0.5}
-                          stroke="none"
-                        />
-                        <path
-                          d={contour.stroke.path}
-                          fill="none"
-                          stroke={contourStrokeColor(item, active)}
-                          strokeOpacity={active ? 0.98 : 0.9}
-                          strokeWidth={active ? 1.15 : 0.72}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </g>
-                    );
-                  }
                   return (
                     <path
                       key={contourKey}
                       d={contour.fill.path}
-                      fill={contour.fill.closed ? contourFillColor(item) : "none"}
-                      fillOpacity={contour.fill.closed ? contourFillOpacity(item) : 0}
+                      fill={!hasRasterMask && contour.closed ? contourFillColor(item) : "none"}
+                      fillOpacity={!hasRasterMask && contour.closed ? contourFillOpacity(item) : 0}
                       stroke={contourStrokeColor(item, active)}
-                      strokeOpacity={active ? 0.96 : 0.84}
-                      strokeWidth={active ? 1.05 : 0.62}
+                      strokeOpacity={active ? 0.88 : 0.58}
+                      strokeWidth={active ? 0.8 : 0.42}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -1409,11 +1591,11 @@ function SectorView({
                   strokeWidth={active ? 1.0 : 0.5}
                 />
               )}
-              {label && item.kind === "vessel" && (
+              {label && active && item.kind === "vessel" && (
                 <line x1={position.x} y1={position.y} x2={label.x} y2={label.y - 1.2} stroke={item.color} strokeOpacity="0.7" strokeWidth="0.35" />
               )}
-              {label && (
-                <text x={label.x} y={label.y} textAnchor={label.anchor} fill="#d9f0ee" fontSize="3.15">
+              {label && active && (
+                <text x={label.x} y={label.y} textAnchor={label.anchor} fill="#d9f0ee" fillOpacity="0.88" fontSize="2.8">
                   {item.label}
                 </text>
               )}
@@ -1421,16 +1603,17 @@ function SectorView({
           );
         })}
         </g>
-        <line x1="94" y1="10" x2="94" y2="91" stroke="#758086" strokeWidth="0.6" />
+        <line x1="94" y1="10" x2="94" y2="91" stroke="#758086" strokeOpacity="0.34" strokeWidth="0.5" />
         {[0, 10, 20, 30, 40].map((tick) => (
           <g key={tick}>
-            <line x1="92.2" x2="94" y1={8 + (tick / maxDepth) * 82} y2={8 + (tick / maxDepth) * 82} stroke="#758086" strokeWidth="0.55" />
-            <text x="95" y={9 + (tick / maxDepth) * 82} fill="#8d999e" fontSize="2.8">{tick}</text>
+            <line x1="92.2" x2="94" y1={8 + (tick / maxDepth) * 82} y2={8 + (tick / maxDepth) * 82} stroke="#758086" strokeOpacity="0.38" strokeWidth="0.45" />
+            <text x="95" y={9 + (tick / maxDepth) * 82} fill="#8d999e" fillOpacity="0.5" fontSize="2.55">{tick}</text>
           </g>
         ))}
-        <text x="13" y="96" fill="#8d999e" fontSize="2.8">caudal</text>
-        <text x="76" y="96" fill="#8d999e" fontSize="2.8">cephalic</text>
+        <text x="13" y="96" fill="#8d999e" fillOpacity="0.58" fontSize="2.55">caudal</text>
+        <text x="76" y="96" fill="#8d999e" fillOpacity="0.58" fontSize="2.55">cephalic</text>
       </svg>
+      </div>
       <div className="structure-list">
         {visibleItems.filter((item) => item.kind !== "contact").map((item) => (
           <button
@@ -1463,6 +1646,7 @@ function App() {
   const [volumeSector, setVolumeSector] = useState<VolumeSectorState>({
     status: "idle",
     queryKey: "",
+    readyQueryKey: "",
     labels: []
   });
 
@@ -1535,11 +1719,16 @@ function App() {
       slab_samples: String(SECTOR_VOLUME_SLAB_SAMPLES),
       slab_half_thickness_mm: String(SECTOR_VOLUME_SLAB_HALF_THICKNESS_MM)
     });
-    setVolumeSector((current) => ({
-      status: current.queryKey === sectorQueryKey && current.status === "ready" ? "ready" : "loading",
-      queryKey: sectorQueryKey,
-      labels: current.queryKey === sectorQueryKey ? current.labels : []
-    }));
+    setVolumeSector((current) => {
+      const alreadyReady = current.readyQueryKey === sectorQueryKey && current.status === "ready";
+      const keepStaleLabels = alreadyReady || canReuseVolumeSectorLabels(current, sectorQueryKey);
+      return {
+        status: alreadyReady ? "ready" : "loading",
+        queryKey: sectorQueryKey,
+        readyQueryKey: keepStaleLabels ? current.readyQueryKey : "",
+        labels: keepStaleLabels ? current.labels : []
+      };
+    });
 
     const timer = window.setTimeout(async () => {
       try {
@@ -1548,22 +1737,35 @@ function App() {
           throw new Error(`${response.status} ${response.statusText}`);
         }
         const payload = (await response.json()) as VolumeSectorResponse;
-        setVolumeSector({
-          status: "ready",
-          queryKey: sectorQueryKey,
-          labels: payload.sector.labels
+        setVolumeSector((current) => {
+          if (current.queryKey !== sectorQueryKey) {
+            return current;
+          }
+          return {
+            status: "ready",
+            queryKey: sectorQueryKey,
+            readyQueryKey: sectorQueryKey,
+            labels: payload.sector.labels
+          };
         });
       } catch {
         if (controller.signal.aborted) {
           return;
         }
-        setVolumeSector({
-          status: "error",
-          queryKey: sectorQueryKey,
-          labels: []
+        setVolumeSector((current) => {
+          if (current.queryKey !== sectorQueryKey) {
+            return current;
+          }
+          const keepStaleLabels = canReuseVolumeSectorLabels(current, sectorQueryKey);
+          return {
+            status: "error",
+            queryKey: sectorQueryKey,
+            readyQueryKey: keepStaleLabels ? current.readyQueryKey : "",
+            labels: keepStaleLabels ? current.labels : []
+          };
         });
       }
-    }, 90);
+    }, SECTOR_VOLUME_REQUEST_DELAY_MS);
 
     return () => {
       window.clearTimeout(timer);
@@ -1598,7 +1800,9 @@ function App() {
       }
     ];
 
-    if (volumeSector.status === "ready" && volumeSector.queryKey === sectorQueryKey) {
+    const canUseVolumeLabels =
+      volumeSector.readyQueryKey === sectorQueryKey || canReuseVolumeSectorLabels(volumeSector, sectorQueryKey);
+    if (canUseVolumeLabels) {
       items.push(...volumeSector.labels.map(volumeLabelToSectorItem));
       items.sort((a, b) => {
         const order = { airway: 0, contact: 1, node: 2, vessel: 3 };
@@ -1718,9 +1922,12 @@ function App() {
     setLayers((current) => ({ ...current, [key]: !current[key] }));
   };
 
-  const sectorSource =
-    volumeSector.status === "ready" && volumeSector.queryKey === sectorQueryKey
-      ? "volume_masks"
+  const hasCurrentVolumeSector = volumeSector.status === "ready" && volumeSector.readyQueryKey === sectorQueryKey;
+  const hasStaleVolumeSector = !hasCurrentVolumeSector && canReuseVolumeSectorLabels(volumeSector, sectorQueryKey);
+  const sectorSource = hasCurrentVolumeSector
+    ? "volume_masks"
+    : hasStaleVolumeSector
+      ? "volume_masks_refreshing"
       : "point_cloud_fallback";
 
   return (

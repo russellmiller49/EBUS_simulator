@@ -89,6 +89,9 @@ class WebVolumeIntersection:
     contours_mm: list[list[list[float]]]
     contour_count: int
     contour_source: str
+    contour_closed: list[bool]
+    has_closed_contour: bool
+    raster_mask: dict[str, object] | None
     surface_source: str
     surface_triangle_count: int
     source: str = "volume_mask"
@@ -327,6 +330,38 @@ def _base_occupancy_from_samples(sample_occupancy: np.ndarray, grid: SectorSampl
     return base_occupancy
 
 
+def _raster_mask_from_base_occupancy(
+    base_occupancy: np.ndarray,
+    grid: SectorSamplingGrid,
+    *,
+    kind: str,
+) -> dict[str, object] | None:
+    if base_occupancy.size != grid.base_sample_count or float(np.max(base_occupancy, initial=0.0)) <= 0.0:
+        return None
+
+    from scipy.ndimage import gaussian_filter
+
+    occupancy = np.asarray(base_occupancy, dtype=np.float32).reshape(
+        (grid.depth_sample_count, grid.lateral_sample_count)
+    )
+    sigma = 1.45 if kind == "vessel" else 1.05
+    smoothed = np.clip(gaussian_filter(occupancy, sigma=sigma, mode="nearest"), 0.0, 1.0)
+    smoothed[smoothed < 0.05] = 0.0
+    alpha_float = np.power(smoothed, 0.65)
+    alpha = np.rint(np.clip(alpha_float, 0.0, 1.0) * 255.0).astype(np.uint8)
+    if not bool(np.any(alpha)):
+        return None
+
+    return {
+        "width": int(grid.lateral_sample_count),
+        "height": int(grid.depth_sample_count),
+        "alpha": alpha.reshape(-1).astype(int).tolist(),
+        "source": "interpolated_mask_occupancy",
+        "depth_samples": int(grid.depth_sample_count),
+        "lateral_samples": int(grid.lateral_sample_count),
+    }
+
+
 _CASE_SEGMENTS: dict[int, tuple[tuple[str, str], ...]] = {
     1: (("left", "top"),),
     2: (("top", "right"),),
@@ -536,6 +571,16 @@ def _contours_from_base_occupancy(
     ]
 
 
+def _is_closed_contour_mm(contour: list[list[float]], *, tolerance_mm: float = 1.5) -> bool:
+    if len(contour) < 4:
+        return False
+    return math.dist(contour[0], contour[-1]) <= tolerance_mm
+
+
+def _contour_closed_flags(contours: list[list[list[float]]]) -> list[bool]:
+    return [_is_closed_contour_mm(contour) for contour in contours]
+
+
 def _unique_points(points: list[np.ndarray]) -> list[np.ndarray]:
     unique: list[np.ndarray] = []
     for point in points:
@@ -692,6 +737,8 @@ def _intersection_from_hits(
         else:
             contours = _contours_from_hit_base_mask(hit_base_mask, grid)
             contour_source = "marching_squares_fan_slice"
+    contour_closed = _contour_closed_flags(contours)
+    raster_mask = _raster_mask_from_base_occupancy(base_occupancy, grid, kind=source.kind)
     depths = grid.depth_mm[hit_base_mask]
     laterals = grid.lateral_mm[hit_base_mask]
     weights = hit_base_counts[hit_base_mask].astype(np.float64)
@@ -751,6 +798,9 @@ def _intersection_from_hits(
         contours_mm=contours,
         contour_count=len(contours),
         contour_source=contour_source,
+        contour_closed=contour_closed,
+        has_closed_contour=bool(any(contour_closed)),
+        raster_mask=raster_mask,
         surface_source="" if surface_mesh is None else surface_mesh.source,
         surface_triangle_count=0 if surface_mesh is None else int(surface_mesh.triangle_count),
     )
