@@ -67,6 +67,22 @@ def _project_perpendicular(vector: np.ndarray, axis: np.ndarray) -> np.ndarray:
     return vector - (np.dot(vector, axis) * axis)
 
 
+def _orthonormal_pose_axes(shaft_axis: np.ndarray, depth_axis: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+    shaft = _normalize(shaft_axis)
+    if shaft is None:
+        return None
+    depth = _normalize(_project_perpendicular(depth_axis, shaft))
+    if depth is None:
+        return None
+    lateral = _normalize(np.cross(shaft, depth))
+    if lateral is None:
+        return None
+    depth = _normalize(np.cross(lateral, shaft))
+    if depth is None:
+        return None
+    return depth, lateral
+
+
 def _choose_fallback_depth_axis(shaft_axis: np.ndarray) -> np.ndarray:
     candidates = [
         np.asarray([0.0, 0.0, 1.0], dtype=np.float64),
@@ -126,26 +142,50 @@ def navigation_pose_from_polyline(
     centerline_s_mm: float,
     roll_deg: float = 0.0,
     target_lps: np.ndarray | None = None,
+    contact_lps: np.ndarray | None = None,
+    contact_centerline_s_mm: float | None = None,
+    shaft_axis_lps: np.ndarray | None = None,
+    depth_axis_lps: np.ndarray | None = None,
 ) -> WebNavigationPose:
-    position = polyline.point_at_arc_length(centerline_s_mm).astype(np.float64)
+    centerline_position = polyline.point_at_arc_length(centerline_s_mm).astype(np.float64)
+    position = centerline_position.copy()
     tangent = _tangent_at_s(polyline, centerline_s_mm)
+    preset_shaft = None if shaft_axis_lps is None else _normalize(np.asarray(shaft_axis_lps, dtype=np.float64))
+    if preset_shaft is not None:
+        if float(np.dot(tangent, preset_shaft)) < 0.0:
+            tangent = -tangent
+        if contact_centerline_s_mm is not None and abs(float(centerline_s_mm) - float(contact_centerline_s_mm)) <= 1.0:
+            tangent = preset_shaft
+
+    if contact_lps is not None and contact_centerline_s_mm is not None:
+        contact = np.asarray(contact_lps, dtype=np.float64)
+        reference_centerline_position = polyline.point_at_arc_length(contact_centerline_s_mm).astype(np.float64)
+        radial_offset = _project_perpendicular(contact - reference_centerline_position, tangent)
+        radial_length = float(np.linalg.norm(radial_offset))
+        if radial_length > EPSILON:
+            if abs(float(centerline_s_mm) - float(contact_centerline_s_mm)) <= 1.0:
+                position = contact
+            else:
+                position = centerline_position + (radial_offset / radial_length) * radial_length
 
     raw_depth: np.ndarray | None = None
-    if target_lps is not None:
+    if depth_axis_lps is not None:
+        raw_depth = _normalize(_project_perpendicular(np.asarray(depth_axis_lps, dtype=np.float64), tangent))
+    if raw_depth is None and target_lps is not None:
         raw_depth = _normalize(_project_perpendicular(np.asarray(target_lps, dtype=np.float64) - position, tangent))
     if raw_depth is None:
         raw_depth = _choose_fallback_depth_axis(tangent)
+    if target_lps is not None and float(np.dot(np.asarray(target_lps, dtype=np.float64) - position, raw_depth)) < 0.0:
+        raw_depth = -raw_depth
 
     depth_axis = _normalize(_rotate_around_axis(raw_depth, tangent, roll_deg))
     if depth_axis is None:
         raise ValueError("Depth axis is undefined.")
 
-    lateral_axis = _normalize(np.cross(tangent, depth_axis))
-    if lateral_axis is None:
-        raise ValueError("Lateral axis is undefined.")
-    depth_axis = _normalize(np.cross(lateral_axis, tangent))
-    if depth_axis is None:
-        raise ValueError("Depth axis could not be re-orthogonalized.")
+    axes = _orthonormal_pose_axes(tangent, depth_axis)
+    if axes is None:
+        raise ValueError("Pose axes could not be re-orthogonalized.")
+    depth_axis, lateral_axis = axes
 
     return WebNavigationPose(
         line_index=int(polyline.line_index),
@@ -278,6 +318,10 @@ def build_navigation_response(
         centerline_s_mm=centerline_s_mm,
         roll_deg=roll_deg,
         target_lps=target_lps,
+        contact_lps=(None if preset is None else np.asarray(preset.contact_lps, dtype=np.float64)),
+        contact_centerline_s_mm=(None if preset is None or int(preset.line_index) != int(line_index) else float(preset.centerline_s_mm)),
+        shaft_axis_lps=(None if preset is None or preset.shaft_axis_lps is None else np.asarray(preset.shaft_axis_lps, dtype=np.float64)),
+        depth_axis_lps=(None if preset is None or preset.depth_axis_lps is None else np.asarray(preset.depth_axis_lps, dtype=np.float64)),
     )
 
     sector_labels: list[dict[str, object]] = []

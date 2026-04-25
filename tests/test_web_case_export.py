@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from ebus_simulator.web_case_export import attach_clean_model_assets, export_web_case
+from ebus_simulator.web_case_export import attach_clean_model_assets, attach_scope_model_asset, export_web_case
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,7 @@ def test_export_web_case_writes_manifest_and_assets(tmp_path):
     assert payload["color_map"]["pulmonary_artery"] == "#0b4f9f"
     assert payload["color_map"]["pulmonary_venous_system"] == "#ee7772"
     assert payload["color_map"]["aorta"] == "#d13f3f"
+    assert payload["assets"]["scope_model"] is None
 
     airway_path = manifest_path.parent / payload["assets"]["airway_mesh"]
     centerline_path = manifest_path.parent / payload["assets"]["centerlines"]
@@ -101,3 +102,37 @@ def test_export_web_case_can_attach_clean_glb_models(tmp_path):
     updated = json.loads(Path(result.manifest_path).read_text())
     assert attached == 1
     assert updated["assets"]["clean_models"][0]["asset"] == "models/replacement.glb"
+
+
+def test_export_web_case_can_attach_scope_glb_model(tmp_path):
+    scope_model = tmp_path / "EBUS_tip.glb"
+    scope_model.write_bytes(b"scope placeholder")
+
+    result = export_web_case(
+        MANIFEST_PATH,
+        output_dir=tmp_path / "web_case",
+        max_mask_points=10,
+        max_station_points=10,
+        scope_model_path=scope_model,
+    )
+    payload = json.loads(Path(result.manifest_path).read_text())
+    scope_asset = payload["assets"]["scope_model"]
+
+    assert scope_asset["asset"] == "models/device/EBUS_tip.glb"
+    assert scope_asset["shaft_axis"] == "+x"
+    assert scope_asset["depth_axis"] == "+y"
+    assert scope_asset["lateral_axis"] == "-z"
+    assert scope_asset["origin"] == "fan_apex_anchor_at_probe_contact"
+    assert scope_asset["fan_apex_anchor"] == {"x": "center", "y": "max", "z": "center"}
+    assert scope_asset["fan_apex_anchor_point"] == [-0.334, -0.055, 0.0]
+    assert scope_asset["scale_mm_per_unit"] == 44.0
+    assert scope_asset["lock_to_fan"] is True
+    assert scope_asset["show_auxiliary_shaft"] is False
+    assert (Path(result.manifest_path).parent / scope_asset["asset"]).exists()
+
+    replacement = tmp_path / "replacement_scope.glb"
+    replacement.write_bytes(b"replacement scope")
+    attached = attach_scope_model_asset(Path(result.manifest_path).parent, replacement)
+    updated = json.loads(Path(result.manifest_path).read_text())
+    assert attached is True
+    assert updated["assets"]["scope_model"]["asset"] == "models/device/replacement_scope.glb"

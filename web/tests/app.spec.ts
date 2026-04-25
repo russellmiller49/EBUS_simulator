@@ -10,6 +10,8 @@ test("loads the case and renders the synchronized panes", async ({ page }) => {
   await expect(page.locator(".layer-toggles label").filter({ hasText: "teaching" }).locator("input")).toBeChecked();
   await expect(page.locator(".layer-toggles label").filter({ hasText: "heart" }).locator("input")).toBeChecked();
   await expect(page.locator(".layer-toggles label").filter({ hasText: "context" }).locator("input")).not.toBeChecked();
+  await expect(page.locator(".scene-canvas")).toHaveAttribute("data-scope-model", /EBUS_tip\.glb/);
+  await expect(page.locator(".scene-canvas")).toHaveAttribute("data-scope-frame", "fan");
 
   await expect.poll(async () => (await canvas.boundingBox())?.width ?? 0).toBeGreaterThan(300);
   await expect.poll(async () => (await canvas.boundingBox())?.height ?? 0).toBeGreaterThan(300);
@@ -108,4 +110,6 @@ test("volume-shaped vessel cuts render as elongated long-axis structures", async
   await expect(svc).toBeVisible();
   await expect.poll(async () => Number(await svc.getAttribute("data-shape-aspect"))).toBeGreaterThan(2.2);
   await expect.poll(async () => Number(await svc.getAttribute("data-contour-count"))).toBeGreaterThan(0);
+  await expect(svc.locator('[data-vessel-fill="body"]').first()).toHaveAttribute("fill", "#2276c9");
+  await expect.poll(async () => Number(await svc.locator('[data-vessel-fill="body"]').first().getAttribute("fill-opacity"))).toBeGreaterThan(0.45);
 });

@@ -48,3 +48,25 @@ def test_station_7_navigation_snaps_remain_distinct():
     assert (lms.line_index, round(lms.centerline_s_mm, 3)) != (rms.line_index, round(rms.centerline_s_mm, 3))
     assert not np.allclose(lms.contact_lps, rms.contact_lps)
     assert lms.vessel_overlays != rms.vessel_overlays
+
+
+def test_preset_navigation_pose_uses_contact_and_exported_axes():
+    context = build_render_context(MANIFEST_PATH)
+    entries = {entry.preset_key: entry for entry in preset_navigation_entries(context)}
+    preset = entries["station_7_node_a::rms"]
+    polyline = next(polyline for polyline in context.main_graph.polylines if polyline.line_index == preset.line_index)
+
+    pose = navigation_pose_from_polyline(
+        polyline,
+        centerline_s_mm=preset.centerline_s_mm,
+        roll_deg=0.0,
+        target_lps=np.asarray(preset.target_lps),
+        contact_lps=np.asarray(preset.contact_lps),
+        contact_centerline_s_mm=preset.centerline_s_mm,
+        shaft_axis_lps=np.asarray(preset.shaft_axis_lps),
+        depth_axis_lps=np.asarray(preset.depth_axis_lps),
+    )
+
+    assert np.allclose(pose.position_lps, preset.contact_lps)
+    assert np.dot(np.asarray(pose.tangent_lps), np.asarray(preset.shaft_axis_lps)) > 0.99
+    assert np.dot(np.asarray(pose.depth_axis_lps), np.asarray(preset.depth_axis_lps)) > 0.99

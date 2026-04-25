@@ -6,7 +6,7 @@ from pathlib import Path
 import webbrowser
 
 from ebus_simulator.centerline import CenterlinePolyline
-from ebus_simulator.web_case_export import attach_clean_model_assets, export_web_case
+from ebus_simulator.web_case_export import attach_clean_model_assets, attach_scope_model_asset, export_web_case
 from ebus_simulator.web_navigation import (
     build_navigation_response,
     preset_navigation_entries,
@@ -22,6 +22,7 @@ from ebus_simulator.rendering import build_render_context
 
 
 DEFAULT_WEB_CASE_DIR = Path("reports/web_case")
+DEFAULT_SCOPE_MODEL_PATHS = (Path("model/EBUS_tip.glb"), Path("model/EBUS_bronchoscope.glb"))
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 
@@ -57,6 +58,13 @@ def _load_case_manifest(web_case_dir: Path) -> dict[str, object]:
 
 def _centerlines_from_context(context) -> dict[int, CenterlinePolyline]:
     return {int(polyline.line_index): polyline for polyline in context.main_graph.polylines}
+
+
+def _default_scope_model_path() -> Path | None:
+    for path in DEFAULT_SCOPE_MODEL_PATHS:
+        if path.exists():
+            return path.resolve()
+    return None
 
 
 def _default_index_html() -> str:
@@ -212,6 +220,7 @@ def launch_web_app(
     *,
     web_case_dir: str | Path = DEFAULT_WEB_CASE_DIR,
     clean_model_dir: str | Path | None = None,
+    scope_model_path: str | Path | None = None,
     host: str = DEFAULT_HOST,
     port: int = DEFAULT_PORT,
     open_browser: bool = False,
@@ -225,10 +234,21 @@ def launch_web_app(
         ) from exc
 
     resolved_web_case = Path(web_case_dir).expanduser().resolve()
+    resolved_scope_model = Path(scope_model_path).expanduser().resolve() if scope_model_path is not None else None
+    if resolved_scope_model is None:
+        resolved_scope_model = _default_scope_model_path()
+
     if not (resolved_web_case / "case_manifest.web.json").exists():
-        export_web_case(manifest_path, output_dir=resolved_web_case, clean_model_dir=clean_model_dir)
+        export_web_case(
+            manifest_path,
+            output_dir=resolved_web_case,
+            clean_model_dir=clean_model_dir,
+            scope_model_path=resolved_scope_model,
+        )
     elif clean_model_dir is not None:
         attach_clean_model_assets(resolved_web_case, clean_model_dir)
+    if resolved_scope_model is not None:
+        attach_scope_model_asset(resolved_web_case, resolved_scope_model)
 
     url = f"http://{host}:{int(port)}"
     print(f"Serving EBUS anatomy correlation app at {url}")
@@ -249,6 +269,7 @@ def main() -> int:
     parser.add_argument("manifest", help="Path to the case manifest YAML file.")
     parser.add_argument("--web-case", default=str(DEFAULT_WEB_CASE_DIR), help="Exported web case directory. Auto-exported if missing.")
     parser.add_argument("--clean-model-dir", help="Optional directory of clean GLB presentation models to attach to the web case.")
+    parser.add_argument("--scope-model", help="Optional EBUS tip GLB to attach to the web case. Defaults to model/EBUS_tip.glb, then model/EBUS_bronchoscope.glb, if present.")
     parser.add_argument("--host", default=DEFAULT_HOST, help=f"Host interface. Default: {DEFAULT_HOST}.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"Port. Default: {DEFAULT_PORT}.")
     parser.add_argument("--open", action="store_true", help="Open the app in the default browser after launch.")
@@ -258,6 +279,7 @@ def main() -> int:
         args.manifest,
         web_case_dir=args.web_case,
         clean_model_dir=args.clean_model_dir,
+        scope_model_path=args.scope_model,
         host=args.host,
         port=args.port,
         open_browser=args.open,

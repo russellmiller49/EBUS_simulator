@@ -47,6 +47,26 @@ type CleanModelAsset = {
   primary?: boolean;
 };
 
+type ScopeModelAsset = {
+  key: string;
+  label: string;
+  asset: string;
+  coordinate_frame: string;
+  shaft_axis: string;
+  depth_axis: string;
+  lateral_axis: string;
+  origin: string;
+  fan_apex_anchor?: {
+    x?: "min" | "center" | "max";
+    y?: "min" | "center" | "max";
+    z?: "min" | "center" | "max";
+  };
+  fan_apex_anchor_point?: Vec3 | null;
+  scale_mm_per_unit: number;
+  lock_to_fan?: boolean;
+  show_auxiliary_shaft?: boolean;
+};
+
 type WebPreset = {
   preset_key: string;
   preset_id: string;
@@ -62,6 +82,9 @@ type WebPreset = {
   station_key: string;
   vessel_overlays: string[];
   contact_to_target_distance_mm: number;
+  shaft_axis?: Vec3 | null;
+  depth_axis?: Vec3 | null;
+  lateral_axis?: Vec3 | null;
 };
 
 type NodeMarker = {
@@ -93,6 +116,7 @@ type WebCaseManifest = {
     vessels: ListedAsset[];
     stations: ListedAsset[];
     clean_models?: CleanModelAsset[];
+    scope_model?: ScopeModelAsset | null;
   };
   navigation: {
     primary_line_index: number;
@@ -193,6 +217,10 @@ const DEFAULT_LAYERS: LayerState = {
   fan: true
 };
 const SECTOR_SLAB_HALF_THICKNESS_MM = 4;
+const SECTOR_VOLUME_DEPTH_SAMPLES = 160;
+const SECTOR_VOLUME_LATERAL_SAMPLES = 160;
+const SECTOR_VOLUME_SLAB_SAMPLES = 5;
+const SECTOR_VOLUME_SLAB_HALF_THICKNESS_MM = 2.5;
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const WEB_CEPHALIC_AXIS = new THREE.Vector3(0, 1, 0);
 const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
@@ -201,7 +229,9 @@ const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
   0, 0, 1000, 0,
   0, 0, 0, 1
 );
-const cleanModelCache = new Map<string, Promise<THREE.Group>>();
+type GlbAsset = Pick<CleanModelAsset, "asset"> | Pick<ScopeModelAsset, "asset">;
+
+const glbModelCache = new Map<string, Promise<THREE.Group>>();
 
 function toVector(point: Vec3): THREE.Vector3 {
   return new THREE.Vector3(point[0], point[1], point[2]);
@@ -224,19 +254,19 @@ function primaryCleanModel(caseData: WebCaseManifest): CleanModelAsset | null {
   return models.find((asset) => asset.primary) ?? models[0] ?? null;
 }
 
-function cleanModelUrl(asset: CleanModelAsset): string {
+function glbModelUrl(asset: GlbAsset): string {
   return `/api/asset/${asset.asset}`;
 }
 
-function loadCleanModel(asset: CleanModelAsset): Promise<THREE.Group> {
-  const url = cleanModelUrl(asset);
-  const cached = cleanModelCache.get(url);
+function loadGlbModel(asset: GlbAsset): Promise<THREE.Group> {
+  const url = glbModelUrl(asset);
+  const cached = glbModelCache.get(url);
   if (cached) {
     return cached;
   }
   const loader = new GLTFLoader();
   const promise = loader.loadAsync(url).then((gltf) => gltf.scene);
-  cleanModelCache.set(url, promise);
+  glbModelCache.set(url, promise);
   return promise;
 }
 
@@ -376,6 +406,91 @@ function disposeMaterial(material: THREE.Material | THREE.Material[] | undefined
   material?.dispose();
 }
 
+function axisVector(axis: string | undefined, fallback: THREE.Vector3): THREE.Vector3 {
+  const normalized = axis?.trim().toLowerCase();
+  const sign = normalized?.startsWith("-") ? -1 : 1;
+  const key = normalized?.replace(/^[+-]/, "");
+  if (key === "x") {
+    return new THREE.Vector3(sign, 0, 0);
+  }
+  if (key === "y") {
+    return new THREE.Vector3(0, sign, 0);
+  }
+  if (key === "z") {
+    return new THREE.Vector3(0, 0, sign);
+  }
+  return fallback.clone().normalize();
+}
+
+function scopePoseQuaternion(pose: ProbePose, scopeModel: ScopeModelAsset): THREE.Quaternion {
+  const depthAxis = pose.depthAxis.clone().normalize();
+  const shaftAxis = scopeModel.lock_to_fan ? cephalicImageAxis(pose) : pose.tangent.clone().normalize();
+  const lateralAxis = scopeModel.lock_to_fan
+    ? new THREE.Vector3().crossVectors(depthAxis, shaftAxis).normalize()
+    : pose.lateralAxis.clone().normalize();
+  const worldBasis = new THREE.Matrix4().makeBasis(
+    lateralAxis,
+    depthAxis,
+    shaftAxis
+  );
+  const modelBasis = new THREE.Matrix4().makeBasis(
+    axisVector(scopeModel.lateral_axis, new THREE.Vector3(1, 0, 0)),
+    axisVector(scopeModel.depth_axis, new THREE.Vector3(0, 1, 0)),
+    axisVector(scopeModel.shaft_axis, new THREE.Vector3(0, 0, 1))
+  );
+  return new THREE.Quaternion().setFromRotationMatrix(worldBasis.multiply(modelBasis.invert()));
+}
+
+function anchorCoordinate(min: number, max: number, mode: "min" | "center" | "max" | undefined): number {
+  if (mode === "min") {
+    return min;
+  }
+  if (mode === "max") {
+    return max;
+  }
+  return (min + max) / 2;
+}
+
+function scopeFanApexAnchorLocal(model: THREE.Group, scopeModel: ScopeModelAsset): THREE.Vector3 {
+  if (scopeModel.fan_apex_anchor_point) {
+    return toVector(scopeModel.fan_apex_anchor_point);
+  }
+  const bounds = new THREE.Box3().setFromObject(model);
+  if (bounds.isEmpty()) {
+    return new THREE.Vector3();
+  }
+  const anchor = scopeModel.fan_apex_anchor ?? {};
+  return new THREE.Vector3(
+    anchorCoordinate(bounds.min.x, bounds.max.x, anchor.x),
+    anchorCoordinate(bounds.min.y, bounds.max.y, anchor.y),
+    anchorCoordinate(bounds.min.z, bounds.max.z, anchor.z)
+  );
+}
+
+function prepareScopeModel(template: THREE.Group, pose: ProbePose, scopeModel: ScopeModelAsset): THREE.Group {
+  const model = template.clone(true);
+  model.name = `scope-model:${scopeModel.key}`;
+  const apexAnchorLocal = scopeFanApexAnchorLocal(model, scopeModel);
+  const poseQuaternion = scopePoseQuaternion(pose, scopeModel);
+  model.quaternion.copy(poseQuaternion);
+  const scale = Number.isFinite(scopeModel.scale_mm_per_unit) ? scopeModel.scale_mm_per_unit : 44;
+  model.scale.setScalar(scale);
+  const apexAnchorOffset = apexAnchorLocal.clone().multiplyScalar(scale).applyQuaternion(poseQuaternion);
+  model.position.copy(pose.position.clone().sub(apexAnchorOffset));
+  model.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) {
+      return;
+    }
+    if (!mesh.geometry.getAttribute("normal")) {
+      mesh.geometry.computeVertexNormals();
+    }
+    mesh.userData.sharedAssetGeometry = true;
+    mesh.renderOrder = 8;
+  });
+  return model;
+}
+
 function pointAtS(polyline: CenterlinePolyline, sMm: number): THREE.Vector3 {
   const points = polyline.points;
   const lengths = polyline.cumulative_lengths_mm;
@@ -432,15 +547,45 @@ function fallbackDepthAxis(tangent: THREE.Vector3): THREE.Vector3 {
   return new THREE.Vector3(0, 1, 0);
 }
 
-function computePose(polyline: CenterlinePolyline, sMm: number, rollDeg: number, target: Vec3): ProbePose {
-  const position = pointAtS(polyline, sMm);
-  const tangent = tangentAtS(polyline, sMm);
-  let depthAxis = toVector(target).sub(position);
+function normalizedVectorOrNull(point: Vec3 | null | undefined): THREE.Vector3 | null {
+  if (!point) {
+    return null;
+  }
+  const vector = toVector(point);
+  return vector.lengthSq() > 1e-8 ? vector.normalize() : null;
+}
+
+function computePose(polyline: CenterlinePolyline, sMm: number, rollDeg: number, preset: WebPreset): ProbePose {
+  const centerlinePosition = pointAtS(polyline, sMm);
+  let position = centerlinePosition.clone();
+  let tangent = tangentAtS(polyline, sMm);
+  const presetShaft = normalizedVectorOrNull(preset.shaft_axis);
+  if (presetShaft && tangent.dot(presetShaft) < 0) {
+    tangent.multiplyScalar(-1);
+  }
+  const atStationSnap = polyline.line_index === preset.line_index && Math.abs(sMm - preset.centerline_s_mm) <= 1;
+  if (presetShaft && atStationSnap) {
+    tangent = presetShaft;
+  }
+
+  if (polyline.line_index === preset.line_index) {
+    const referenceCenterlinePosition = pointAtS(polyline, preset.centerline_s_mm);
+    const radialOffset = toVector(preset.contact).sub(referenceCenterlinePosition);
+    radialOffset.sub(tangent.clone().multiplyScalar(radialOffset.dot(tangent)));
+    if (radialOffset.lengthSq() > 1e-8) {
+      position = atStationSnap ? toVector(preset.contact) : centerlinePosition.clone().add(radialOffset);
+    }
+  }
+
+  let depthAxis = normalizedVectorOrNull(preset.depth_axis) ?? toVector(preset.target).sub(position);
   depthAxis.sub(tangent.clone().multiplyScalar(depthAxis.dot(tangent)));
   if (depthAxis.lengthSq() <= 1e-8) {
     depthAxis = fallbackDepthAxis(tangent);
   } else {
     depthAxis.normalize();
+  }
+  if (toVector(preset.target).sub(position).dot(depthAxis) < 0) {
+    depthAxis.multiplyScalar(-1);
   }
   depthAxis.applyAxisAngle(tangent, THREE.MathUtils.degToRad(rollDeg)).normalize();
   const lateralAxis = new THREE.Vector3().crossVectors(tangent, depthAxis).normalize();
@@ -652,7 +797,7 @@ function AnatomyScene({
     let cancelled = false;
 
     if (cleanModel) {
-      loadCleanModel(cleanModel)
+      loadGlbModel(cleanModel)
         .then((template) => {
           if (cancelled) {
             return;
@@ -791,16 +936,35 @@ function AnatomyScene({
     }
 
     const scopeGroup = new THREE.Group();
-    const shaftStart = pose.position.clone().add(pose.tangent.clone().multiplyScalar(-22));
-    const shaftEnd = pose.position.clone().add(pose.tangent.clone().multiplyScalar(34));
-    const shaftGeometry = new THREE.BufferGeometry().setFromPoints([shaftStart, shaftEnd]);
-    scopeGroup.add(new THREE.Line(shaftGeometry, new THREE.LineBasicMaterial({ color: "#f5e4c8", linewidth: 2 })));
-    const contact = new THREE.Mesh(
-      new THREE.SphereGeometry(3.1, 20, 12),
-      new THREE.MeshStandardMaterial({ color: "#f5e166", emissive: "#3a2e05", emissiveIntensity: 0.35 })
-    );
-    contact.position.copy(pose.position);
-    scopeGroup.add(contact);
+    const scopeModel = caseData.assets.scope_model ?? null;
+    if (!scopeModel || scopeModel.show_auxiliary_shaft !== false) {
+      const shaftStart = pose.position.clone().add(pose.tangent.clone().multiplyScalar(-22));
+      const shaftEnd = pose.position.clone().add(pose.tangent.clone().multiplyScalar(34));
+      const shaftGeometry = new THREE.BufferGeometry().setFromPoints([shaftStart, shaftEnd]);
+      scopeGroup.add(new THREE.Line(shaftGeometry, new THREE.LineBasicMaterial({ color: "#f5e4c8", linewidth: 2 })));
+    }
+    if (scopeModel) {
+      loadGlbModel(scopeModel)
+        .then((template) => {
+          if (cancelled) {
+            return;
+          }
+          const model = prepareScopeModel(template, pose, scopeModel);
+          scopeGroup.add(model);
+          container.dataset.scopeModel = scopeModel.asset;
+        })
+        .catch((loadError) => {
+          console.error("Failed to load EBUS bronchoscope model", loadError);
+        });
+    } else {
+      const contact = new THREE.Mesh(
+        new THREE.SphereGeometry(3.1, 20, 12),
+        new THREE.MeshStandardMaterial({ color: "#f5e166", emissive: "#3a2e05", emissiveIntensity: 0.35 })
+      );
+      contact.position.copy(pose.position);
+      scopeGroup.add(contact);
+      container.dataset.scopeModel = "";
+    }
     scene.add(scopeGroup);
 
     if (layers.fan) {
@@ -875,6 +1039,8 @@ function AnatomyScene({
       data-fan-depth-axis={pose.depthAxis.toArray().map((value) => value.toFixed(3)).join(",")}
       data-fan-image-axis={cephalicImageAxis(pose).toArray().map((value) => value.toFixed(3)).join(",")}
       data-clean-model={primaryCleanModel(caseData)?.asset ?? ""}
+      data-scope-model={caseData.assets.scope_model?.asset ?? ""}
+      data-scope-frame={caseData.assets.scope_model?.lock_to_fan ? "fan" : "pose"}
     />
   );
 }
@@ -913,16 +1079,123 @@ function SectorView({
     return { x: clamp(x, 8, 92), y: clamp(y, 7, 93) };
   }
 
-  function contourPath(points: Vec2[]) {
-    if (points.length < 2) {
-      return "";
+  function isClosedContour(points: Vec2[]): boolean {
+    if (points.length < 4) {
+      return false;
     }
-    const mapped = points.map(sectorPoint);
-    const first = mapped[0];
-    const commands = mapped.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
-    const last = mapped[mapped.length - 1];
-    const closed = Math.hypot(first.x - last.x, first.y - last.y) < 1.6;
-    return `${commands.join(" ")}${closed ? " Z" : ""}`;
+    const first = points[0];
+    const last = points[points.length - 1];
+    return Math.hypot(first[0] - last[0], first[1] - last[1]) <= 1.5;
+  }
+
+  function smoothSectorPoints(
+    points: { x: number; y: number }[],
+    { closed, iterations }: { closed: boolean; iterations: number }
+  ) {
+    let working = points;
+    for (let pass = 0; pass < iterations; pass += 1) {
+      if (working.length < 3) {
+        break;
+      }
+      const smoothed: { x: number; y: number }[] = [];
+      const segmentCount = closed ? working.length : working.length - 1;
+      if (!closed) {
+        smoothed.push(working[0]);
+      }
+      for (let index = 0; index < segmentCount; index += 1) {
+        const start = working[index];
+        const end = working[(index + 1) % working.length];
+        smoothed.push(
+          {
+            x: start.x * 0.75 + end.x * 0.25,
+            y: start.y * 0.75 + end.y * 0.25
+          },
+          {
+            x: start.x * 0.25 + end.x * 0.75,
+            y: start.y * 0.25 + end.y * 0.75
+          }
+        );
+      }
+      if (!closed) {
+        smoothed.push(working[working.length - 1]);
+      }
+      working = smoothed;
+    }
+    return working;
+  }
+
+  function contourPath(
+    points: Vec2[],
+    { forceClosed = false, smoothIterations = 0 }: { forceClosed?: boolean; smoothIterations?: number } = {}
+  ) {
+    if (points.length < 2) {
+      return { path: "", closed: false };
+    }
+    const alreadyClosed = isClosedContour(points);
+    const closed = alreadyClosed || (forceClosed && points.length >= 4);
+    const sourcePoints = alreadyClosed ? points.slice(0, -1) : points;
+    const mapped = smoothSectorPoints(sourcePoints.map(sectorPoint), {
+      closed,
+      iterations: smoothIterations
+    });
+    if (mapped.length < 2) {
+      return { path: "", closed: false };
+    }
+
+    let path = `M${mapped[0].x.toFixed(2)} ${mapped[0].y.toFixed(2)}`;
+    if (mapped.length === 2) {
+      path += ` L${mapped[1].x.toFixed(2)} ${mapped[1].y.toFixed(2)}`;
+      return { path, closed: false };
+    }
+
+    const segmentCount = closed ? mapped.length : mapped.length - 1;
+    for (let index = 0; index < segmentCount; index += 1) {
+      const p0 = mapped[closed ? (index - 1 + mapped.length) % mapped.length : Math.max(0, index - 1)];
+      const p1 = mapped[index];
+      const p2 = mapped[(index + 1) % mapped.length];
+      const p3 = mapped[closed ? (index + 2) % mapped.length : Math.min(mapped.length - 1, index + 2)];
+      const c1 = {
+        x: p1.x + (p2.x - p0.x) / 6,
+        y: p1.y + (p2.y - p0.y) / 6
+      };
+      const c2 = {
+        x: p2.x - (p3.x - p1.x) / 6,
+        y: p2.y - (p3.y - p1.y) / 6
+      };
+      path += ` C${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+    return { path: `${path}${closed ? " Z" : ""}`, closed };
+  }
+
+  function fanHalfWidthAtY(y: number) {
+    const depthRatio = clamp((y - 7) / 85, 0, 1);
+    return Math.max(0.8, depthRatio * 40);
+  }
+
+  function boundedSectorLabel(item: SectorItem, position: { x: number; y: number }) {
+    const y = item.kind === "vessel" ? Math.min(position.y + 5.5, 88) : Math.max(position.y - 4.5, 14);
+    const halfWidth = fanHalfWidthAtY(y);
+    const leftEdge = 50 - halfWidth + 1.3;
+    const rightEdge = 50 + halfWidth - 1.3;
+    const availableWidth = Math.max(0, rightEdge - leftEdge);
+    const estimatedTextWidth = Math.min(34, item.label.length * 1.35);
+    if (availableWidth < estimatedTextWidth) {
+      return null;
+    }
+
+    const preferLeft = item.kind === "vessel" || position.x > 66;
+    const leftCandidate = position.x - 3.2 - estimatedTextWidth >= leftEdge;
+    const rightCandidate = position.x + 3.2 + estimatedTextWidth <= rightEdge;
+    if (preferLeft && leftCandidate) {
+      return { x: position.x - 3.2, y, anchor: "end" as const };
+    }
+    if (rightCandidate) {
+      return { x: position.x + 3.2, y, anchor: "start" as const };
+    }
+    if (leftCandidate) {
+      return { x: position.x - 3.2, y, anchor: "end" as const };
+    }
+    return { x: 50, y, anchor: "middle" as const };
   }
 
   function itemShape(item: SectorItem) {
@@ -968,6 +1241,38 @@ function SectorView({
     };
   }
 
+  function contourFillColor(item: SectorItem) {
+    if (item.kind === "node") {
+      return item.color;
+    }
+    return item.color;
+  }
+
+  function contourStrokeColor(item: SectorItem, active: boolean) {
+    if (active) {
+      return "#ffffff";
+    }
+    if (item.kind === "node") {
+      return "#9cf0a2";
+    }
+    return item.color;
+  }
+
+  function contourFillOpacity(item: SectorItem) {
+    if (item.kind === "vessel") {
+      return 0.76;
+    }
+    if (item.kind === "node") {
+      return 0.55;
+    }
+    return 0.34;
+  }
+
+  const renderItems = [...visibleItems].sort((a, b) => {
+    const order = { node: 0, vessel: 1, airway: 2, contact: 3 };
+    return order[a.kind] - order[b.kind] || a.depthMm - b.depthMm || a.label.localeCompare(b.label);
+  });
+
   return (
     <section className="sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
       <div className="pane-header">
@@ -1007,17 +1312,15 @@ function SectorView({
             />
           ))}
         </g>
-        {visibleItems.map((item) => {
+        <g clipPath="url(#fanClip)">
+        {renderItems.map((item) => {
           const position = itemPosition(item);
           const active = activeStructure === item.id;
-          const labelOnLeft = item.kind === "vessel" || position.x > 66;
-          const labelX = labelOnLeft ? Math.max(position.x - 5, 16) : Math.min(position.x + 4, 84);
-          const labelY = item.kind === "vessel" ? Math.min(position.y + 6, 88) : Math.max(position.y - 5, 12);
+          const label = boundedSectorLabel(item, position);
           if (item.kind === "airway") {
             return (
               <g key={item.id} onMouseEnter={() => setActiveStructure(item.id)} onMouseLeave={() => setActiveStructure(null)}>
-                <path d="M16 15 C30 23, 70 23, 84 15" stroke={active ? "#fff5c2" : item.color} strokeWidth={active ? 2.2 : 1.5} fill="none" />
-                <text x="52" y="19" fill={active ? "#fff5c2" : item.color} fontSize="3.2">airway wall</text>
+                <path d="M45.8 14.2 C48.5 16.3, 51.5 16.3, 54.2 14.2" stroke={active ? "#fff5c2" : item.color} strokeWidth={active ? 2.2 : 1.5} fill="none" />
               </g>
             );
           }
@@ -1026,8 +1329,20 @@ function SectorView({
           }
           const shape = itemShape(item);
           const contourPaths = (item.contoursMm ?? [])
-            .map((contour) => contourPath(contour))
-            .filter((path) => path.length > 0);
+            .map((contour) => {
+              const smoothIterations = item.kind === "vessel" ? 5 : 1;
+              return {
+                fill: contourPath(contour, {
+                  forceClosed: item.kind === "node" || item.kind === "vessel",
+                  smoothIterations
+                }),
+                stroke: contourPath(contour, {
+                  forceClosed: item.kind === "node",
+                  smoothIterations
+                })
+              };
+            })
+            .filter((contour) => contour.fill.path.length > 0);
           return (
             <g
               key={item.id}
@@ -1042,18 +1357,44 @@ function SectorView({
               onBlur={() => setActiveStructure(null)}
             >
               {contourPaths.length > 0 ? (
-                contourPaths.map((path, index) => (
-                  <path
-                    key={`${item.id}-contour-${index}`}
-                    d={path}
-                    clipPath="url(#fanClip)"
-                    fill={path.endsWith(" Z") ? item.color : "none"}
-                    fillOpacity={item.kind === "node" ? 0.34 : 0.28}
-                    stroke={active ? "#ffffff" : item.color}
-                    strokeOpacity={active ? 0.95 : 0.78}
-                    strokeWidth={active ? 0.85 : 0.5}
-                  />
-                ))
+                contourPaths.map((contour, index) => {
+                  const contourKey = `${item.id}-contour-${index}`;
+                  if (item.kind === "vessel" && contour.fill.closed) {
+                    return (
+                      <g key={contourKey} data-vessel-cut-plane="filled">
+                        <path
+                          data-vessel-fill="body"
+                          d={contour.fill.path}
+                          fill={item.color}
+                          fillOpacity={active ? 0.62 : 0.5}
+                          stroke="none"
+                        />
+                        <path
+                          d={contour.stroke.path}
+                          fill="none"
+                          stroke={contourStrokeColor(item, active)}
+                          strokeOpacity={active ? 0.98 : 0.9}
+                          strokeWidth={active ? 1.15 : 0.72}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </g>
+                    );
+                  }
+                  return (
+                    <path
+                      key={contourKey}
+                      d={contour.fill.path}
+                      fill={contour.fill.closed ? contourFillColor(item) : "none"}
+                      fillOpacity={contour.fill.closed ? contourFillOpacity(item) : 0}
+                      stroke={contourStrokeColor(item, active)}
+                      strokeOpacity={active ? 0.96 : 0.84}
+                      strokeWidth={active ? 1.05 : 0.62}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                })
               ) : (
                 <ellipse
                   cx={position.x}
@@ -1061,22 +1402,25 @@ function SectorView({
                   rx={active ? shape.rx * 1.08 : shape.rx}
                   ry={active ? shape.ry * 1.08 : shape.ry}
                   transform={`rotate(${shape.angleDeg.toFixed(1)} ${position.x.toFixed(2)} ${position.y.toFixed(2)})`}
-                  clipPath="url(#fanClip)"
-                  fill={item.color}
-                  fillOpacity={item.kind === "node" ? 0.66 : 0.52}
-                  stroke={active ? "#ffffff" : item.color}
-                  strokeWidth={active ? 0.9 : 0.35}
+                  fill={contourFillColor(item)}
+                  fillOpacity={item.kind === "node" ? 0.58 : 0.66}
+                  stroke={contourStrokeColor(item, active)}
+                  strokeOpacity={active ? 0.96 : 0.82}
+                  strokeWidth={active ? 1.0 : 0.5}
                 />
               )}
-              {item.kind === "vessel" && (
-                <line x1={position.x} y1={position.y} x2={labelX} y2={labelY - 1.2} stroke={item.color} strokeOpacity="0.7" strokeWidth="0.35" />
+              {label && item.kind === "vessel" && (
+                <line x1={position.x} y1={position.y} x2={label.x} y2={label.y - 1.2} stroke={item.color} strokeOpacity="0.7" strokeWidth="0.35" />
               )}
-              <text x={labelX} y={labelY} textAnchor={labelOnLeft ? "end" : "start"} fill="#d9f0ee" fontSize="3.15">
-                {item.label}
-              </text>
+              {label && (
+                <text x={label.x} y={label.y} textAnchor={label.anchor} fill="#d9f0ee" fontSize="3.15">
+                  {item.label}
+                </text>
+              )}
             </g>
           );
         })}
+        </g>
         <line x1="94" y1="10" x2="94" y2="91" stroke="#758086" strokeWidth="0.6" />
         {[0, 10, 20, 30, 40].map((tick) => (
           <g key={tick}>
@@ -1156,14 +1500,14 @@ function App() {
     if (!activePolyline || !selectedPreset) {
       return null;
     }
-    return computePose(activePolyline, sMm, rollDeg, selectedPreset.target);
+    return computePose(activePolyline, sMm, rollDeg, selectedPreset);
   }, [activePolyline, rollDeg, sMm, selectedPreset]);
 
   const cameraPose = useMemo(() => {
     if (!activePolyline || !selectedPreset) {
       return null;
     }
-    return computePose(activePolyline, sMm, 0, selectedPreset.target);
+    return computePose(activePolyline, sMm, 0, selectedPreset);
   }, [activePolyline, sMm, selectedPreset]);
 
   const sectorQueryKey = useMemo(() => {
@@ -1185,7 +1529,11 @@ function App() {
       s_mm: sMm.toFixed(1),
       roll_deg: rollDeg.toFixed(1),
       max_depth_mm: String(caseData.render_defaults.max_depth_mm),
-      sector_angle_deg: String(caseData.render_defaults.sector_angle_deg)
+      sector_angle_deg: String(caseData.render_defaults.sector_angle_deg),
+      depth_samples: String(SECTOR_VOLUME_DEPTH_SAMPLES),
+      lateral_samples: String(SECTOR_VOLUME_LATERAL_SAMPLES),
+      slab_samples: String(SECTOR_VOLUME_SLAB_SAMPLES),
+      slab_half_thickness_mm: String(SECTOR_VOLUME_SLAB_HALF_THICKNESS_MM)
     });
     setVolumeSector((current) => ({
       status: current.queryKey === sectorQueryKey && current.status === "ready" ? "ready" : "loading",

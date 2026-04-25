@@ -21,11 +21,12 @@ from ebus_simulator.web_navigation import (
 )
 
 
-DEFAULT_DEPTH_SAMPLES = 72
-DEFAULT_LATERAL_SAMPLES = 72
+DEFAULT_DEPTH_SAMPLES = 160
+DEFAULT_LATERAL_SAMPLES = 160
 DEFAULT_SLAB_HALF_THICKNESS_MM = 2.5
 DEFAULT_SLAB_SAMPLES = 5
 MIN_HIT_BASE_SAMPLES = 2
+MASK_HIT_OCCUPANCY_THRESHOLD = 0.25
 EPSILON = 1e-9
 PLANE_INTERSECTION_TOLERANCE_MM = 1e-6
 MAX_SURFACE_TRIANGLES = 750_000
@@ -295,23 +296,35 @@ def build_sector_sampling_grid(
     )
 
 
-def _sample_mask_hits(volume: VolumeData, points_lps: np.ndarray) -> np.ndarray:
+def _sample_mask_occupancy(volume: VolumeData, points_lps: np.ndarray) -> np.ndarray:
     if volume.data is None or points_lps.size == 0:
-        return np.zeros(points_lps.shape[0], dtype=bool)
+        return np.zeros(points_lps.shape[0], dtype=np.float32)
 
-    data = np.asarray(volume.data)
+    from scipy.ndimage import map_coordinates
+
+    data = np.clip(np.asarray(volume.data, dtype=np.float32), 0.0, 1.0)
     voxels = _points_to_voxel(points_lps, volume.inverse_affine_lps)
-    ijk = np.rint(voxels).astype(np.int64)
-    shape = np.asarray(data.shape[:3], dtype=np.int64)
-    inside = np.all((ijk >= 0) & (ijk < shape[None, :]), axis=1)
-    hits = np.zeros(points_lps.shape[0], dtype=bool)
-    if not bool(np.any(inside)):
-        return hits
+    occupancy = map_coordinates(
+        data,
+        voxels.T,
+        order=1,
+        mode="constant",
+        cval=0.0,
+    )
+    return np.clip(np.asarray(occupancy, dtype=np.float32), 0.0, 1.0)
 
-    inside_indices = np.flatnonzero(inside)
-    inside_ijk = ijk[inside_indices]
-    hits[inside_indices] = data[inside_ijk[:, 0], inside_ijk[:, 1], inside_ijk[:, 2]] > 0
-    return hits
+
+def _sample_mask_hits(volume: VolumeData, points_lps: np.ndarray) -> np.ndarray:
+    occupancy = _sample_mask_occupancy(volume, points_lps)
+    return occupancy >= MASK_HIT_OCCUPANCY_THRESHOLD
+
+
+def _base_occupancy_from_samples(sample_occupancy: np.ndarray, grid: SectorSamplingGrid) -> np.ndarray:
+    base_occupancy = np.zeros(grid.base_sample_count, dtype=np.float32)
+    if sample_occupancy.size == 0:
+        return base_occupancy
+    np.maximum.at(base_occupancy, grid.base_index, np.asarray(sample_occupancy, dtype=np.float32))
+    return base_occupancy
 
 
 _CASE_SEGMENTS: dict[int, tuple[tuple[str, str], ...]] = {
@@ -473,6 +486,56 @@ def _contours_from_hit_base_mask(hit_base_mask: np.ndarray, grid: SectorSampling
     ]
 
 
+def _contours_from_base_occupancy(
+    base_occupancy: np.ndarray,
+    grid: SectorSamplingGrid,
+    *,
+    level: float = 0.35,
+) -> list[list[list[float]]]:
+    if base_occupancy.size != grid.base_sample_count or float(np.max(base_occupancy, initial=0.0)) < float(level):
+        return []
+
+    try:
+        from scipy.ndimage import gaussian_filter, map_coordinates
+        from skimage import measure  # type: ignore
+    except ImportError:
+        return []
+
+    occupancy = np.asarray(base_occupancy, dtype=np.float32).reshape(
+        (grid.depth_sample_count, grid.lateral_sample_count)
+    )
+    smoothed = gaussian_filter(occupancy, sigma=0.75, mode="nearest")
+    if float(np.max(smoothed, initial=0.0)) < float(level):
+        return []
+
+    lateral_grid = grid.lateral_mm.reshape((grid.depth_sample_count, grid.lateral_sample_count))
+    depth_grid = grid.depth_mm.reshape((grid.depth_sample_count, grid.lateral_sample_count))
+    depth_step = float(np.mean(np.diff(depth_grid[:, 0]))) if grid.depth_sample_count > 1 else 1.0
+    lateral_steps = np.abs(np.diff(lateral_grid, axis=1))
+    lateral_step = float(np.mean(lateral_steps)) if lateral_steps.size else 1.0
+    close_threshold_mm = max(0.75, 1.8 * max(abs(depth_step), abs(lateral_step)))
+
+    polylines: list[list[tuple[float, float]]] = []
+    for contour in measure.find_contours(smoothed, level=float(level)):
+        if contour.shape[0] < 4:
+            continue
+        coordinates = np.vstack((contour[:, 0], contour[:, 1]))
+        laterals = map_coordinates(lateral_grid, coordinates, order=1, mode="nearest")
+        depths = map_coordinates(depth_grid, coordinates, order=1, mode="nearest")
+        polyline = [(float(lateral), float(depth)) for lateral, depth in zip(laterals, depths)]
+        if len(polyline) >= 4 and math.dist(polyline[0], polyline[-1]) <= close_threshold_mm:
+            polyline[-1] = polyline[0]
+        smoothed_polyline = _smooth_polyline(polyline)
+        if len(smoothed_polyline) >= 4 and _contour_score(smoothed_polyline) >= 2.0:
+            polylines.append(smoothed_polyline)
+
+    polylines.sort(key=_contour_score, reverse=True)
+    return [
+        [[float(lateral), float(depth)] for lateral, depth in polyline]
+        for polyline in polylines[:4]
+    ]
+
+
 def _unique_points(points: list[np.ndarray]) -> list[np.ndarray]:
     unique: list[np.ndarray] = []
     for point in points:
@@ -590,6 +653,7 @@ def _intersection_from_hits(
     source: WebVolumeMaskSource,
     *,
     hits: np.ndarray,
+    sample_occupancy: np.ndarray,
     grid: SectorSamplingGrid,
     pose: WebNavigationPose,
     max_depth_mm: float,
@@ -606,6 +670,7 @@ def _intersection_from_hits(
     if hit_base_count < int(min_hit_base_samples):
         return None
 
+    base_occupancy = _base_occupancy_from_samples(sample_occupancy, grid)
     surface_contours = (
         []
         if surface_mesh is None
@@ -616,9 +681,17 @@ def _intersection_from_hits(
             sector_angle_deg=sector_angle_deg,
         )
     )
-    fallback_contours = _contours_from_hit_base_mask(hit_base_mask, grid)
-    contours = surface_contours or fallback_contours
-    contour_source = "surface_triangle_plane_intersection" if surface_contours else "marching_squares_fan_slice"
+    if surface_contours:
+        contours = surface_contours
+        contour_source = "surface_triangle_plane_intersection"
+    else:
+        occupancy_contours = _contours_from_base_occupancy(base_occupancy, grid)
+        if occupancy_contours:
+            contours = occupancy_contours
+            contour_source = "interpolated_mask_occupancy"
+        else:
+            contours = _contours_from_hit_base_mask(hit_base_mask, grid)
+            contour_source = "marching_squares_fan_slice"
     depths = grid.depth_mm[hit_base_mask]
     laterals = grid.lateral_mm[hit_base_mask]
     weights = hit_base_counts[hit_base_mask].astype(np.float64)
@@ -754,11 +827,13 @@ def compute_volume_intersections(
     intersections: list[WebVolumeIntersection] = []
     for source in sources:
         volume = _get_mask_volume(context, source.mask_path)
-        hits = _sample_mask_hits(volume, grid.points_lps)
+        sample_occupancy = _sample_mask_occupancy(volume, grid.points_lps)
+        hits = sample_occupancy >= MASK_HIT_OCCUPANCY_THRESHOLD
         surface_mesh = _get_surface_mesh(source.mask_path) if bool(np.any(hits)) else None
         intersection = _intersection_from_hits(
             source,
             hits=hits,
+            sample_occupancy=sample_occupancy,
             grid=grid,
             pose=pose,
             max_depth_mm=max_depth_mm,
@@ -801,6 +876,10 @@ def build_volume_sector_response(
         centerline_s_mm=centerline_s_mm,
         roll_deg=roll_deg,
         target_lps=target_lps,
+        contact_lps=(None if preset is None else np.asarray(preset.contact_lps, dtype=np.float64)),
+        contact_centerline_s_mm=(None if preset is None or int(preset.line_index) != int(line_index) else float(preset.centerline_s_mm)),
+        shaft_axis_lps=(None if preset is None or preset.shaft_axis_lps is None else np.asarray(preset.shaft_axis_lps, dtype=np.float64)),
+        depth_axis_lps=(None if preset is None or preset.depth_axis_lps is None else np.asarray(preset.depth_axis_lps, dtype=np.float64)),
     )
     sources = volume_mask_sources(
         context,

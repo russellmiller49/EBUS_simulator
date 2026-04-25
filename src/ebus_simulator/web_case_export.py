@@ -204,6 +204,60 @@ def _clean_model_assets(clean_model_dir: str | Path | None, output_dir: Path) ->
     return copied_assets
 
 
+def _scope_model_asset(scope_model_path: str | Path | None, output_dir: Path) -> dict[str, object] | None:
+    if scope_model_path is None:
+        return None
+
+    source_path = Path(scope_model_path).expanduser().resolve()
+    if not source_path.exists():
+        raise FileNotFoundError(f"EBUS scope model does not exist: {source_path}")
+    if not source_path.is_file() or source_path.suffix.lower() != ".glb":
+        raise ValueError(f"EBUS scope model must be a .glb file: {source_path}")
+
+    destination = output_dir / "models" / "device" / source_path.name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_path, destination)
+    is_tip_model = "tip" in source_path.stem.lower()
+    if is_tip_model:
+        label = "EBUS tip"
+        shaft_axis = "+x"
+        depth_axis = "+y"
+        lateral_axis = "-z"
+        fan_apex_anchor = {
+            "x": "center",
+            "y": "max",
+            "z": "center",
+        }
+        fan_apex_anchor_point = [-0.334, -0.055, 0.0]
+    else:
+        label = "EBUS bronchoscope"
+        shaft_axis = "+z"
+        depth_axis = "+y"
+        lateral_axis = "+x"
+        fan_apex_anchor = {
+            "x": "center",
+            "y": "max",
+            "z": "min",
+        }
+        fan_apex_anchor_point = None
+    return {
+        "key": source_path.stem,
+        "label": label,
+        "asset": _relative(destination, output_dir),
+        "source_path": str(source_path),
+        "coordinate_frame": "local_device_model_units",
+        "shaft_axis": shaft_axis,
+        "depth_axis": depth_axis,
+        "lateral_axis": lateral_axis,
+        "origin": "fan_apex_anchor_at_probe_contact",
+        "fan_apex_anchor": fan_apex_anchor,
+        "fan_apex_anchor_point": fan_apex_anchor_point,
+        "scale_mm_per_unit": 44.0,
+        "lock_to_fan": is_tip_model,
+        "show_auxiliary_shaft": False,
+    }
+
+
 def attach_clean_model_assets(web_case_dir: str | Path, clean_model_dir: str | Path) -> int:
     output_root = Path(web_case_dir).expanduser().resolve()
     manifest_path = output_root / "case_manifest.web.json"
@@ -224,6 +278,25 @@ def attach_clean_model_assets(web_case_dir: str | Path, clean_model_dir: str | P
     return len(clean_assets)
 
 
+def attach_scope_model_asset(web_case_dir: str | Path, scope_model_path: str | Path) -> bool:
+    output_root = Path(web_case_dir).expanduser().resolve()
+    manifest_path = output_root / "case_manifest.web.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Web case manifest does not exist: {manifest_path}")
+
+    payload = json.loads(manifest_path.read_text())
+    assets = payload.setdefault("assets", {})
+    if not isinstance(assets, dict):
+        raise ValueError(f"Web case manifest has invalid assets payload: {manifest_path}")
+
+    assets["scope_model"] = _scope_model_asset(scope_model_path, output_root)
+    notes = payload.setdefault("notes", {})
+    if isinstance(notes, dict):
+        notes["scope_model"] = "GLB bronchoscope tip presentation model aligned to the active probe pose."
+    _write_json(manifest_path, payload)
+    return assets["scope_model"] is not None
+
+
 def export_web_case(
     manifest_path: str | Path,
     *,
@@ -231,6 +304,7 @@ def export_web_case(
     max_mask_points: int = DEFAULT_MAX_MASK_POINTS,
     max_station_points: int = DEFAULT_MAX_STATION_POINTS,
     clean_model_dir: str | Path | None = None,
+    scope_model_path: str | Path | None = None,
 ) -> WebCaseExportResult:
     output_root = Path(output_dir).expanduser().resolve()
     output_root.mkdir(parents=True, exist_ok=True)
@@ -370,6 +444,7 @@ def export_web_case(
 
     render_defaults = context.manifest.render_defaults
     clean_model_assets = _clean_model_assets(clean_model_dir, output_root)
+    scope_model_asset = _scope_model_asset(scope_model_path, output_root)
     manifest_payload = {
         "schema_version": SCHEMA_VERSION,
         "case_id": context.manifest.case_id,
@@ -390,6 +465,7 @@ def export_web_case(
             "vessels": vessel_assets,
             "stations": station_assets,
             "clean_models": clean_model_assets,
+            "scope_model": scope_model_asset,
         },
         "navigation": {
             "mode": "guided_centerline",
@@ -408,6 +484,7 @@ def export_web_case(
             "intent": "local anatomy-correlation teaching app",
             "mask_assets": "translucent point-cloud fallbacks for v1 browser performance",
             "clean_models": "GLB presentation meshes only; sector intersections still use source masks.",
+            "scope_model": "GLB bronchoscope tip presentation model aligned to the active probe pose.",
             "navigation": "guided along exported centerline polylines with curated station snaps",
         },
     }
@@ -434,6 +511,7 @@ def main() -> int:
     parser.add_argument("--max-mask-points", type=int, default=DEFAULT_MAX_MASK_POINTS, help="Maximum sampled points per vessel mask.")
     parser.add_argument("--max-station-points", type=int, default=DEFAULT_MAX_STATION_POINTS, help="Maximum sampled points per station mask.")
     parser.add_argument("--clean-model-dir", help="Optional directory of clean GLB presentation models to copy into the web case.")
+    parser.add_argument("--scope-model", help="Optional EBUS bronchoscope tip GLB to copy into the web case.")
     args = parser.parse_args()
 
     result = export_web_case(
@@ -442,6 +520,7 @@ def main() -> int:
         max_mask_points=args.max_mask_points,
         max_station_points=args.max_station_points,
         clean_model_dir=args.clean_model_dir,
+        scope_model_path=args.scope_model,
     )
     print(f"web_case: {result.output_dir}")
     print(f"manifest: {result.manifest_path}")
